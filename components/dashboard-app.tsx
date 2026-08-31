@@ -77,6 +77,58 @@ function formText(data: FormData, name: string) {
   return typeof value === 'string' ? value : '';
 }
 
+function encodeBytes(bytes: Uint8Array) {
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+function decodeBytes(value: string) {
+  const padded = value.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(value.length / 4) * 4, '=');
+  return Uint8Array.from(atob(padded), (char) => char.charCodeAt(0));
+}
+
+function createHandoff() {
+  const key = crypto.getRandomValues(new Uint8Array(32));
+  return { id: crypto.randomUUID(), key: encodeBytes(key) };
+}
+
+async function importHandoffKey(encoded: string) {
+  return crypto.subtle.importKey('raw', decodeBytes(encoded), 'AES-GCM', false, [
+    'encrypt',
+    'decrypt',
+  ]);
+}
+
+async function encryptSession(session: Session, encodedKey: string) {
+  const key = await importHandoffKey(encodedKey);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const plain = new TextEncoder().encode(
+    JSON.stringify({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    }),
+  );
+  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plain);
+  return `${encodeBytes(iv)}.${encodeBytes(new Uint8Array(encrypted))}`;
+}
+
+async function decryptSession(value: string, encodedKey: string) {
+  const [encodedIv, encodedPayload] = value.split('.');
+  if (!encodedIv || !encodedPayload) throw new Error('Invalid handoff payload');
+  const key = await importHandoffKey(encodedKey);
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: decodeBytes(encodedIv) },
+    key,
+    decodeBytes(encodedPayload),
+  );
+  return JSON.parse(new TextDecoder().decode(decrypted)) as {
+    access_token: string;
+    refresh_token: string;
+  };
+}
+
 const navigation: { label: Area; icon: typeof LayoutDashboard }[] = [
   { label: '总目标', icon: Target },
   { label: '工作', icon: BriefcaseBusiness },
@@ -99,6 +151,7 @@ export default function DashboardApp() {
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(!isCloudConfigured);
   const [email, setEmail] = useState('');
+  const [handoffPending, setHandoffPending] = useState(false);
   const [authMessage, setAuthMessage] = useState('');
   const [query, setQuery] = useState('');
   const [syncMessage, setSyncMessage] = useState('');
@@ -201,6 +254,74 @@ export default function DashboardApp() {
   }, []);
 
   useEffect(() => {
+    const client = getSupabase();
+    if (!client || session) return;
+    const stored = window.localStorage.getItem('ryan-login-handoff');
+    if (!stored) return;
+    let handoff: { id: string; key: string };
+    try {
+      handoff = JSON.parse(stored) as { id: string; key: string };
+    } catch {
+      window.localStorage.removeItem('ryan-login-handoff');
+      return;
+    }
+    setHandoffPending(true);
+    setAuthMessage('等待手机验证。点击手机邮件中的登录链接后，电脑会自动登录。');
+    let stopped = false;
+    const check = async () => {
+      const { data } = await client
+        .from('session_handoffs')
+        .select('encrypted_session')
+        .eq('id', handoff.id)
+        .maybeSingle();
+      if (stopped || !data?.encrypted_session) return;
+      try {
+        const transferred = await decryptSession(data.encrypted_session, handoff.key);
+        const { error } = await client.auth.setSession(transferred);
+        if (error) throw error;
+        window.localStorage.removeItem('ryan-login-handoff');
+        setAuthMessage('手机验证成功，电脑已登录。');
+        await client.from('session_handoffs').delete().eq('id', handoff.id);
+      } catch {
+        setAuthMessage('跨设备登录信息无效，请重新发送登录链接。');
+      }
+    };
+    void check();
+    const timer = window.setInterval(() => void check(), 2500);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+  }, [session]);
+
+  useEffect(() => {
+    const client = getSupabase();
+    if (!client || !session) return;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('handoff');
+    const key = params.get('handoff_key');
+    if (!id || !key) return;
+    const publish = async () => {
+      try {
+        const encrypted = await encryptSession(session, key);
+        const { error } = await client
+          .from('session_handoffs')
+          .update({ encrypted_session: encrypted, approved_at: new Date().toISOString() })
+          .eq('id', id);
+        if (error) throw error;
+        setAuthMessage('手机验证成功，电脑正在自动登录。');
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete('handoff');
+        cleanUrl.searchParams.delete('handoff_key');
+        window.history.replaceState({}, '', cleanUrl.toString());
+      } catch {
+        setAuthMessage('手机验证成功，但同步到电脑失败，请重新尝试。');
+      }
+    };
+    void publish();
+  }, [session]);
+
+  useEffect(() => {
     if (!session) return;
     const timer = window.setTimeout(() => void loadCloudData(), 0);
     return () => window.clearTimeout(timer);
@@ -277,16 +398,36 @@ export default function DashboardApp() {
     };
   }, [session, loadCloudData]);
 
-  async function sendMagicLink(event: SyntheticEvent<HTMLFormElement>) {
+  async function sendLoginLink(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const client = getSupabase();
     if (!client || !email) return;
     setAuthMessage('正在发送…');
+    const handoff = createHandoff();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const { error: rowError } = await client
+      .from('session_handoffs')
+      .insert({ id: handoff.id, expires_at: expiresAt });
+    if (rowError) {
+      setAuthMessage(`创建跨设备登录失败：${rowError.message}`);
+      return;
+    }
+    window.localStorage.setItem('ryan-login-handoff', JSON.stringify(handoff));
+    const redirect = new URL(window.location.href);
+    redirect.searchParams.set('handoff', handoff.id);
+    redirect.searchParams.set('handoff_key', handoff.key);
     const { error } = await client.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.href },
+      options: { shouldCreateUser: true, emailRedirectTo: redirect.toString() },
     });
-    setAuthMessage(error ? error.message : '登录链接已发送，请查看邮箱。');
+    if (error) {
+      window.localStorage.removeItem('ryan-login-handoff');
+      await client.from('session_handoffs').delete().eq('id', handoff.id);
+      setAuthMessage(error.message);
+      return;
+    }
+    setHandoffPending(true);
+    setAuthMessage('登录链接已发送。请在手机邮箱点击链接，电脑会自动登录。');
   }
 
   async function syncNotion() {
@@ -314,8 +455,9 @@ export default function DashboardApp() {
       <Login
         email={email}
         setEmail={setEmail}
+        handoffPending={handoffPending}
         message={authMessage}
-        submit={sendMagicLink}
+        submit={sendLoginLink}
       />
     );
 
@@ -2228,11 +2370,13 @@ function SelectField({
 function Login({
   email,
   setEmail,
+  handoffPending,
   message,
   submit,
 }: {
   email: string;
   setEmail: (v: string) => void;
+  handoffPending: boolean;
   message: string;
   submit: (e: SyntheticEvent<HTMLFormElement>) => void;
 }) {
@@ -2244,7 +2388,7 @@ function Login({
         </div>
         <h1 className="text-2xl font-semibold">登录 Ryan‘s 个人看板</h1>
         <p className="mt-2 text-sm leading-6 text-[#6f7973]">
-          输入你指定的邮箱，我们会发送一次性登录链接。电脑和手机使用同一个邮箱即可同步数据。
+          电脑输入邮箱后，用手机点击邮件里的登录链接；验证成功后，这台电脑会自动登录。
         </p>
         <form onSubmit={submit} className="mt-6">
           <label className="block text-sm">
@@ -2259,7 +2403,7 @@ function Login({
             />
           </label>
           <button className="mt-4 h-11 w-full rounded-xl bg-[#153e32] text-sm font-medium text-white">
-            发送登录链接
+            {handoffPending ? '重新发送登录链接' : '发送登录链接'}
           </button>
         </form>
         {message && (
