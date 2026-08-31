@@ -12,7 +12,6 @@ import {
   Dumbbell,
   FileClock,
   BookOpen,
-  History,
   LayoutDashboard,
   LineChart,
   LogOut,
@@ -29,20 +28,24 @@ import {
 import { type SyntheticEvent, useCallback, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import {
+  Bar,
+  BarChart as ReBarChart,
   CartesianGrid,
   Line,
   LineChart as ReLineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import {
-  demoBooks,
-  demoFinance,
-  demoHealth,
-  demoProducts,
-  demoProfits,
+  initialBooks,
+  initialFinance,
+  initialHealth,
+  initialProducts,
+  initialProfits,
   initialGoals,
   type Book,
   type FinanceLog,
@@ -54,20 +57,20 @@ import {
 import { getSupabase, isCloudConfigured } from '@/lib/supabase';
 
 type Area =
-  | '总览'
+  | '总目标'
   | '工作'
   | '副业'
   | '身体'
   | '个人财务'
-  | '读书清单'
-  | '目标档案';
+  | '读书清单';
 type RecordKind =
   | '工作产品'
   | '副业利润'
   | '身体数据'
   | '财务流水'
   | '读书记录'
-  | '新目标';
+  | '新目标'
+  | '更新目标';
 
 function formText(data: FormData, name: string) {
   const value = data.get(name);
@@ -75,24 +78,24 @@ function formText(data: FormData, name: string) {
 }
 
 const navigation: { label: Area; icon: typeof LayoutDashboard }[] = [
-  { label: '总览', icon: LayoutDashboard },
+  { label: '总目标', icon: Target },
   { label: '工作', icon: BriefcaseBusiness },
   { label: '副业', icon: TrendingUp },
   { label: '身体', icon: Dumbbell },
   { label: '个人财务', icon: WalletCards },
   { label: '读书清单', icon: BookOpen },
-  { label: '目标档案', icon: History },
 ];
 
 export default function DashboardApp() {
-  const [active, setActive] = useState<Area>('总览');
-  const [products, setProducts] = useState<WorkProduct[]>(demoProducts);
-  const [profits, setProfits] = useState<ProfitLog[]>(demoProfits);
-  const [health, setHealth] = useState<HealthLog[]>(demoHealth);
-  const [finance, setFinance] = useState<FinanceLog[]>(demoFinance);
-  const [books, setBooks] = useState<Book[]>(demoBooks);
+  const [active, setActive] = useState<Area>('总目标');
+  const [products, setProducts] = useState<WorkProduct[]>(initialProducts);
+  const [profits, setProfits] = useState<ProfitLog[]>(initialProfits);
+  const [health, setHealth] = useState<HealthLog[]>(initialHealth);
+  const [finance, setFinance] = useState<FinanceLog[]>(initialFinance);
+  const [books, setBooks] = useState<Book[]>(initialBooks);
   const [goals, setGoals] = useState<Goal[]>(initialGoals);
   const [recordKind, setRecordKind] = useState<RecordKind | null>(null);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(!isCloudConfigured);
   const [email, setEmail] = useState('');
@@ -111,9 +114,8 @@ export default function DashboardApp() {
       client.from('finance_logs').select('*').order('occurred_at'),
       client.from('books').select('*').order('created_at'),
     ]);
-    if (p.data?.length)
-      setProducts(
-        p.data.map((x) => ({
+    setProducts(
+        (p.data ?? []).map((x) => ({
           id: x.id,
           name: x.name,
           category: x.category,
@@ -125,9 +127,8 @@ export default function DashboardApp() {
           status: x.status,
         })),
       );
-    if (r.data?.length)
-      setProfits(
-        r.data.map((x) => ({
+    setProfits(
+        (r.data ?? []).map((x) => ({
           id: x.id,
           project: x.project,
           platform: x.platform,
@@ -137,9 +138,8 @@ export default function DashboardApp() {
           profit: Number(x.profit),
         })),
       );
-    if (h.data?.length)
-      setHealth(
-        h.data.map((x) => ({
+    setHealth(
+        (h.data ?? []).map((x) => ({
           id: x.id,
           date: x.date_label,
           weight: Number(x.weight),
@@ -147,9 +147,8 @@ export default function DashboardApp() {
           workouts: Number(x.workouts),
         })),
       );
-    if (g.data?.length)
-      setGoals(
-        g.data.map((x) => ({
+    setGoals(
+        (g.data ?? []).map((x) => ({
           id: x.id,
           area: x.area,
           title: x.title,
@@ -163,9 +162,8 @@ export default function DashboardApp() {
           result: x.result,
         })),
       );
-    if (f.data?.length)
-      setFinance(
-        f.data.map((x) => ({
+    setFinance(
+        (f.data ?? []).map((x) => ({
           id: x.id,
           date: x.date_label,
           type: x.type,
@@ -174,9 +172,8 @@ export default function DashboardApp() {
           note: x.note,
         })),
       );
-    if (b.data?.length)
-      setBooks(
-        b.data.map((x) => ({
+    setBooks(
+        (b.data ?? []).map((x) => ({
           id: x.id,
           title: x.title,
           author: x.author,
@@ -324,7 +321,6 @@ export default function DashboardApp() {
 
   const currentGoals = goals.filter((goal) => goal.status === '进行中');
   const archivedGoals = goals.filter((goal) => goal.status !== '进行中');
-  const monthProfit = profits.reduce((sum, row) => sum + row.profit, 0);
   const filteredProducts = products.filter((row) =>
     `${row.name}${row.category}${row.stage}`
       .toLowerCase()
@@ -344,46 +340,53 @@ export default function DashboardApp() {
           syncMessage={syncMessage}
         />
         <div className="mx-auto max-w-[1500px] px-4 py-6 pb-24 sm:px-8 sm:py-8 lg:pb-8">
-          {!isCloudConfigured && <DemoBanner />}
-          {active === '总览' && (
-            <Overview
-              products={products}
-              profits={profits}
-              health={health}
-              goals={currentGoals}
-              monthProfit={monthProfit}
-              openRecord={setRecordKind}
-              setActive={setActive}
-            />
+          {!isCloudConfigured && <CloudSetupBanner />}
+          {active === '总目标' && (
+            <TotalGoalsView goals={goals} openRecord={setRecordKind} onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }} />
           )}
           {active === '工作' && (
-            <WorkView products={filteredProducts} openRecord={setRecordKind} />
+            <WorkView
+              products={filteredProducts}
+              goals={currentGoals.filter((goal) => goal.area === '工作')}
+              history={archivedGoals.filter((goal) => goal.area === '工作')}
+              openRecord={setRecordKind}
+              onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }}
+            />
           )}
           {active === '副业' && (
             <SideView
               profits={profits}
               goals={currentGoals.filter((goal) => goal.area === '副业')}
+              history={archivedGoals.filter((goal) => goal.area === '副业')}
               openRecord={setRecordKind}
+              onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }}
             />
           )}
           {active === '身体' && (
             <HealthView
               health={health}
-              goal={currentGoals.find((item) => item.area === '身体')}
+              goals={currentGoals.filter((item) => item.area === '身体')}
+              history={archivedGoals.filter((goal) => goal.area === '身体')}
               openRecord={setRecordKind}
+              onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }}
             />
           )}
           {active === '个人财务' && (
-            <FinanceView logs={finance} openRecord={setRecordKind} />
+            <FinanceView
+              logs={finance}
+              goals={currentGoals.filter((goal) => goal.area === '个人财务')}
+              history={archivedGoals.filter((goal) => goal.area === '个人财务')}
+              openRecord={setRecordKind}
+              onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }}
+            />
           )}
           {active === '读书清单' && (
-            <ReadingView books={books} openRecord={setRecordKind} />
-          )}
-          {active === '目标档案' && (
-            <GoalArchive
-              current={currentGoals}
-              archived={archivedGoals}
+            <ReadingView
+              books={books}
+              goals={currentGoals.filter((goal) => goal.area === '读书清单')}
+              history={archivedGoals.filter((goal) => goal.area === '读书清单')}
               openRecord={setRecordKind}
+              onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }}
             />
           )}
         </div>
@@ -392,7 +395,7 @@ export default function DashboardApp() {
       {recordKind && (
         <RecordDialog
           kind={recordKind}
-          close={() => setRecordKind(null)}
+          close={() => { setRecordKind(null); setEditingGoal(null); }}
           products={products}
           setProducts={setProducts}
           profits={profits}
@@ -406,6 +409,7 @@ export default function DashboardApp() {
           goals={goals}
           setGoals={setGoals}
           session={session}
+          editingGoal={editingGoal}
         />
       )}
     </main>
@@ -447,7 +451,7 @@ function Header({
       <div className="flex items-center gap-2">
         <span className="hidden items-center gap-2 rounded-full border border-[#dfe5df] bg-white px-3 py-1.5 text-xs text-[#647168] sm:flex">
           <RefreshCw className="size-3" />{' '}
-          {syncMessage || (session ? '实时同步中' : '演示模式')}
+          {syncMessage || (session ? '实时同步中' : '等待接入云端')}
         </span>
         <button
           onClick={onNotionSync}
@@ -522,24 +526,151 @@ function Sidebar({
   );
 }
 
-function DemoBanner() {
+function CloudSetupBanner() {
   return (
     <div className="mb-5 flex flex-col justify-between gap-3 rounded-2xl border border-[#dbcfa8] bg-[#fff9e8] px-4 py-3 text-sm sm:flex-row sm:items-center">
       <div className="flex items-start gap-2">
         <Database className="mt-0.5 size-4 text-[#8a6c1d]" />
         <div>
-          <b>当前展示演示数据</b>
+          <b>当前为空白看板</b>
           <span className="ml-2 text-[#756c52]">
-            连接你的 Supabase 后，记录会自动改为云端数据并支持多设备同步。
+            可先规划目标；接入 Supabase 后，记录将在不同设备间实时同步。
           </span>
         </div>
       </div>
-      <span className="text-xs font-medium text-[#876b1d]">发布前配置</span>
+      <span className="text-xs font-medium text-[#876b1d]">没有演示数据</span>
     </div>
   );
 }
 
-function Overview({
+const goalAreas: Goal['area'][] = ['工作', '副业', '身体', '个人财务', '读书清单'];
+const chartColors = ['#2f6d57', '#c8753b', '#7d65a7', '#d6a63f', '#5d7fa3'];
+
+function TotalGoalsView({
+  goals,
+  openRecord,
+  onEditGoal,
+}: {
+  goals: Goal[];
+  openRecord: (k: RecordKind) => void;
+  onEditGoal: (goal: Goal) => void;
+}) {
+  const completed = goals.filter((goal) => goal.status === '已达成').length;
+  const activeGoals = goals.filter((goal) => goal.status === '进行中');
+  const overall = goals.length ? Math.round((completed / goals.length) * 100) : 0;
+  const statusData = [
+    { name: '进行中', value: activeGoals.length },
+    { name: '已达成', value: completed },
+    { name: '已归档', value: goals.filter((goal) => goal.status === '已归档').length },
+  ].filter((item) => item.value > 0).map((item, index) => ({ ...item, fill: chartColors[index] }));
+  const areaData = goalAreas.map((area) => {
+    const rows = goals.filter((goal) => goal.area === area);
+    const progress = rows.length
+      ? Math.round(
+          rows.reduce((sum, goal) => {
+            if (goal.status === '已达成') return sum + 100;
+            if (goal.target && goal.current != null)
+              return sum + Math.min(100, (goal.current / goal.target) * 100);
+            return sum;
+          }, 0) / rows.length,
+        )
+      : 0;
+    return { area, progress, count: rows.length };
+  });
+
+  return (
+    <>
+      <PageIntro
+        eyebrow="总目标"
+        title="所有目标的总体达成情况"
+        detail="集中查看五大板块的目标数量、平均进度和状态分布；具体分析与历史仍保留在各自板块。"
+        action="设立新目标"
+        onAction={() => openRecord('新目标')}
+      />
+      <section className="mb-5 grid gap-4 sm:grid-cols-3">
+        <Metric label="总体达成率" value={`${overall}%`} note="按已达成目标数量计算" />
+        <Metric label="进行中" value={`${activeGoals.length} 个`} note="跨五大板块汇总" />
+        <Metric label="累计目标" value={`${goals.length} 个`} note="包含达成和归档历史" />
+      </section>
+      <section className="mb-5 grid gap-5 lg:grid-cols-2">
+        <ChartCard title="目标状态分布" detail="进行中、已达成与已归档">
+          {statusData.length ? (
+            <ResponsiveContainer width="100%" height={270}>
+              <PieChart>
+                <Pie data={statusData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={96} paddingAngle={4} label />
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : <ChartEmpty label="设立目标后显示状态分布" />}
+        </ChartCard>
+        <ChartCard title="各板块平均进度" detail="按目标当前值与目标值计算">
+          {goals.length ? (
+            <ResponsiveContainer width="100%" height={270}>
+              <ReBarChart data={areaData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
+                <XAxis dataKey="area" tick={{ fontSize: 11 }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="progress" name="平均进度 %" fill="#2f6d57" radius={[8, 8, 0, 0]} />
+              </ReBarChart>
+            </ResponsiveContainer>
+          ) : <ChartEmpty label="设立目标后显示板块进度" />}
+        </ChartCard>
+      </section>
+      <AreaGoalSection area="全部" goals={activeGoals} history={goals.filter((goal) => goal.status !== '进行中')} openRecord={openRecord} onEditGoal={onEditGoal} />
+    </>
+  );
+}
+
+function AreaGoalSection({
+  area,
+  goals,
+  history,
+  openRecord,
+  onEditGoal,
+}: {
+  area: Goal['area'] | '全部';
+  goals: Goal[];
+  history: Goal[];
+  openRecord: (k: RecordKind) => void;
+  onEditGoal: (goal: Goal) => void;
+}) {
+  return (
+    <section className="mt-5 rounded-2xl border border-[#dfe5df] bg-white p-5">
+      <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div>
+          <h2 className="font-semibold">{area === '全部' ? '目标清单与历史' : `${area} · 目标与历史`}</h2>
+          <p className="text-xs text-[#7b887f]">达成后保留结果和周期，新目标由你确认后继续建立</p>
+        </div>
+        <button onClick={() => openRecord('新目标')} className="rounded-xl bg-[#153e32] px-3 py-2 text-xs font-medium text-white">新增目标</button>
+      </div>
+      {goals.length ? (
+        <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {goals.map((goal) => <GoalCard key={goal.id} goal={goal} onEdit={() => onEditGoal(goal)} />)}
+        </div>
+      ) : <p className="mb-5 rounded-xl bg-[#f6f7f4] px-4 py-6 text-center text-sm text-[#7b887f]">还没有进行中的目标</p>}
+      <div className="border-t border-[#edf0ec] pt-4">
+        <h3 className="mb-3 text-sm font-semibold">历史记录</h3>
+        {history.length ? (
+          <div className="space-y-2">
+            {history.map((goal) => (
+              <div key={goal.id} className="flex flex-col justify-between gap-2 rounded-xl bg-[#fafbf9] px-4 py-3 text-sm sm:flex-row sm:items-center">
+                <div><b>{goal.title}</b><p className="mt-1 text-xs text-[#7b887f]">{goal.startedAt} — {goal.deadline}{goal.result ? ` · ${goal.result}` : ''}</p></div>
+                <span className="w-fit rounded-full bg-[#e9f4ed] px-2.5 py-1 text-xs text-[#286444]">{goal.status}</span>
+              </div>
+            ))}
+          </div>
+        ) : <p className="text-sm text-[#7b887f]">达成或归档后的目标会保留在这里。</p>}
+      </div>
+    </section>
+  );
+}
+
+function ChartEmpty({ label }: { label: string }) {
+  return <div className="grid h-[250px] place-items-center rounded-xl bg-[#fafbf9] text-sm text-[#7b887f]">{label}</div>;
+}
+
+function _Overview({
   products,
   profits,
   health,
@@ -607,7 +738,7 @@ function Overview({
         />
       </section>
       <section className="grid gap-5 xl:grid-cols-[1.2fr_.9fr]">
-        <GoalPulse goals={goals} onArchive={() => setActive('目标档案')} />
+        <GoalPulse goals={goals} onArchive={() => setActive('总目标')} />
         <AnalysisPanel products={products} profits={profits} health={health} />
       </section>
       <section className="mt-5 rounded-2xl border border-[#dfe5df] bg-white">
@@ -654,10 +785,16 @@ function Overview({
 
 function WorkView({
   products,
+  goals,
+  history,
   openRecord,
+  onEditGoal,
 }: {
   products: WorkProduct[];
+  goals: Goal[];
+  history: Goal[];
   openRecord: (k: RecordKind) => void;
+  onEditGoal: (goal: Goal) => void;
 }) {
   const avgMargin = products.length
     ? products.reduce((sum, p) => sum + p.margin, 0) / products.length
@@ -687,6 +824,21 @@ function WorkView({
           value={String(products.filter((x) => x.status === '机会品').length)}
           note="综合毛利与评论痛点"
         />
+      </section>
+      <section className="mb-5">
+        <ChartCard title="候选产品毛利率" detail="柱状图对比每个候选产品的预估毛利率">
+          {products.length ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <ReBarChart data={products}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="margin" name="毛利率 %" fill="#2f6d57" radius={[8, 8, 0, 0]} />
+              </ReBarChart>
+            </ResponsiveContainer>
+          ) : <ChartEmpty label="新增候选产品后显示毛利率对比" />}
+        </ChartCard>
       </section>
       <div className="overflow-hidden rounded-2xl border border-[#dfe5df] bg-white">
         <div className="border-b border-[#edf0ec] p-5">
@@ -740,6 +892,7 @@ function WorkView({
           </table>
         </div>
       </div>
+      <AreaGoalSection area="工作" goals={goals} history={history} openRecord={openRecord} onEditGoal={onEditGoal} />
     </>
   );
 }
@@ -747,11 +900,15 @@ function WorkView({
 function SideView({
   profits,
   goals,
+  history,
   openRecord,
+  onEditGoal,
 }: {
   profits: ProfitLog[];
   goals: Goal[];
+  history: Goal[];
   openRecord: (k: RecordKind) => void;
+  onEditGoal: (goal: Goal) => void;
 }) {
   const platformTotals = Object.entries(
     profits.reduce<Record<string, number>>((acc, row) => {
@@ -773,7 +930,7 @@ function SideView({
           title="每周利润趋势"
           detail="用连续记录识别增长，而不是被单周波动影响"
         >
-          <ResponsiveContainer width="100%" height={250}>
+          {profits.length ? <ResponsiveContainer width="100%" height={250}>
             <ReLineChart data={profits}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
               <XAxis dataKey="week" tick={{ fontSize: 11 }} />
@@ -788,7 +945,7 @@ function SideView({
                 dot={{ r: 4 }}
               />
             </ReLineChart>
-          </ResponsiveContainer>
+          </ResponsiveContainer> : <ChartEmpty label="记录每周盈利后显示趋势" />}
         </ChartCard>
         <div className="rounded-2xl border border-[#dfe5df] bg-white p-5">
           <h2 className="font-semibold">平台贡献分析</h2>
@@ -813,12 +970,8 @@ function SideView({
               </div>
             ))}
           </div>
+          {!platformTotals.length && <ChartEmpty label="记录盈利后显示平台贡献" />}
         </div>
-      </section>
-      <section className="mb-5 grid gap-4 md:grid-cols-2">
-        {goals.map((goal) => (
-          <GoalCard key={goal.id} goal={goal} />
-        ))}
       </section>
       <div className="overflow-hidden rounded-2xl border border-[#dfe5df] bg-white">
         <div className="p-5">
@@ -856,18 +1009,23 @@ function SideView({
           </tbody>
         </table>
       </div>
+      <AreaGoalSection area="副业" goals={goals} history={history} openRecord={openRecord} onEditGoal={onEditGoal} />
     </>
   );
 }
 
 function HealthView({
   health,
-  goal,
+  goals,
+  history,
   openRecord,
+  onEditGoal,
 }: {
   health: HealthLog[];
-  goal?: Goal;
+  goals: Goal[];
+  history: Goal[];
   openRecord: (k: RecordKind) => void;
+  onEditGoal: (goal: Goal) => void;
 }) {
   const latest = health.at(-1);
   const first = health[0];
@@ -905,7 +1063,7 @@ function HealthView({
           note="建议关注每周稳定性"
         />
       </section>
-      {goal && goal.target == null && (
+      {goals.some((goal) => goal.target == null) && (
         <div className="mb-5 flex flex-col justify-between gap-3 rounded-2xl border border-[#dbcfa8] bg-[#fff9e8] p-5 sm:flex-row sm:items-center">
           <div>
             <b>还需要你设定具体体重和体脂目标</b>
@@ -923,7 +1081,7 @@ function HealthView({
       )}
       <section className="grid gap-5 lg:grid-cols-2">
         <ChartCard title="体重趋势" detail="每周记录值">
-          <ResponsiveContainer width="100%" height={260}>
+          {health.length ? <ResponsiveContainer width="100%" height={260}>
             <ReLineChart data={health}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
@@ -940,10 +1098,10 @@ function HealthView({
                 strokeWidth={3}
               />
             </ReLineChart>
-          </ResponsiveContainer>
+          </ResponsiveContainer> : <ChartEmpty label="记录身体数据后显示体重趋势" />}
         </ChartCard>
         <ChartCard title="体脂率趋势" detail="与训练频率一起复盘">
-          <ResponsiveContainer width="100%" height={260}>
+          {health.length ? <ResponsiveContainer width="100%" height={260}>
             <ReLineChart data={health}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
@@ -960,19 +1118,26 @@ function HealthView({
                 strokeWidth={3}
               />
             </ReLineChart>
-          </ResponsiveContainer>
+          </ResponsiveContainer> : <ChartEmpty label="记录身体数据后显示体脂趋势" />}
         </ChartCard>
       </section>
+      <AreaGoalSection area="身体" goals={goals} history={history} openRecord={openRecord} onEditGoal={onEditGoal} />
     </>
   );
 }
 
 function FinanceView({
   logs,
+  goals,
+  history,
   openRecord,
+  onEditGoal,
 }: {
   logs: FinanceLog[];
+  goals: Goal[];
+  history: Goal[];
   openRecord: (k: RecordKind) => void;
+  onEditGoal: (goal: Goal) => void;
 }) {
   const income = logs
     .filter((x) => x.type === '收入')
@@ -1022,6 +1187,14 @@ function FinanceView({
         <div className="rounded-2xl border border-[#dfe5df] bg-white p-5">
           <h2 className="font-semibold">支出结构</h2>
           <p className="mb-5 text-xs text-[#7b887f]">识别最值得优化的类别</p>
+          {categories.length ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie data={categories.map(([name, value], index) => ({ name, value, fill: chartColors[index % chartColors.length] }))} dataKey="value" nameKey="name" outerRadius={82} label />
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : <ChartEmpty label="记录支出后显示扇形图" />}
           <div className="space-y-4">
             {categories.map(([category, amount]) => (
               <div key={category}>
@@ -1089,16 +1262,23 @@ function FinanceView({
           </table>
         </div>
       </section>
+      <AreaGoalSection area="个人财务" goals={goals} history={history} openRecord={openRecord} onEditGoal={onEditGoal} />
     </>
   );
 }
 
 function ReadingView({
   books,
+  goals,
+  history,
   openRecord,
+  onEditGoal,
 }: {
   books: Book[];
+  goals: Goal[];
+  history: Goal[];
   openRecord: (k: RecordKind) => void;
+  onEditGoal: (goal: Goal) => void;
 }) {
   const reading = books.filter((book) => book.status === '在读');
   const finished = books.filter((book) => book.status === '已读');
@@ -1106,6 +1286,10 @@ function ReadingView({
     ? finished.reduce((sum, b) => sum + (b.rating || 0), 0) /
       finished.filter((b) => b.rating).length
     : 0;
+  const readingStatus = ['想读', '在读', '已读'].map((status) => ({
+    status,
+    count: books.filter((book) => book.status === status).length,
+  }));
   return (
     <>
       <PageIntro
@@ -1131,6 +1315,21 @@ function ReadingView({
           value={averageRating ? `${averageRating.toFixed(1)} / 5` : '待评分'}
           note="只统计已读书目"
         />
+      </section>
+      <section className="mb-5">
+        <ChartCard title="阅读状态分布" detail="书单在想读、在读与已读阶段的数量">
+          {books.length ? (
+            <ResponsiveContainer width="100%" height={240}>
+              <ReBarChart data={readingStatus}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
+                <XAxis dataKey="status" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="count" name="书籍数量" fill="#7d65a7" radius={[8, 8, 0, 0]} />
+              </ReBarChart>
+            </ResponsiveContainer>
+          ) : <ChartEmpty label="添加书籍后显示阅读状态" />}
+        </ChartCard>
       </section>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {books.map((book) => (
@@ -1175,11 +1374,12 @@ function ReadingView({
           </article>
         ))}
       </section>
+      <AreaGoalSection area="读书清单" goals={goals} history={history} openRecord={openRecord} onEditGoal={onEditGoal} />
     </>
   );
 }
 
-function GoalArchive({
+function _GoalArchive({
   current,
   archived,
   openRecord,
@@ -1282,9 +1482,11 @@ function GoalPulse({
 function GoalCard({
   goal,
   compact = false,
+  onEdit,
 }: {
   goal: Goal;
   compact?: boolean;
+  onEdit?: () => void;
 }) {
   const percent =
     goal.target && goal.current != null
@@ -1331,6 +1533,11 @@ function GoalCard({
       <div className="mt-3 flex items-center gap-1.5 text-xs text-[#7d8881]">
         <Clock3 className="size-3" /> 截止 {goal.deadline}
       </div>
+      {onEdit && (
+        <button onClick={onEdit} className="mt-3 w-full rounded-lg border border-[#d9e1da] bg-white px-3 py-2 text-xs font-medium text-[#2f6d57]">
+          更新进度或完成状态
+        </button>
+      )}
       {percent >= 100 && (
         <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-[#e8f4ec] p-2 text-xs font-medium text-[#286444]">
           <CheckCircle2 className="size-3.5" /> 已达标，请确认阶段总结与新目标
@@ -1567,6 +1774,7 @@ function RecordDialog({
   goals,
   setGoals,
   session,
+  editingGoal,
 }: {
   kind: RecordKind;
   close: () => void;
@@ -1583,6 +1791,7 @@ function RecordDialog({
   goals: Goal[];
   setGoals: (v: Goal[]) => void;
   session: Session | null;
+  editingGoal: Goal | null;
 }) {
   const [selected, setSelected] = useState<RecordKind>(kind);
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
@@ -1736,6 +1945,25 @@ function RecordDialog({
           status: row.status,
         });
     }
+    if (selected === '更新目标' && editingGoal) {
+      const updated: Goal = {
+        ...editingGoal,
+        current: data.get('current') ? Number(data.get('current')) : null,
+        target: data.get('target') ? Number(data.get('target')) : null,
+        deadline: formText(data, 'deadline'),
+        status: formText(data, 'status') as Goal['status'],
+        result: formText(data, 'result'),
+      };
+      setGoals(goals.map((goal) => goal.id === updated.id ? updated : goal));
+      if (client && session)
+        await client.from('goals').update({
+          current_value: updated.current,
+          target_value: updated.target,
+          deadline: updated.deadline,
+          status: updated.status,
+          result: updated.result,
+        }).eq('id', updated.id);
+    }
     close();
   }
   return (
@@ -1761,14 +1989,14 @@ function RecordDialog({
         </div>
         <div className="flex flex-wrap gap-1 border-b border-[#e8ece8] p-2">
           {(
-            [
+            (kind === '更新目标' ? ['更新目标'] : [
               '工作产品',
               '副业利润',
               '身体数据',
               '财务流水',
               '读书记录',
               '新目标',
-            ] as RecordKind[]
+            ]) as RecordKind[]
           ).map((item) => (
             <button
               key={item}
@@ -1900,7 +2128,7 @@ function RecordDialog({
               <SelectField
                 name="area"
                 label="所属板块"
-                options={['工作', '副业', '身体']}
+                options={['工作', '副业', '身体', '个人财务', '读书清单']}
               />
               <Field name="title" label="目标名称" required />
               <Field name="metric" label="衡量指标" required />
@@ -1912,6 +2140,24 @@ function RecordDialog({
               <Field name="deadline" label="截止日期" type="date" required />
               <div className="rounded-xl bg-[#fff8e4] p-3 text-xs leading-5 text-[#796634]">
                 新目标应在复盘旧目标后与你确认。系统会保留旧目标的全部记录和阶段结论。
+              </div>
+            </>
+          )}
+          {selected === '更新目标' && editingGoal && (
+            <>
+              <div className="rounded-xl bg-[#f4f7f4] p-4">
+                <p className="text-xs text-[#7b887f]">{editingGoal.area} · {editingGoal.metric}</p>
+                <b className="mt-1 block">{editingGoal.title}</b>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field name="current" label="当前值" type="number" step="0.01" defaultValue={editingGoal.current?.toString() ?? ''} />
+                <Field name="target" label="目标值" type="number" step="0.01" defaultValue={editingGoal.target?.toString() ?? ''} />
+              </div>
+              <Field name="deadline" label="截止日期" type="date" required defaultValue={editingGoal.deadline} />
+              <SelectField name="status" label="目标状态" options={['进行中', '已达成', '已归档']} defaultValue={editingGoal.status} />
+              <Field name="result" label="阶段总结 / 达成结果" defaultValue={editingGoal.result ?? ''} />
+              <div className="rounded-xl bg-[#fff8e4] p-3 text-xs leading-5 text-[#796634]">
+                标记为已达成或已归档后，这个目标会进入当前板块的历史记录；原目标不会被新目标覆盖。
               </div>
             </>
           )}
@@ -1930,12 +2176,14 @@ function Field({
   type = 'text',
   required,
   step,
+  defaultValue,
 }: {
   name: string;
   label: string;
   type?: string;
   required?: boolean;
   step?: string;
+  defaultValue?: string;
 }) {
   return (
     <label className="block text-sm">
@@ -1945,6 +2193,7 @@ function Field({
         type={type}
         required={required}
         step={step}
+        defaultValue={defaultValue}
         className="h-10 w-full rounded-xl border border-[#dfe5df] px-3 outline-none focus:border-[#6f8f80]"
       />
     </label>
@@ -1954,16 +2203,19 @@ function SelectField({
   name,
   label,
   options,
+  defaultValue,
 }: {
   name: string;
   label: string;
   options: string[];
+  defaultValue?: string;
 }) {
   return (
     <label className="block text-sm">
       <span className="mb-1.5 block font-medium">{label}</span>
       <select
         name={name}
+        defaultValue={defaultValue}
         className="h-10 w-full rounded-xl border border-[#dfe5df] bg-white px-3"
       >
         {options.map((option) => (

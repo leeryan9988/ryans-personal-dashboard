@@ -9,7 +9,8 @@
 - 身体：体重、体脂率、训练次数和六个月目标趋势。
 - 个人财务：收入、支出、结余、支出分类与历史流水。
 - 读书清单：想读、在读、已读、进度、评分和核心笔记。
-- 目标档案：保留进行中、已达成和已归档目标的完整周期与结果。
+- 总目标：用扇形图和柱状图汇总五大板块的总体达成情况。
+- 每个板块内置自己的目标更新、数据分析、阶段总结、图表与历史目标，不再设置独立分析或目标档案页面。
 
 ## 登录与实时同步
 
@@ -22,16 +23,16 @@
    - `VITE_SUPABASE_ANON_KEY`
 4. 在 Supabase Authentication → URL Configuration 中添加 GitHub Pages 地址作为 Redirect URL。
 
-未配置上述变量时，网站以演示数据运行，不会把演示记录当作正式数据。
+未配置上述变量时，网站保持为空白看板，不加载任何演示记录。
 
 ## Notion 周复盘同步
 
-项目包含 `supabase/functions/notion-sync` Edge Function。它只把当前阶段汇总写入指定 Notion 数据库，Notion 密钥不会进入 GitHub Pages 前端。
+项目包含 `supabase/functions/notion-sync` Edge Function。它只把当前阶段汇总写入指定 Notion 父页面下的新复盘页面，Notion 密钥不会进入 GitHub Pages 前端。
 
 在 Supabase Edge Function secrets 中配置：
 
 - `NOTION_API_KEY`
-- `NOTION_DATABASE_ID`
+- `NOTION_PARENT_PAGE_ID`
 
 然后部署 `notion-sync` 函数。登录后点击顶部 Notion 按钮即可生成一条阶段复盘。
 
