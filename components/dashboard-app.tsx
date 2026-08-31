@@ -437,7 +437,7 @@ function Header({
         <div className="grid size-9 place-items-center rounded-xl bg-[#153e32] text-[#d9f99d]">
           <Target className="size-4" />
         </div>
-        <span className="font-semibold">向上看板</span>
+        <span className="font-semibold">Ryan‘s 个人看板</span>
       </div>
       <div className="relative hidden max-w-sm flex-1 lg:block">
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#87928b]" />
@@ -490,7 +490,7 @@ function Sidebar({
           <Target className="size-5" />
         </div>
         <div>
-          <div className="font-semibold tracking-tight">向上看板</div>
+          <div className="font-semibold tracking-tight">Ryan‘s 个人看板</div>
           <div className="text-xs text-white/55">记录 · 分析 · 达标</div>
         </div>
       </div>
@@ -2242,7 +2242,7 @@ function Login({
         <div className="mb-6 grid size-12 place-items-center rounded-2xl bg-[#153e32] text-[#d9f99d]">
           <Target />
         </div>
-        <h1 className="text-2xl font-semibold">登录向上看板</h1>
+        <h1 className="text-2xl font-semibold">登录 Ryan‘s 个人看板</h1>
         <p className="mt-2 text-sm leading-6 text-[#6f7973]">
           输入你指定的邮箱，我们会发送一次性登录链接。电脑和手机使用同一个邮箱即可同步数据。
         </p>
