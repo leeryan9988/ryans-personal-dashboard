@@ -57,7 +57,7 @@ button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 
 :root {
-  --background: #f6f7f4;
+  --background: #eef7ff;
   --foreground: #18221d;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);

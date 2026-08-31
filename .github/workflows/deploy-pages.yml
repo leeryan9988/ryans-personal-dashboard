@@ -32,8 +32,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Build static dashboard
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # Supabase publishable keys are designed for browser clients; RLS protects user data.
+          VITE_SUPABASE_URL: https://logkdsuqbachhueraqjm.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_DxDoKrfMEg44KVTAKX9Q6Q_zbx9aXhz
         run: pnpm exec vite build --config vite.pages.config.ts
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

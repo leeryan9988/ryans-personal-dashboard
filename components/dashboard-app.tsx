@@ -328,7 +328,7 @@ export default function DashboardApp() {
   );
 
   return (
-    <main className="min-h-screen bg-[#f6f7f4] text-[#18221d]">
+    <main className="min-h-screen bg-[#eef7ff] text-[#18221d]">
       <Sidebar active={active} setActive={setActive} session={session} />
       <div className="lg:pl-[232px]">
         <Header
@@ -432,7 +432,7 @@ function Header({
   syncMessage: string;
 }) {
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[#e3e7e2] bg-[#f6f7f4]/90 px-4 backdrop-blur-xl sm:px-8">
+    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[#d9e9f7] bg-[#eef7ff]/90 px-4 backdrop-blur-xl sm:px-8">
       <div className="flex items-center gap-2 lg:hidden">
         <div className="grid size-9 place-items-center rounded-xl bg-[#153e32] text-[#d9f99d]">
           <Target className="size-4" />
@@ -2237,7 +2237,7 @@ function Login({
   submit: (e: SyntheticEvent<HTMLFormElement>) => void;
 }) {
   return (
-    <main className="grid min-h-screen place-items-center bg-[#edf1ed] p-4">
+    <main className="grid min-h-screen place-items-center bg-[#eef7ff] p-4">
       <div className="w-full max-w-md rounded-3xl bg-white p-7 shadow-xl">
         <div className="mb-6 grid size-12 place-items-center rounded-2xl bg-[#153e32] text-[#d9f99d]">
           <Target />
@@ -2274,7 +2274,7 @@ function Login({
 }
 function CenteredMessage({ title, detail }: { title: string; detail: string }) {
   return (
-    <main className="grid min-h-screen place-items-center bg-[#f6f7f4]">
+    <main className="grid min-h-screen place-items-center bg-[#eef7ff]">
       <div className="text-center">
         <RefreshCw className="mx-auto mb-3 size-6 animate-spin text-[#39765e]" />
         <b>{title}</b>
