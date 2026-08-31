@@ -292,7 +292,7 @@ export default function DashboardApp() {
       stopped = true;
       window.clearInterval(timer);
     };
-  }, [session]);
+  }, [session, handoffPending]);
 
   useEffect(() => {
     const client = getSupabase();
