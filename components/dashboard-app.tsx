@@ -970,7 +970,7 @@ function CountdownManager({
   const [editing, setEditing] = useState<TargetCountdown | null>(null);
   const activeCountdowns = countdowns.filter((item) => !item.completedAt).sort((a, b) => a.targetDate.localeCompare(b.targetDate));
   const completedCountdowns = countdowns.filter((item) => item.completedAt).sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''));
-  const nearest = activeCountdowns[0];
+  const visibleCountdowns = activeCountdowns.slice(0, 2);
 
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -992,11 +992,16 @@ function CountdownManager({
         <span className="flex items-center gap-2"><CalendarClock className="size-3.5" /> 目标倒计时</span>
         <Plus className="size-3.5" />
       </div>
-      {nearest ? <>
-        <p className="truncate text-sm font-medium text-white">{nearest.title}</p>
-        <p className="mt-1 text-lg font-semibold text-[#b9dcff]">{countdownText(nearest.targetDate)}</p>
-        <p className="mt-1 text-xs text-white/50">{nearest.targetDate}{activeCountdowns.length > 1 ? ` · 共 ${activeCountdowns.length} 个` : ''}</p>
-      </> : <p className="text-sm leading-6 text-white/70">还没有倒计时，点击添加目标日期。</p>}
+      {visibleCountdowns.length ? <div className="space-y-2.5">
+        {visibleCountdowns.map((item, index) => <div key={item.id} className={index ? 'border-t border-white/10 pt-2.5' : ''}>
+          <p className="truncate text-sm font-medium text-white">{item.title}</p>
+          <div className="mt-1 flex items-end justify-between gap-2">
+            <p className="text-base font-semibold text-[#b9dcff]">{countdownText(item.targetDate)}</p>
+            <p className="shrink-0 text-[10px] text-white/45">{item.targetDate}</p>
+          </div>
+        </div>)}
+        {activeCountdowns.length > 2 && <p className="text-[10px] text-white/40">还有 {activeCountdowns.length - 2} 个，点击查看全部</p>}
+      </div> : <p className="text-sm leading-6 text-white/70">还没有倒计时，点击添加目标日期。</p>}
     </button>
   ) : (
     <button type="button" onClick={() => setOpen(true)} className="flex min-w-16 shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[9px] text-[#78837d]">
