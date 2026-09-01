@@ -1215,9 +1215,9 @@ function SideView({
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="自媒体" fill="#2563eb" radius={[5, 5, 0, 0]} />
-              <Bar dataKey="网盘拉新" fill="#f59e0b" radius={[5, 5, 0, 0]} />
-              <Bar dataKey="抖音电商" fill="#8b5cf6" radius={[5, 5, 0, 0]} />
+              <Bar dataKey="自媒体" stackId="income" fill="#2563eb" maxBarSize={52} />
+              <Bar dataKey="网盘拉新" stackId="income" fill="#f59e0b" maxBarSize={52} />
+              <Bar dataKey="抖音电商" stackId="income" fill="#8b5cf6" maxBarSize={52} />
             </ReBarChart>
           </ResponsiveContainer> : <ChartEmpty label="所选日期范围内暂无收入" />}
         </ChartCard>
