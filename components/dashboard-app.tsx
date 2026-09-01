@@ -2,6 +2,8 @@
 
 import {
   Activity,
+  ArrowDown,
+  ArrowUp,
   Archive,
   BarChart3,
   BriefcaseBusiness,
@@ -14,6 +16,7 @@ import {
   File as FileIcon,
   BookOpen,
   CalendarDays,
+  CalendarClock,
   Download,
   FolderOpen,
   FolderPlus,
@@ -26,7 +29,7 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Sparkles,
+  SlidersHorizontal,
   Target,
   Trash2,
   TrendingUp,
@@ -35,6 +38,7 @@ import {
   X,
 } from 'lucide-react';
 import { type SyntheticEvent, useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { Session } from '@supabase/supabase-js';
 import {
   Bar,
@@ -196,6 +200,17 @@ const navigation: { label: Area; icon: typeof LayoutDashboard }[] = [
   { label: '计划和感悟', icon: NotebookPen },
 ];
 
+const defaultNavigationOrder = navigation.map((item) => item.label);
+
+type TargetCountdown = {
+  id: string;
+  title: string;
+  targetDate: string;
+  note: string;
+  createdAt: string;
+  completedAt: string | null;
+};
+
 function currentWeekStart() {
   const date = new Date();
   const day = date.getDay() || 7;
@@ -236,6 +251,8 @@ export default function DashboardApp() {
   const [goals, setGoals] = useState<Goal[]>(initialGoals);
   const [reflections, setReflections] = useState<WeeklyReflection[]>([]);
   const [planNotes, setPlanNotes] = useState<PlanNote[]>([]);
+  const [countdowns, setCountdowns] = useState<TargetCountdown[]>([]);
+  const [navigationOrder, setNavigationOrder] = useState<Area[]>(defaultNavigationOrder);
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [recordKind, setRecordKind] = useState<RecordKind | null>(null);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -250,7 +267,7 @@ export default function DashboardApp() {
   const loadCloudData = useCallback(async () => {
     const client = getSupabase();
     if (!client) return;
-    const [p, r, h, g, f, b, w, n] = await Promise.all([
+    const [p, r, h, g, f, b, w, n, c, d] = await Promise.all([
       client.from('work_products').select('*').order('created_at'),
       client.from('profit_logs').select('*').order('week_start'),
       client.from('health_logs').select('*').order('logged_at'),
@@ -259,6 +276,8 @@ export default function DashboardApp() {
       client.from('books').select('*').order('created_at'),
       client.from('weekly_reflections').select('*').order('week_start', { ascending: false }),
       client.from('plan_notes').select('*').order('note_date', { ascending: false }),
+      client.from('target_countdowns').select('*').order('target_date'),
+      client.from('dashboard_preferences').select('nav_order').maybeSingle(),
     ]);
     setProducts(
         (p.data ?? []).map((x) => ({
@@ -353,6 +372,18 @@ export default function DashboardApp() {
       imagePaths: x.image_paths ?? [],
     }));
     setPlanNotes(nextNotes);
+    setCountdowns((c.data ?? []).map((x) => ({
+      id: x.id,
+      title: x.title,
+      targetDate: x.target_date,
+      note: x.note,
+      createdAt: x.created_at,
+      completedAt: x.completed_at,
+    })));
+    const savedOrder = Array.isArray(d.data?.nav_order)
+      ? d.data.nav_order.filter((label: unknown): label is Area => defaultNavigationOrder.includes(label as Area))
+      : [];
+    setNavigationOrder([...savedOrder, ...defaultNavigationOrder.filter((label) => !savedOrder.includes(label))]);
     const paths = nextNotes.flatMap((note) => note.imagePaths);
     if (paths.length) {
       const { data: signed } = await client.storage.from('journal-images').createSignedUrls(paths, 3600);
@@ -515,6 +546,8 @@ export default function DashboardApp() {
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'weekly_reflections', filter: `user_id=eq.${session.user.id}` }, loadCloudData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'plan_notes', filter: `user_id=eq.${session.user.id}` }, loadCloudData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'target_countdowns', filter: `user_id=eq.${session.user.id}` }, loadCloudData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dashboard_preferences', filter: `user_id=eq.${session.user.id}` }, loadCloudData)
       .subscribe();
     return () => {
       void client.removeChannel(channel);
@@ -584,6 +617,57 @@ export default function DashboardApp() {
     return '已保存';
   }
 
+  async function moveNavigation(label: Area, direction: -1 | 1) {
+    const currentIndex = navigationOrder.indexOf(label);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= navigationOrder.length) return;
+    const next = [...navigationOrder];
+    [next[currentIndex], next[nextIndex]] = [next[nextIndex], next[currentIndex]];
+    setNavigationOrder(next);
+    const client = getSupabase();
+    if (!client || !session) return;
+    await client.from('dashboard_preferences').upsert({
+      user_id: session.user.id,
+      nav_order: next,
+    }, { onConflict: 'user_id' });
+  }
+
+  async function addCountdown(title: string, targetDate: string, note: string) {
+    const client = getSupabase();
+    if (!client || !session) return '请先登录';
+    const { error } = await client.from('target_countdowns').insert({
+      user_id: session.user.id,
+      title: title.trim(),
+      target_date: targetDate,
+      note: note.trim(),
+    });
+    if (error) return error.message;
+    await loadCloudData();
+    return '倒计时已添加';
+  }
+
+  async function setCountdownCompleted(id: string, completed: boolean) {
+    const client = getSupabase();
+    if (!client || !session) return;
+    await client.from('target_countdowns').update({
+      completed_at: completed ? new Date().toISOString() : null,
+    }).eq('id', id);
+    await loadCloudData();
+  }
+
+  async function updateCountdown(id: string, title: string, targetDate: string, note: string) {
+    const client = getSupabase();
+    if (!client || !session) return '请先登录';
+    const { error } = await client.from('target_countdowns').update({
+      title: title.trim(),
+      target_date: targetDate,
+      note: note.trim(),
+    }).eq('id', id);
+    if (error) return error.message;
+    await loadCloudData();
+    return '倒计时已更新';
+  }
+
   if (!authReady)
     return (
       <CenteredMessage title="正在确认登录状态" detail="连接你的云端数据…" />
@@ -609,7 +693,17 @@ export default function DashboardApp() {
 
   return (
     <main className="min-h-screen bg-[#eef7ff] text-[#18221d]">
-      <Sidebar active={active} setActive={setActive} session={session} />
+      <Sidebar
+        active={active}
+        setActive={setActive}
+        session={session}
+        navigationOrder={navigationOrder}
+        onMoveNavigation={moveNavigation}
+        countdowns={countdowns}
+        onAddCountdown={addCountdown}
+        onUpdateCountdown={updateCountdown}
+        onSetCountdownCompleted={setCountdownCompleted}
+      />
       <div className="lg:pl-[232px]">
         <Header
           query={query}
@@ -686,7 +780,15 @@ export default function DashboardApp() {
             />
           )}
         </div>
-        <MobileNav active={active} setActive={setActive} />
+        <MobileNav
+          active={active}
+          setActive={setActive}
+          navigationOrder={navigationOrder}
+          countdowns={countdowns}
+          onAddCountdown={addCountdown}
+          onUpdateCountdown={updateCountdown}
+          onSetCountdownCompleted={setCountdownCompleted}
+        />
       </div>
       {recordKind && (
         <RecordDialog
@@ -774,11 +876,27 @@ function Sidebar({
   active,
   setActive,
   session,
+  navigationOrder,
+  onMoveNavigation,
+  countdowns,
+  onAddCountdown,
+  onUpdateCountdown,
+  onSetCountdownCompleted,
 }: {
   active: Area;
   setActive: (area: Area) => void;
   session: Session | null;
+  navigationOrder: Area[];
+  onMoveNavigation: (label: Area, direction: -1 | 1) => void;
+  countdowns: TargetCountdown[];
+  onAddCountdown: (title: string, targetDate: string, note: string) => Promise<string>;
+  onUpdateCountdown: (id: string, title: string, targetDate: string, note: string) => Promise<string>;
+  onSetCountdownCompleted: (id: string, completed: boolean) => void;
 }) {
+  const [sorting, setSorting] = useState(false);
+  const orderedNavigation = navigationOrder
+    .map((label) => navigation.find((item) => item.label === label))
+    .filter((item): item is (typeof navigation)[number] => Boolean(item));
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[232px] flex-col border-r border-[#183866] bg-[#102a56] text-white lg:flex">
       <div className="flex h-20 items-center gap-3 px-6">
@@ -790,26 +908,29 @@ function Sidebar({
           <div className="text-xs text-white/55">记录 · 分析 · 达标</div>
         </div>
       </div>
-      <nav className="flex-1 space-y-1 px-3 pt-5">
-        {navigation.map(({ label, icon: Icon }) => (
-          <button
-            key={label}
-            onClick={() => setActive(label)}
-            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${active === label ? 'bg-white/12 text-white' : 'text-white/60 hover:bg-white/7 hover:text-white'}`}
-          >
-            <Icon className="size-4" />
-            {label}
+      <nav className="flex-1 overflow-y-auto px-3 pt-5">
+        <div className="mb-2 flex items-center justify-between px-2 text-[11px] text-white/45">
+          <span>看板顺序</span>
+          <button type="button" onClick={() => setSorting((value) => !value)} className="flex items-center gap-1 rounded-lg px-2 py-1 hover:bg-white/10 hover:text-white" aria-pressed={sorting}>
+            <SlidersHorizontal className="size-3" />{sorting ? '完成' : '调整'}
           </button>
-        ))}
-      </nav>
-      <div className="m-3 rounded-2xl bg-white/8 p-4">
-        <div className="mb-2 flex items-center gap-2 text-xs text-[#b9dcff]">
-          <Sparkles className="size-3.5" /> 本周复盘
         </div>
-        <p className="text-sm leading-6 text-white/80">
-          用真实记录判断进度，目标达成后再与你商定下一阶段。
-        </p>
-      </div>
+        <div className="space-y-1">
+          {orderedNavigation.map(({ label, icon: Icon }, index) => (
+            <div key={label} className={`flex items-center rounded-xl transition ${active === label ? 'bg-white/12 text-white' : 'text-white/60 hover:bg-white/7 hover:text-white'}`}>
+              <button onClick={() => setActive(label)} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left text-sm">
+                <Icon className="size-4 shrink-0" />
+                <span className="truncate">{label}</span>
+              </button>
+              {sorting && <div className="mr-1 flex shrink-0 gap-0.5">
+                <button type="button" onClick={() => onMoveNavigation(label, -1)} disabled={index === 0} title={`上移${label}`} aria-label={`上移${label}`} className="grid size-7 place-items-center rounded-lg hover:bg-white/10 disabled:opacity-20"><ArrowUp className="size-3.5" /></button>
+                <button type="button" onClick={() => onMoveNavigation(label, 1)} disabled={index === orderedNavigation.length - 1} title={`下移${label}`} aria-label={`下移${label}`} className="grid size-7 place-items-center rounded-lg hover:bg-white/10 disabled:opacity-20"><ArrowDown className="size-3.5" /></button>
+              </div>}
+            </div>
+          ))}
+        </div>
+      </nav>
+      <CountdownManager countdowns={countdowns} onAdd={onAddCountdown} onUpdate={onUpdateCountdown} onSetCompleted={onSetCountdownCompleted} variant="sidebar" />
       <button
         onClick={() => getSupabase()?.auth.signOut()}
         disabled={!session}
@@ -820,6 +941,96 @@ function Sidebar({
       </button>
     </aside>
   );
+}
+
+function countdownText(targetDate: string) {
+  const target = new Date(`${targetDate}T00:00:00`);
+  const today = new Date(`${localDateString()}T00:00:00`);
+  const days = Math.round((target.getTime() - today.getTime()) / 86400000);
+  if (days === 0) return '就是今天';
+  if (days > 0) return `还有 ${days} 天`;
+  return `已过 ${Math.abs(days)} 天`;
+}
+
+function CountdownManager({
+  countdowns,
+  onAdd,
+  onUpdate,
+  onSetCompleted,
+  variant,
+}: {
+  countdowns: TargetCountdown[];
+  onAdd: (title: string, targetDate: string, note: string) => Promise<string>;
+  onUpdate: (id: string, title: string, targetDate: string, note: string) => Promise<string>;
+  onSetCompleted: (id: string, completed: boolean) => void;
+  variant: 'sidebar' | 'mobile';
+}) {
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState('');
+  const [editing, setEditing] = useState<TargetCountdown | null>(null);
+  const activeCountdowns = countdowns.filter((item) => !item.completedAt).sort((a, b) => a.targetDate.localeCompare(b.targetDate));
+  const completedCountdowns = countdowns.filter((item) => item.completedAt).sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''));
+  const nearest = activeCountdowns[0];
+
+  async function submit(event: SyntheticEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const result = editing
+      ? await onUpdate(editing.id, formText(data, 'title'), formText(data, 'targetDate'), formText(data, 'note'))
+      : await onAdd(formText(data, 'title'), formText(data, 'targetDate'), formText(data, 'note'));
+    setMessage(result);
+    if (result === '倒计时已添加' || result === '倒计时已更新') {
+      setEditing(null);
+      form.reset();
+    }
+  }
+
+  const trigger = variant === 'sidebar' ? (
+    <button type="button" onClick={() => setOpen(true)} className="m-3 rounded-2xl bg-white/8 p-4 text-left transition hover:bg-white/12">
+      <div className="mb-2 flex items-center justify-between gap-2 text-xs text-[#b9dcff]">
+        <span className="flex items-center gap-2"><CalendarClock className="size-3.5" /> 目标倒计时</span>
+        <Plus className="size-3.5" />
+      </div>
+      {nearest ? <>
+        <p className="truncate text-sm font-medium text-white">{nearest.title}</p>
+        <p className="mt-1 text-lg font-semibold text-[#b9dcff]">{countdownText(nearest.targetDate)}</p>
+        <p className="mt-1 text-xs text-white/50">{nearest.targetDate}{activeCountdowns.length > 1 ? ` · 共 ${activeCountdowns.length} 个` : ''}</p>
+      </> : <p className="text-sm leading-6 text-white/70">还没有倒计时，点击添加目标日期。</p>}
+    </button>
+  ) : (
+    <button type="button" onClick={() => setOpen(true)} className="flex min-w-16 shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[9px] text-[#78837d]">
+      <CalendarClock className="size-4" />
+      倒计时
+    </button>
+  );
+
+  const modal = open && typeof document !== 'undefined' ? createPortal(
+    <div role="presentation" className="fixed inset-0 z-[80] grid place-items-center bg-black/35 p-4" onMouseDown={(event) => event.target === event.currentTarget && setOpen(false)}>
+      <div role="dialog" aria-modal="true" aria-label="目标倒计时" className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 text-[#18221d] shadow-2xl sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div><p className="text-xs font-medium tracking-[.16em] text-[#6d8297]">目标日期</p><h2 className="mt-1 text-xl font-semibold">倒计时管理</h2><p className="mt-1 text-sm text-[#718078]">可以添加多个日期，完成后归档保留历史。</p></div>
+          <button type="button" onClick={() => setOpen(false)} className="grid size-9 place-items-center rounded-xl bg-[#eef2f5]" aria-label="关闭"><X className="size-4" /></button>
+        </div>
+        <form key={editing?.id ?? 'new'} onSubmit={submit} className="mt-5 grid gap-4 rounded-2xl bg-[#eef7ff] p-4 sm:grid-cols-2">
+          <label className="block text-sm"><span className="mb-1.5 block font-medium">目标名称</span><input name="title" defaultValue={editing?.title ?? ''} required maxLength={120} placeholder="例如：完成六个月健身目标" className="h-11 w-full rounded-xl border border-[#cfdce8] bg-white px-3 outline-none focus:border-[#174578]" /></label>
+          <label className="block text-sm"><span className="mb-1.5 block font-medium">目标日期</span><input name="targetDate" type="date" defaultValue={editing?.targetDate ?? ''} required className="h-11 w-full rounded-xl border border-[#cfdce8] bg-white px-3 outline-none focus:border-[#174578]" /></label>
+          <label className="block text-sm sm:col-span-2"><span className="mb-1.5 block font-medium">备注内容</span><textarea name="note" rows={3} defaultValue={editing?.note ?? ''} maxLength={1000} placeholder="记录这个日期要完成什么、判定标准或提醒事项" className="w-full rounded-xl border border-[#cfdce8] bg-white px-3 py-2 outline-none focus:border-[#174578]" /></label>
+          <div className="flex gap-2 sm:col-span-2"><button className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#174578] font-medium text-white"><Plus className="size-4" />{editing ? '保存修改' : '添加倒计时'}</button>{editing && <button type="button" onClick={() => setEditing(null)} className="h-11 rounded-xl border border-[#cfdce8] bg-white px-4 text-sm text-[#536b80]">取消编辑</button>}</div>
+        </form>
+        {message && <p className="mt-3 rounded-xl bg-[#eef4f9] px-3 py-2 text-sm text-[#36536f]">{message}</p>}
+        <section className="mt-6"><h3 className="font-semibold">进行中 <span className="text-sm font-normal text-[#7c8d9e]">{activeCountdowns.length}</span></h3>
+          <div className="mt-3 space-y-3">{activeCountdowns.length ? activeCountdowns.map((item) => <article key={item.id} className="rounded-2xl border border-[#d7e3ef] p-4">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start"><div><div className="flex flex-wrap items-center gap-2"><h4 className="font-semibold">{item.title}</h4><span className="rounded-lg bg-[#e7f0fa] px-2 py-1 text-xs font-medium text-[#174578]">{countdownText(item.targetDate)}</span></div><p className="mt-1 text-xs text-[#71869b]">{item.targetDate}</p>{item.note && <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#536b80]">{item.note}</p>}</div><div className="flex shrink-0 gap-2"><button type="button" onClick={() => { setEditing(item); setMessage(''); }} className="rounded-xl border border-[#d4e0ea] px-3 py-2 text-xs text-[#536b80]">编辑</button><button type="button" onClick={() => onSetCompleted(item.id, true)} className="rounded-xl border border-[#b9cddd] px-3 py-2 text-xs text-[#174578]">完成归档</button></div></div>
+          </article>) : <p className="rounded-2xl bg-[#f5f8fa] py-8 text-center text-sm text-[#8192a2]">还没有进行中的倒计时</p>}</div>
+        </section>
+        {completedCountdowns.length > 0 && <section className="mt-6 border-t border-[#e2e9ef] pt-5"><h3 className="font-semibold">历史记录 <span className="text-sm font-normal text-[#7c8d9e]">{completedCountdowns.length}</span></h3><div className="mt-3 space-y-2">{completedCountdowns.map((item) => <article key={item.id} className="flex flex-col justify-between gap-3 rounded-xl bg-[#f5f8fa] p-3 sm:flex-row sm:items-center"><div><p className="text-sm font-medium text-[#52677a]">{item.title}</p><p className="mt-1 text-xs text-[#8998a6]">目标日期 {item.targetDate}</p></div><button type="button" onClick={() => onSetCompleted(item.id, false)} className="text-xs text-[#174578]">恢复倒计时</button></article>)}</div></section>}
+      </div>
+    </div>,
+    document.body,
+  ) : null;
+
+  return <>{trigger}{modal}</>;
 }
 
 function CloudSetupBanner() {
@@ -2496,13 +2707,26 @@ function PageIntro({
 function MobileNav({
   active,
   setActive,
+  navigationOrder,
+  countdowns,
+  onAddCountdown,
+  onUpdateCountdown,
+  onSetCountdownCompleted,
 }: {
   active: Area;
   setActive: (a: Area) => void;
+  navigationOrder: Area[];
+  countdowns: TargetCountdown[];
+  onAddCountdown: (title: string, targetDate: string, note: string) => Promise<string>;
+  onUpdateCountdown: (id: string, title: string, targetDate: string, note: string) => Promise<string>;
+  onSetCountdownCompleted: (id: string, completed: boolean) => void;
 }) {
+  const orderedNavigation = navigationOrder
+    .map((label) => navigation.find((item) => item.label === label))
+    .filter((item): item is (typeof navigation)[number] => Boolean(item));
   return (
     <nav className="fixed inset-x-2 bottom-2 z-40 flex justify-start gap-1 overflow-x-auto rounded-2xl border border-[#dfe5df] bg-white/95 p-1.5 shadow-xl backdrop-blur lg:hidden">
-      {navigation.map(({ label, icon: Icon }) => (
+      {orderedNavigation.map(({ label, icon: Icon }) => (
         <button
           key={label}
           onClick={() => setActive(label)}
@@ -2512,6 +2736,7 @@ function MobileNav({
           {label}
         </button>
       ))}
+      <CountdownManager countdowns={countdowns} onAdd={onAddCountdown} onUpdate={onUpdateCountdown} onSetCompleted={onSetCountdownCompleted} variant="mobile" />
     </nav>
   );
 }
