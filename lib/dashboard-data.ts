@@ -72,9 +72,13 @@ export type Book = {
   id: string;
   title: string;
   author: string;
+  category: string;
   status: '想读' | '在读' | '已读';
   progress: number;
-  rating: number | null;
+  startDate: string;
+  plannedEndDate: string;
+  plannedHours: number;
+  dailyMinutes: number;
   notes: string;
   finishedAt?: string;
 };

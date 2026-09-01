@@ -83,6 +83,48 @@ function formText(data: FormData, name: string) {
   return typeof value === 'string' ? value : '';
 }
 
+type StoredBookPlan = Pick<Book, 'category' | 'startDate' | 'plannedEndDate' | 'plannedHours' | 'dailyMinutes' | 'notes'> & {
+  version: 1;
+};
+
+function decodeBookPlan(raw: string | null | undefined) {
+  const fallback: Omit<StoredBookPlan, 'version'> = {
+    category: '其他',
+    startDate: '',
+    plannedEndDate: '',
+    plannedHours: 0,
+    dailyMinutes: 0,
+    notes: raw ?? '',
+  };
+  if (!raw) return fallback;
+  try {
+    const value = JSON.parse(raw) as Partial<StoredBookPlan>;
+    if (value.version !== 1) return fallback;
+    return {
+      category: value.category ?? '其他',
+      startDate: value.startDate ?? '',
+      plannedEndDate: value.plannedEndDate ?? '',
+      plannedHours: Number(value.plannedHours ?? 0),
+      dailyMinutes: Number(value.dailyMinutes ?? 0),
+      notes: value.notes ?? '',
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function encodeBookPlan(book: Book) {
+  return JSON.stringify({
+    version: 1,
+    category: book.category,
+    startDate: book.startDate,
+    plannedEndDate: book.plannedEndDate,
+    plannedHours: book.plannedHours,
+    dailyMinutes: book.dailyMinutes,
+    notes: book.notes,
+  } satisfies StoredBookPlan);
+}
+
 function encodeBytes(bytes: Uint8Array) {
   return btoa(String.fromCharCode(...bytes))
     .replace(/\+/g, '-')
@@ -269,16 +311,23 @@ export default function DashboardApp() {
         })),
       );
     setBooks(
-        (b.data ?? []).map((x) => ({
+        (b.data ?? []).map((x) => {
+          const plan = decodeBookPlan(x.notes);
+          return {
           id: x.id,
           title: x.title,
           author: x.author,
+          category: plan.category,
           status: x.status,
           progress: Number(x.progress),
-          rating: x.rating == null ? null : Number(x.rating),
-          notes: x.notes,
+          startDate: plan.startDate || x.created_at?.slice(0, 10) || '',
+          plannedEndDate: plan.plannedEndDate,
+          plannedHours: plan.plannedHours,
+          dailyMinutes: plan.dailyMinutes,
+          notes: plan.notes,
           finishedAt: x.finished_at,
-        })),
+          };
+        }),
       );
     setReflections((w.data ?? []).map((x) => ({
       id: x.id,
@@ -1552,20 +1601,19 @@ function ReadingView({
 }) {
   const reading = books.filter((book) => book.status === '在读');
   const finished = books.filter((book) => book.status === '已读');
-  const averageRating = finished.filter((b) => b.rating).length
-    ? finished.reduce((sum, b) => sum + (b.rating || 0), 0) /
-      finished.filter((b) => b.rating).length
-    : 0;
-  const readingStatus = ['想读', '在读', '已读'].map((status) => ({
-    status,
-    count: books.filter((book) => book.status === status).length,
-  }));
+  const today = new Date().toISOString().slice(0, 10);
+  const unfinished = books.filter((book) => book.status !== '已读');
+  const plannedHours = unfinished.reduce((sum, book) => sum + book.plannedHours, 0);
+  const overdue = unfinished.filter((book) => book.plannedEndDate && book.plannedEndDate < today);
+  const readingPlan = books
+    .filter((book) => book.plannedHours > 0)
+    .map((book) => ({ title: book.title, hours: book.plannedHours }));
   return (
     <>
       <PageIntro
         eyebrow="读书清单"
-        title="从书单到可复用的认知"
-        detail="记录想读、在读和已读状态，保留进度、评分与核心笔记，并统计年度阅读成果。"
+        title="阅读计划与时间安排"
+        detail="按开始日期、预计结束时间和阅读时长安排书单，随时查看进度、分类与完成情况。"
         action="添加一本书"
         onAction={() => openRecord('读书记录')}
       />
@@ -1576,29 +1624,29 @@ function ReadingView({
           note="建议同时在读不超过 3 本"
         />
         <Metric
-          label="今年已读"
+          label="已读"
           value={`${finished.length} 本`}
           note="完成后进入永久历史"
         />
         <Metric
-          label="平均评分"
-          value={averageRating ? `${averageRating.toFixed(1)} / 5` : '待评分'}
-          note="只统计已读书目"
+          label="待完成计划时长"
+          value={`${plannedHours.toFixed(1)} 小时`}
+          note={overdue.length ? `${overdue.length} 本已超过预计结束时间` : '当前没有逾期书目'}
         />
       </section>
       <section className="mb-5">
-        <ChartCard title="阅读状态分布" detail="书单在想读、在读与已读阶段的数量">
-          {books.length ? (
+        <ChartCard title="各书计划阅读时长" detail="按书目比较预计投入时间，便于安排每日阅读节奏">
+          {readingPlan.length ? (
             <ResponsiveContainer width="100%" height={240}>
-              <ReBarChart data={readingStatus}>
+              <ReBarChart data={readingPlan}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
-                <XAxis dataKey="status" tick={{ fontSize: 11 }} />
+                <XAxis dataKey="title" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="count" name="书籍数量" fill="#7d65a7" radius={[8, 8, 0, 0]} />
+                <Tooltip formatter={(value) => [`${value} 小时`, '计划时长']} />
+                <Bar dataKey="hours" name="计划时长" fill="#2563eb" radius={[8, 8, 0, 0]} maxBarSize={52} />
               </ReBarChart>
             </ResponsiveContainer>
-          ) : <ChartEmpty label="添加书籍后显示阅读状态" />}
+          ) : <ChartEmpty label="添加书籍和计划阅读时长后显示图表" />}
         </ChartCard>
       </section>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -1618,7 +1666,11 @@ function ReadingView({
               </span>
             </div>
             <h2 className="text-lg font-semibold">{book.title}</h2>
-            <p className="mt-1 text-sm text-[#7b887f]">{book.author}</p>
+            <p className="mt-1 text-sm text-[#7b887f]">{book.author || '作者未填写'} · {book.category}</p>
+            <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-[#657169]">
+              <div className="rounded-xl bg-[#f4f8fc] p-3"><span className="block text-[#8797a7]">开始日期</span><b className="mt-1 block text-[#29445f]">{book.startDate || '待安排'}</b></div>
+              <div className="rounded-xl bg-[#f4f8fc] p-3"><span className="block text-[#8797a7]">预计结束</span><b className="mt-1 block text-[#29445f]">{book.plannedEndDate || '待安排'}</b></div>
+            </div>
             <div className="mt-5">
               <div className="mb-1.5 flex justify-between text-xs">
                 <span>阅读进度</span>
@@ -1631,15 +1683,9 @@ function ReadingView({
                 />
               </div>
             </div>
-            <p className="mt-4 flex-1 text-sm leading-6 text-[#657169]">
-              {book.notes || '暂未记录笔记'}
-            </p>
+            <p className="mt-4 flex-1 text-sm leading-6 text-[#657169]">{book.notes || '暂未填写阅读安排或备注'}</p>
             <div className="mt-4 border-t border-[#edf0ec] pt-3 text-xs text-[#7b887f]">
-              {book.rating
-                ? `评分 ${book.rating} / 5`
-                : book.status === '已读'
-                  ? '待评分'
-                  : '完成后可评分'}
+              计划 {book.plannedHours || 0} 小时 · 每日 {book.dailyMinutes || 0} 分钟
             </div>
           </article>
         ))}
@@ -2321,12 +2367,15 @@ function RecordDialog({
         id,
         title: formText(data, 'title'),
         author: formText(data, 'author'),
+        category: formText(data, 'category'),
         status,
         progress: Number(data.get('progress')),
-        rating: data.get('rating') ? Number(data.get('rating')) : null,
+        startDate: formText(data, 'startDate'),
+        plannedEndDate: formText(data, 'plannedEndDate'),
+        plannedHours: Number(data.get('plannedHours')),
+        dailyMinutes: Number(data.get('dailyMinutes')),
         notes: formText(data, 'notes'),
-        finishedAt:
-          status === '已读' ? new Date().toISOString().slice(0, 10) : undefined,
+        finishedAt: formText(data, 'finishedAt') || (status === '已读' ? new Date().toISOString().slice(0, 10) : undefined),
       };
       setBooks([...books, row]);
       if (client && session)
@@ -2336,8 +2385,8 @@ function RecordDialog({
           author: row.author,
           status: row.status,
           progress: row.progress,
-          rating: row.rating,
-          notes: row.notes,
+          rating: null,
+          notes: encodeBookPlan(row),
           finished_at: row.finishedAt,
         });
     }
@@ -2519,26 +2568,25 @@ function RecordDialog({
           )}
           {selected === '读书记录' && (
             <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field name="startDate" label="开始日期" type="date" required />
+                <Field name="plannedEndDate" label="预计结束日期" type="date" required />
+              </div>
               <Field name="title" label="书名" required />
-              <Field name="author" label="作者" required />
+              <Field name="author" label="作者（选填）" />
               <SelectField
-                name="status"
-                label="阅读状态"
-                options={['想读', '在读', '已读']}
+                name="category"
+                label="分类"
+                options={['历史', '人文', '商业', '投资', '文学', '传记', '科技', '其他']}
               />
-              <Field
-                name="progress"
-                label="阅读进度（0-100）"
-                type="number"
-                required
-              />
-              <Field
-                name="rating"
-                label="评分（0-5，可稍后填写）"
-                type="number"
-                step="0.5"
-              />
-              <Field name="notes" label="核心笔记或阅读目的" />
+              <SelectField name="status" label="阅读状态" options={['想读', '在读', '已读']} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field name="plannedHours" label="计划阅读总时长（小时）" type="number" step="0.5" required />
+                <Field name="dailyMinutes" label="每日计划阅读（分钟）" type="number" required />
+              </div>
+              <Field name="progress" label="当前阅读进度（0-100）" type="number" required />
+              <Field name="finishedAt" label="实际结束日期（已读时填写）" type="date" />
+              <Field name="notes" label="阅读安排 / 备注（选填）" />
             </>
           )}
           {selected === '新目标' && (
