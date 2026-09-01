@@ -2451,17 +2451,13 @@ function RecordDialog({
           )}
           {selected === '副业利润' && (
             <>
-              <label className="block text-sm">
-                <span className="mb-1.5 block font-medium">副业项目</span>
-                <select
-                  name="project"
-                  value={sideProject}
-                  onChange={(event) => setSideProject(event.target.value as ProfitLog['project'])}
-                  className="h-10 w-full rounded-xl border border-[#dfe5df] bg-white px-3"
-                >
-                  {(['自媒体', '网盘拉新', '抖音电商'] as ProfitLog['project'][]).map((option) => <option key={option}>{option}</option>)}
-                </select>
-              </label>
+              <ChoicePicker
+                name="project"
+                label="副业项目"
+                options={['自媒体', '网盘拉新', '抖音电商']}
+                value={sideProject}
+                onChange={(value) => setSideProject(value as ProfitLog['project'])}
+              />
               <PlatformPicker project={sideProject} />
               <Field name="date" label="收入日期" type="date" required />
               <Field
@@ -2632,19 +2628,44 @@ function SelectField({
   options: string[];
   defaultValue?: string;
 }) {
+  const [value, setValue] = useState(defaultValue ?? options[0]);
   return (
-    <label className="block text-sm">
+    <ChoicePicker name={name} label={label} options={options} value={value} onChange={setValue} />
+  );
+}
+
+function ChoicePicker({
+  name,
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  name: string;
+  label: string;
+  options: readonly string[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="block text-sm">
       <span className="mb-1.5 block font-medium">{label}</span>
-      <select
-        name={name}
-        defaultValue={defaultValue}
-        className="h-10 w-full rounded-xl border border-[#dfe5df] bg-white px-3"
-      >
-        {options.map((option) => (
-          <option key={option}>{option}</option>
-        ))}
-      </select>
-    </label>
+      <input type="hidden" name={name} value={value} readOnly />
+      <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="flex h-12 w-full items-center justify-between rounded-xl border border-[#cfdbe7] bg-[#f8fbfe] px-4 text-left font-medium text-[#174578]">
+        <span>{value}</span>
+        <span className="text-xs text-[#71869b]">{open ? '收起选项' : '点击选择'}</span>
+      </button>
+      {open && (
+        <div className="mt-2 grid grid-cols-2 gap-2 rounded-xl border border-[#d7e3ef] bg-white p-3 sm:grid-cols-3">
+          {options.map((option) => (
+            <button key={option} type="button" aria-pressed={value === option} onClick={() => { onChange(option); setOpen(false); }} className={`rounded-xl border px-3 py-3 text-sm transition ${value === option ? 'border-[#174578] bg-[#e7f0fa] font-medium text-[#174578]' : 'border-[#dfe7ef] bg-white text-[#566b7f] hover:border-[#89a9c9]'}`}>
+              {option}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
