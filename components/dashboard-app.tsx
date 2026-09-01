@@ -1802,6 +1802,13 @@ function CloudDriveView({ session }: { session: Session | null }) {
     return matchesFolder && text.includes(search.toLowerCase());
   });
   const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+  const driveCapacity = 1024 ** 3;
+  const remainingSize = Math.max(0, driveCapacity - totalSize);
+  const usagePercent = Math.min(100, (totalSize / driveCapacity) * 100);
+  const capacityData = [
+    { name: '已使用', value: totalSize, fill: '#174578' },
+    { name: '剩余', value: remainingSize, fill: '#cfe2f3' },
+  ];
 
   async function createFolder(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1894,6 +1901,35 @@ function CloudDriveView({ session }: { session: Session | null }) {
         <Metric label="文件数量" value={`${files.length} 个`} note="全部私人文件" />
         <Metric label="已使用空间" value={formatFileSize(totalSize)} note="单个文件最多 50 MB" />
         <Metric label="文件夹" value={`${folders.length + 1} 个`} note="包含默认的未分类" />
+      </section>
+      <section className="mb-5 rounded-2xl border border-[#d7e3ef] bg-white p-5">
+        <div className="grid items-center gap-5 md:grid-cols-[220px_1fr]">
+          <div className="relative mx-auto h-48 w-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={capacityData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={86} startAngle={90} endAngle={-270} stroke="#ffffff" strokeWidth={3} isAnimationActive={false} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="pointer-events-none absolute inset-0 grid place-content-center text-center">
+              <span className="text-2xl font-semibold text-[#102a43]">{usagePercent.toFixed(1)}%</span>
+              <span className="mt-0.5 text-xs text-[#71869b]">已使用</span>
+            </div>
+          </div>
+          <div>
+            <p className="text-sm text-[#71869b]">个人网盘估算容量</p>
+            <h2 className="mt-1 text-xl font-semibold text-[#102a43]">剩余 {formatFileSize(remainingSize)}</h2>
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl bg-[#eef4f9] p-3"><p className="text-xs text-[#71869b]">总容量</p><p className="mt-1 font-semibold">1.00 GB</p></div>
+              <div className="rounded-xl bg-[#e7f0fa] p-3"><p className="text-xs text-[#71869b]">已使用</p><p className="mt-1 font-semibold text-[#174578]">{formatFileSize(totalSize)}</p></div>
+              <div className="rounded-xl bg-[#f3f8fc] p-3"><p className="text-xs text-[#71869b]">剩余</p><p className="mt-1 font-semibold text-[#4d7699]">{formatFileSize(remainingSize)}</p></div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[#60768a]">
+              <span className="flex items-center gap-2"><i className="size-2.5 rounded-full bg-[#174578]" />已使用</span>
+              <span className="flex items-center gap-2"><i className="size-2.5 rounded-full bg-[#cfe2f3]" />剩余</span>
+            </div>
+            <p className="mt-4 text-xs leading-5 text-[#8495a6]">此处按 1 GB 免费额度估算，仅统计个人网盘文件；“计划和感悟”中上传的图片也会占用 Supabase 总存储额度。</p>
+          </div>
+        </div>
       </section>
       <section className="mb-5 rounded-2xl border border-[#d7e3ef] bg-white p-4 sm:p-5">
         <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
