@@ -40,7 +40,7 @@ Deno.serve(async (request) => {
       headers: { Authorization: `Bearer ${notionToken}`, 'Notion-Version': '2022-06-28', 'Content-Type': 'application/json' },
       body: JSON.stringify({
         parent: { page_id: parentPageId },
-        properties: { title: { title: [{ text: { content: `Ryan‘s 个人看板复盘 · ${today}` } }] } },
+        properties: { title: { title: [{ text: { content: `Ryan's 个人看板复盘 · ${today}` } }] } },
         children: [
           { object: 'block', type: 'heading_2', heading_2: { rich_text: [{ type: 'text', text: { content: '阶段数据摘要' } }] } },
           { object: 'block', type: 'heading_3', heading_3: { rich_text: [{ type: 'text', text: { content: '工作' } }] } },
