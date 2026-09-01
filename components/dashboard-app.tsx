@@ -152,6 +152,29 @@ function currentWeekStart() {
   return date.toISOString().slice(0, 10);
 }
 
+function localDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function shiftDate(value: string, days: number) {
+  const date = new Date(`${value}T12:00:00`);
+  date.setDate(date.getDate() + days);
+  return localDateString(date);
+}
+
+function incomePeriodKey(dateValue: string, granularity: '日' | '周' | '月' | '季度') {
+  const date = new Date(`${dateValue}T12:00:00`);
+  if (granularity === '日') return dateValue;
+  if (granularity === '月') return dateValue.slice(0, 7);
+  if (granularity === '季度') return `${date.getFullYear()} Q${Math.floor(date.getMonth() / 3) + 1}`;
+  const day = date.getDay() || 7;
+  date.setDate(date.getDate() - day + 1);
+  return `${localDateString(date)} 周`;
+}
+
 export default function DashboardApp() {
   const [active, setActive] = useState<Area>('总目标');
   const [products, setProducts] = useState<WorkProduct[]>(initialProducts);
@@ -1122,38 +1145,73 @@ function SideView({
   openRecord: (k: RecordKind) => void;
   onEditGoal: (goal: Goal) => void;
 }) {
+  const today = localDateString();
+  const [granularity, setGranularity] = useState<'日' | '周' | '月' | '季度'>('日');
+  const [rangeStart, setRangeStart] = useState(today);
+  const [rangeEnd, setRangeEnd] = useState(shiftDate(today, 6));
+  const validRange = Boolean(rangeStart && rangeEnd && rangeStart <= rangeEnd);
   const platformTotals = Object.entries(
     profits.reduce<Record<string, number>>((acc, row) => {
-      acc[row.platform] = (acc[row.platform] || 0) + row.profit;
+      acc[row.platform] = (acc[row.platform] || 0) + row.revenue;
       return acc;
     }, {}),
   ).sort((a, b) => b[1] - a[1]);
-  const incomeByDate = Object.values(
-    profits.reduce<Record<string, { date: string; 自媒体: number; 网盘拉新: number; 抖音电商: number }>>((acc, row) => {
-      const date = row.weekStart || row.week;
-      acc[date] ??= { date, 自媒体: 0, 网盘拉新: 0, 抖音电商: 0 };
-      acc[date][row.project] += row.revenue;
-      return acc;
-    }, {}),
-  ).sort((a, b) => a.date.localeCompare(b.date));
+  const incomeBuckets: Record<string, { label: string; 自媒体: number; 网盘拉新: number; 抖音电商: number }> = {};
+  if (granularity === '日' && validRange) {
+    for (let cursor = rangeStart; cursor <= rangeEnd; cursor = shiftDate(cursor, 1)) {
+      incomeBuckets[cursor] = { label: cursor, 自媒体: 0, 网盘拉新: 0, 抖音电商: 0 };
+      if (Object.keys(incomeBuckets).length > 366) break;
+    }
+  }
+  profits.forEach((row) => {
+    const date = row.weekStart || row.week;
+    if (!validRange || !date || date < rangeStart || date > rangeEnd) return;
+    const key = incomePeriodKey(date, granularity);
+    incomeBuckets[key] ??= { label: key, 自媒体: 0, 网盘拉新: 0, 抖音电商: 0 };
+    incomeBuckets[key][row.project] += row.revenue;
+  });
+  const incomeByDate = Object.values(incomeBuckets).sort((a, b) => a.label.localeCompare(b.label));
   return (
     <>
       <PageIntro
         eyebrow="副业看板"
         title="盈利记录与增长分析"
-        detail="自媒体、网盘拉新和抖音电商按周记录收入与成本，利润自动汇总。"
-        action="记录本周盈利"
+        detail="自媒体、网盘拉新和抖音电商按日期记录收入，数据自动分类汇总。"
+        action="记录一笔收入"
         onAction={() => openRecord('副业利润')}
       />
+      <section className="mb-5 rounded-2xl border border-[#dfe5df] bg-white p-4">
+        <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
+          <div>
+            <p className="mb-2 text-xs font-medium text-[#657169]">收入汇总粒度</p>
+            <div className="flex flex-wrap gap-2">
+              {(['日', '周', '月', '季度'] as const).map((item) => (
+                <button key={item} onClick={() => setGranularity(item)} className={`rounded-xl px-4 py-2 text-sm ${granularity === item ? 'bg-[#174578] text-white' : 'bg-[#edf3f9] text-[#4d6277]'}`}>{item}</button>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <label className="text-xs text-[#657169]">开始日期<input type="date" value={rangeStart} onChange={(event) => { const value = event.target.value; setRangeStart(value); if (value && value > rangeEnd) setRangeEnd(value); }} className="mt-1 block h-10 rounded-xl border border-[#d7e3ef] bg-white px-3 text-sm text-[#18221d]" /></label>
+            <label className="text-xs text-[#657169]">结束日期<input type="date" value={rangeEnd} min={rangeStart} onChange={(event) => setRangeEnd(event.target.value)} className="mt-1 block h-10 rounded-xl border border-[#d7e3ef] bg-white px-3 text-sm text-[#18221d]" /></label>
+            <button onClick={() => { setGranularity('日'); setRangeStart(today); setRangeEnd(shiftDate(today, 6)); }} className="h-10 rounded-xl border border-[#b9cbe0] px-4 text-sm text-[#174578]">恢复默认 7 天</button>
+          </div>
+        </div>
+      </section>
       <section className="mb-5 grid gap-4 lg:grid-cols-[1.2fr_.8fr]">
         <ChartCard
-          title="按日期分类收入"
-          detail="三种副业收入按日期排列，不同颜色对应不同收入来源"
+          title={`按${granularity}分类收入`}
+          detail={`${rangeStart} 至 ${rangeEnd} · 不同颜色对应不同收入来源`}
         >
-          {profits.length ? <ResponsiveContainer width="100%" height={250}>
-            <ReBarChart data={incomeByDate}>
+          {incomeByDate.length ? <ResponsiveContainer width="100%" height={250}>
+            <ReBarChart data={incomeByDate} margin={{ left: 4, right: 4, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+              <XAxis
+                dataKey="label"
+                interval={0}
+                padding={{ left: 24, right: 24 }}
+                tick={{ fontSize: 11, textAnchor: 'middle' }}
+                tickMargin={10}
+              />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Legend />
@@ -1161,11 +1219,11 @@ function SideView({
               <Bar dataKey="网盘拉新" fill="#f59e0b" radius={[5, 5, 0, 0]} />
               <Bar dataKey="抖音电商" fill="#8b5cf6" radius={[5, 5, 0, 0]} />
             </ReBarChart>
-          </ResponsiveContainer> : <ChartEmpty label="记录副业收入后显示分类柱状图" />}
+          </ResponsiveContainer> : <ChartEmpty label="所选日期范围内暂无收入" />}
         </ChartCard>
         <div className="rounded-2xl border border-[#dfe5df] bg-white p-5">
           <h2 className="font-semibold">平台贡献分析</h2>
-          <p className="mb-4 text-xs text-[#7b887f]">按累计净利润排序</p>
+          <p className="mb-4 text-xs text-[#7b887f]">按累计收入排序</p>
           <div className="space-y-4">
             {platformTotals.map(([platform, total], i) => (
               <div key={platform}>
@@ -1191,7 +1249,7 @@ function SideView({
       </section>
       <div className="overflow-hidden rounded-2xl border border-[#dfe5df] bg-white">
         <div className="p-5">
-          <h2 className="font-semibold">每周盈利明细</h2>
+          <h2 className="font-semibold">收入明细</h2>
           <p className="text-xs text-[#7b887f]">
             原始记录永久保留，可用于后续月度和目标周期复盘
           </p>
@@ -1199,7 +1257,7 @@ function SideView({
         <table className="w-full text-left text-sm">
           <thead className="bg-[#fafbf9] text-xs text-[#7b887f]">
             <tr>
-              {['周次', '项目', '平台', '收入', '成本', '净利润'].map((h) => (
+              {['日期', '项目', '平台', '收入'].map((h) => (
                 <th key={h} className="px-4 py-3 font-medium">
                   {h}
                 </th>
@@ -1212,14 +1270,10 @@ function SideView({
               .reverse()
               .map((row) => (
                 <tr key={row.id} className="border-t border-[#edf0ec]">
-                  <td className="px-4 py-3">{row.week}</td>
+                  <td className="px-4 py-3">{row.weekStart || row.week}</td>
                   <td className="px-4 py-3 font-medium">{row.project}</td>
                   <td className="px-4 py-3">{row.platform}</td>
                   <td className="px-4 py-3">¥{row.revenue}</td>
-                  <td className="px-4 py-3">¥{row.cost}</td>
-                  <td className="px-4 py-3 font-semibold text-[#236c4d]">
-                    ¥{row.profit}
-                  </td>
                 </tr>
               ))}
           </tbody>
@@ -1928,7 +1982,7 @@ function AnalysisPanel({
   const topProduct = products.slice().sort((a, b) => b.margin - a.margin)[0];
   const topPlatform = Object.entries(
     profits.reduce<Record<string, number>>((a, r) => {
-      a[r.platform] = (a[r.platform] || 0) + r.profit;
+      a[r.platform] = (a[r.platform] || 0) + r.revenue;
       return a;
     }, {}),
   ).sort((a, b) => b[1] - a[1])[0];
@@ -1958,8 +2012,8 @@ function AnalysisPanel({
           label="副业"
           text={
             topPlatform
-              ? `${topPlatform[0]} 当前累计净利润最高（¥${topPlatform[1]}），建议复盘其内容与转化路径。`
-              : '先记录每周收入和成本，才能分析平台贡献。'
+              ? `${topPlatform[0]} 当前累计收入最高（¥${topPlatform[1]}），建议复盘其内容与转化路径。`
+              : '先记录收入，才能分析平台贡献。'
           }
         />
         <Insight
@@ -2163,6 +2217,7 @@ function RecordDialog({
   editingGoal: Goal | null;
 }) {
   const [selected, setSelected] = useState<RecordKind>(kind);
+  const [sideProject, setSideProject] = useState<ProfitLog['project']>('自媒体');
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -2196,16 +2251,16 @@ function RecordDialog({
     }
     if (selected === '副业利润') {
       const revenue = Number(data.get('revenue'));
-      const cost = Number(data.get('cost'));
+      const date = formText(data, 'date');
       const row: ProfitLog = {
         id,
         project: formText(data, 'project') as ProfitLog['project'],
         platform: formText(data, 'platform'),
-        week: formText(data, 'week'),
-        weekStart: formText(data, 'date'),
+        week: date,
+        weekStart: date,
         revenue,
-        cost,
-        profit: revenue - cost,
+        cost: 0,
+        profit: revenue,
       };
       setProfits([...profits, row]);
       if (client && session)
@@ -2213,10 +2268,10 @@ function RecordDialog({
           user_id: session.user.id,
           project: row.project,
           platform: row.platform,
-          week_label: row.week,
+          week_label: row.weekStart,
           week_start: row.weekStart,
           revenue,
-          cost,
+          cost: 0,
           profit: row.profit,
         });
     }
@@ -2396,28 +2451,24 @@ function RecordDialog({
           )}
           {selected === '副业利润' && (
             <>
-              <SelectField
-                name="project"
-                label="副业项目"
-                options={['自媒体', '网盘拉新', '抖音电商']}
-              />
-              <Field
-                name="platform"
-                label="平台（抖音/小红书/YouTube/网盘等）"
-                required
-              />
+              <label className="block text-sm">
+                <span className="mb-1.5 block font-medium">副业项目</span>
+                <select
+                  name="project"
+                  value={sideProject}
+                  onChange={(event) => setSideProject(event.target.value as ProfitLog['project'])}
+                  className="h-10 w-full rounded-xl border border-[#dfe5df] bg-white px-3"
+                >
+                  {(['自媒体', '网盘拉新', '抖音电商'] as ProfitLog['project'][]).map((option) => <option key={option}>{option}</option>)}
+                </select>
+              </label>
+              <PlatformPicker project={sideProject} />
               <Field name="date" label="收入日期" type="date" required />
-              <Field name="week" label="周次（如 09/07）" required />
               <Field
                 name="revenue"
-                label="本周收入（元）"
+                label="收入金额（元）"
                 type="number"
-                required
-              />
-              <Field
-                name="cost"
-                label="本周成本（元）"
-                type="number"
+                step="0.01"
                 required
               />
             </>
@@ -2593,6 +2644,40 @@ function SelectField({
           <option key={option}>{option}</option>
         ))}
       </select>
+    </label>
+  );
+}
+
+const platformsByProject: Record<ProfitLog['project'], string[]> = {
+  自媒体: ['抖音', '小红书', 'YouTube', 'B站', '视频号', '快手', '其他平台'],
+  网盘拉新: ['夸克网盘', '百度网盘', '阿里云盘', '迅雷云盘', '其他网盘'],
+  抖音电商: ['抖音商城', '抖音直播', '抖音橱窗', '其他渠道'],
+};
+
+function PlatformPicker({ project }: { project: ProfitLog['project'] }) {
+  const [open, setOpen] = useState(false);
+  const [platform, setPlatform] = useState(platformsByProject[project][0]);
+  useEffect(() => {
+    setPlatform(platformsByProject[project][0]);
+    setOpen(false);
+  }, [project]);
+  return (
+    <label className="block text-sm">
+      <span className="mb-1.5 block font-medium">平台</span>
+      <input type="hidden" name="platform" value={platform} readOnly />
+      <button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)} className="flex h-12 w-full items-center justify-between rounded-xl border border-[#cfdbe7] bg-[#f8fbfe] px-4 text-left font-medium text-[#174578]">
+        <span>{platform}</span>
+        <span className="text-xs text-[#71869b]">{open ? '收起平台' : '点击选择平台'}</span>
+      </button>
+      {open && (
+        <div className="mt-2 grid grid-cols-2 gap-2 rounded-xl border border-[#d7e3ef] bg-white p-3 sm:grid-cols-3">
+          {platformsByProject[project].map((option) => (
+            <button key={option} type="button" aria-pressed={platform === option} onClick={() => { setPlatform(option); setOpen(false); }} className={`rounded-xl border px-3 py-3 text-sm transition ${platform === option ? 'border-[#174578] bg-[#e7f0fa] font-medium text-[#174578]' : 'border-[#dfe7ef] bg-white text-[#566b7f] hover:border-[#89a9c9]'}`}>
+              {option}
+            </button>
+          ))}
+        </div>
+      )}
     </label>
   );
 }
