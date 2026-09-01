@@ -11,8 +11,13 @@ import {
   Database,
   Dumbbell,
   FileClock,
+  File as FileIcon,
   BookOpen,
   CalendarDays,
+  Download,
+  FolderOpen,
+  FolderPlus,
+  HardDrive,
   ImagePlus,
   LayoutDashboard,
   LineChart,
@@ -23,7 +28,9 @@ import {
   Search,
   Sparkles,
   Target,
+  Trash2,
   TrendingUp,
+  Upload,
   WalletCards,
   X,
 } from 'lucide-react';
@@ -68,6 +75,7 @@ type Area =
   | '身体'
   | '个人财务'
   | '读书清单'
+  | '个人网盘'
   | '计划和感悟';
 type RecordKind =
   | '工作产品'
@@ -184,6 +192,7 @@ const navigation: { label: Area; icon: typeof LayoutDashboard }[] = [
   { label: '身体', icon: Dumbbell },
   { label: '个人财务', icon: WalletCards },
   { label: '读书清单', icon: BookOpen },
+  { label: '个人网盘', icon: HardDrive },
   { label: '计划和感悟', icon: NotebookPen },
 ];
 
@@ -668,11 +677,14 @@ export default function DashboardApp() {
               onSaved={loadCloudData}
             />
           )}
-          <WeeklyReflectionPanel
-            area={active}
-            records={reflections.filter((item) => item.area === active)}
-            onSave={saveReflection}
-          />
+          {active === '个人网盘' && <CloudDriveView session={session} />}
+          {active !== '个人网盘' && (
+            <WeeklyReflectionPanel
+              area={active}
+              records={reflections.filter((item) => item.area === active)}
+              onSave={saveReflection}
+            />
+          )}
         </div>
         <MobileNav active={active} setActive={setActive} />
       </div>
@@ -1642,7 +1654,7 @@ function ReadingView({
                 <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
                 <XAxis dataKey="title" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(value) => [`${value} 小时`, '计划时长']} />
+                <Tooltip formatter={(value) => [`${String(value)} 小时`, '计划时长']} />
                 <Bar dataKey="hours" name="计划时长" fill="#2563eb" radius={[8, 8, 0, 0]} maxBarSize={52} />
               </ReBarChart>
             </ResponsiveContainer>
@@ -1691,6 +1703,247 @@ function ReadingView({
         ))}
       </section>
       <AreaGoalSection area="读书清单" goals={goals} history={history} openRecord={openRecord} onEditGoal={onEditGoal} />
+    </>
+  );
+}
+
+type PersonalFile = {
+  id: string;
+  name: string;
+  storagePath: string;
+  folder: string;
+  category: string;
+  size: number;
+  mimeType: string;
+  note: string;
+  createdAt: string;
+};
+
+type PersonalFolder = { id: string; name: string };
+
+const driveCategories = ['工作资料', '副业素材', '财务表格', '读书资料', '个人文件', '图片', '其他'];
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
+}
+
+function CloudDriveView({ session }: { session: Session | null }) {
+  const [files, setFiles] = useState<PersonalFile[]>([]);
+  const [folders, setFolders] = useState<PersonalFolder[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState('');
+  const [folderFilter, setFolderFilter] = useState('全部文件');
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadFolder, setUploadFolder] = useState('未分类');
+  const [uploadCategory, setUploadCategory] = useState(driveCategories[0]);
+  const [uploading, setUploading] = useState(false);
+  const [newFolder, setNewFolder] = useState('');
+  const [editing, setEditing] = useState<PersonalFile | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editFolder, setEditFolder] = useState('未分类');
+  const [editCategory, setEditCategory] = useState(driveCategories[0]);
+  const [editNote, setEditNote] = useState('');
+  const [message, setMessage] = useState('');
+
+  const loadDrive = useCallback(async () => {
+    const client = getSupabase();
+    if (!client || !session) return;
+    const [fileResult, folderResult] = await Promise.all([
+      client.from('personal_files').select('*').order('created_at', { ascending: false }),
+      client.from('personal_folders').select('*').order('name'),
+    ]);
+    if (fileResult.error || folderResult.error) {
+      setMessage(fileResult.error?.message ?? folderResult.error?.message ?? '个人网盘读取失败');
+      return;
+    }
+    const nextFiles: PersonalFile[] = (fileResult.data ?? []).map((item) => ({
+      id: item.id,
+      name: item.name,
+      storagePath: item.storage_path,
+      folder: item.folder || '未分类',
+      category: item.category || '其他',
+      size: Number(item.size_bytes ?? 0),
+      mimeType: item.mime_type || 'application/octet-stream',
+      note: item.note || '',
+      createdAt: item.created_at,
+    }));
+    setFiles(nextFiles);
+    setFolders((folderResult.data ?? []).map((item) => ({ id: item.id, name: item.name })));
+    const images = nextFiles.filter((file) => file.mimeType.startsWith('image/'));
+    if (images.length) {
+      const { data } = await client.storage.from('personal-files').createSignedUrls(images.map((file) => file.storagePath), 3600);
+      setPreviewUrls(Object.fromEntries((data ?? []).filter((item) => item.signedUrl).map((item) => [item.path, item.signedUrl])));
+    } else setPreviewUrls({});
+    setMessage('');
+  }, [session]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadDrive(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadDrive]);
+  useEffect(() => {
+    const client = getSupabase();
+    if (!client || !session) return;
+    const channel = client
+      .channel(`personal-drive-${session.user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'personal_files', filter: `user_id=eq.${session.user.id}` }, loadDrive)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'personal_folders', filter: `user_id=eq.${session.user.id}` }, loadDrive)
+      .subscribe();
+    return () => { void client.removeChannel(channel); };
+  }, [session, loadDrive]);
+
+  const folderOptions = ['未分类', ...folders.map((folder) => folder.name).filter((name) => name !== '未分类')];
+  const filteredFiles = files.filter((file) => {
+    const matchesFolder = folderFilter === '全部文件' || file.folder === folderFilter;
+    const text = `${file.name}${file.category}${file.folder}${file.note}`.toLowerCase();
+    return matchesFolder && text.includes(search.toLowerCase());
+  });
+  const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+
+  async function createFolder(event: SyntheticEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const client = getSupabase();
+    const name = newFolder.trim();
+    if (!client || !session || !name) return;
+    const { error } = await client.from('personal_folders').insert({ user_id: session.user.id, name });
+    setMessage(error ? error.message : '文件夹已创建');
+    if (!error) { setNewFolder(''); await loadDrive(); }
+  }
+
+  async function uploadFile(event: SyntheticEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const client = getSupabase();
+    if (!client || !session) return;
+    const data = new FormData(event.currentTarget);
+    const file = data.get('file');
+    if (!(file instanceof File) || !file.size) { setMessage('请选择要上传的文件'); return; }
+    if (file.size > 50 * 1024 * 1024) { setMessage('单个文件不能超过 50 MB'); return; }
+    setUploading(true);
+    setMessage('正在上传…');
+    const safeName = file.name.replace(/[^\p{L}\p{N}._-]+/gu, '-');
+    const storagePath = `${session.user.id}/${crypto.randomUUID()}-${safeName}`;
+    const { error: uploadError } = await client.storage.from('personal-files').upload(storagePath, file, { contentType: file.type || undefined, upsert: false });
+    if (uploadError) { setMessage(uploadError.message); setUploading(false); return; }
+    const { error: rowError } = await client.from('personal_files').insert({
+      user_id: session.user.id,
+      name: file.name,
+      storage_path: storagePath,
+      folder: uploadFolder,
+      category: uploadCategory,
+      size_bytes: file.size,
+      mime_type: file.type || 'application/octet-stream',
+      note: formText(data, 'note'),
+    });
+    if (rowError) {
+      await client.storage.from('personal-files').remove([storagePath]);
+      setMessage(rowError.message);
+    } else {
+      setMessage('文件已上传，可以在其他设备下载');
+      setShowUpload(false);
+      await loadDrive();
+    }
+    setUploading(false);
+  }
+
+  async function downloadFile(file: PersonalFile) {
+    const client = getSupabase();
+    if (!client) return;
+    const { data, error } = await client.storage.from('personal-files').createSignedUrl(file.storagePath, 60, { download: file.name });
+    if (error || !data?.signedUrl) { setMessage(error?.message ?? '下载链接创建失败'); return; }
+    const link = document.createElement('a');
+    link.href = data.signedUrl;
+    link.download = file.name;
+    link.click();
+  }
+
+  function beginEdit(file: PersonalFile) {
+    setEditing(file);
+    setEditName(file.name);
+    setEditFolder(file.folder);
+    setEditCategory(file.category);
+    setEditNote(file.note);
+  }
+
+  async function saveEdit(event: SyntheticEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const client = getSupabase();
+    if (!client || !editing) return;
+    const { error } = await client.from('personal_files').update({ name: editName.trim(), folder: editFolder, category: editCategory, note: editNote }).eq('id', editing.id);
+    setMessage(error ? error.message : '文件信息已更新');
+    if (!error) { setEditing(null); await loadDrive(); }
+  }
+
+  async function deleteFile(file: PersonalFile) {
+    if (!window.confirm(`确认删除“${file.name}”吗？删除后无法恢复。`)) return;
+    const client = getSupabase();
+    if (!client) return;
+    const { error: storageError } = await client.storage.from('personal-files').remove([file.storagePath]);
+    if (storageError) { setMessage(storageError.message); return; }
+    const { error } = await client.from('personal_files').delete().eq('id', file.id);
+    setMessage(error ? error.message : '文件已永久删除');
+    if (!error) await loadDrive();
+  }
+
+  return (
+    <>
+      <PageIntro eyebrow="个人网盘" title="跨设备文件中心" detail="文件保存在私有云端，只有你的白名单账户可以上传、查看和下载。" action="上传文件" onAction={() => setShowUpload(true)} />
+      <section className="mb-5 grid gap-4 sm:grid-cols-3">
+        <Metric label="文件数量" value={`${files.length} 个`} note="全部私人文件" />
+        <Metric label="已使用空间" value={formatFileSize(totalSize)} note="单个文件最多 50 MB" />
+        <Metric label="文件夹" value={`${folders.length + 1} 个`} note="包含默认的未分类" />
+      </section>
+      <section className="mb-5 rounded-2xl border border-[#d7e3ef] bg-white p-4 sm:p-5">
+        <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
+          <label className="relative block"><Search className="absolute left-3 top-3 size-4 text-[#7c91a5]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜索文件名、分类、文件夹或备注" className="h-10 w-full rounded-xl border border-[#d7e3ef] pl-10 pr-3 outline-none focus:border-[#174578]" /></label>
+          <form onSubmit={createFolder} className="flex gap-2"><input value={newFolder} onChange={(event) => setNewFolder(event.target.value)} placeholder="新文件夹名称" className="h-10 min-w-0 flex-1 rounded-xl border border-[#d7e3ef] px-3 outline-none focus:border-[#174578]" /><button className="flex h-10 items-center gap-2 rounded-xl bg-[#174578] px-4 text-sm font-medium text-white"><FolderPlus className="size-4" />新建文件夹</button></form>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {['全部文件', ...folderOptions].map((folder) => <button key={folder} type="button" onClick={() => setFolderFilter(folder)} className={`rounded-xl border px-3 py-2 text-sm ${folderFilter === folder ? 'border-[#174578] bg-[#e7f0fa] font-medium text-[#174578]' : 'border-[#d7e3ef] text-[#617589]'}`}>{folder}</button>)}
+        </div>
+        {message && <p className="mt-3 rounded-xl bg-[#eef4f9] px-3 py-2 text-sm text-[#36536f]">{message}</p>}
+      </section>
+      {filteredFiles.length ? (
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {filteredFiles.map((file) => (
+            <article key={file.id} className="overflow-hidden rounded-2xl border border-[#d7e3ef] bg-white">
+              {previewUrls[file.storagePath] ? <><div aria-hidden="true" style={{ backgroundImage: `url(${previewUrls[file.storagePath]})` }} className="h-40 w-full bg-[#edf4fa] bg-cover bg-center" /><span className="sr-only">{file.name} 图片预览</span></> : <div className="grid h-32 place-items-center bg-[#edf4fa] text-[#174578]"><FileIcon className="size-10" /></div>}
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h2 className="truncate font-semibold" title={file.name}>{file.name}</h2><p className="mt-1 text-xs text-[#71869b]">{file.category} · {file.folder}</p></div><span className="shrink-0 rounded-lg bg-[#eef4f9] px-2 py-1 text-xs text-[#45627e]">{formatFileSize(file.size)}</span></div>
+                <p className="mt-3 min-h-10 text-sm leading-5 text-[#65798d]">{file.note || '暂无备注'}</p>
+                <p className="mt-2 text-xs text-[#8a9aaa]">上传于 {new Date(file.createdAt).toLocaleDateString('zh-CN')}</p>
+                <div className="mt-4 grid grid-cols-3 gap-2"><button type="button" onClick={() => void downloadFile(file)} className="flex items-center justify-center gap-1 rounded-xl bg-[#174578] px-2 py-2 text-xs font-medium text-white"><Download className="size-3.5" />下载</button><button type="button" onClick={() => beginEdit(file)} className="rounded-xl border border-[#cfdbe7] px-2 py-2 text-xs text-[#174578]">编辑</button><button type="button" onClick={() => void deleteFile(file)} className="flex items-center justify-center gap-1 rounded-xl border border-[#f1c9c9] px-2 py-2 text-xs text-[#a13b3b]"><Trash2 className="size-3.5" />删除</button></div>
+              </div>
+            </article>
+          ))}
+        </section>
+      ) : <div className="rounded-2xl border border-dashed border-[#bfcfdd] bg-white py-16 text-center"><FolderOpen className="mx-auto size-10 text-[#7c9ab5]" /><h2 className="mt-3 font-semibold">这里还没有文件</h2><p className="mt-1 text-sm text-[#71869b]">上传后即可在电脑和手机间查看、下载。</p></div>}
+      {showUpload && (
+        <div role="presentation" className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4" onMouseDown={(event) => event.target === event.currentTarget && setShowUpload(false)}>
+          <form onSubmit={uploadFile} className="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
+            <div className="flex items-center justify-between"><div><h2 className="font-semibold">上传文件</h2><p className="text-xs text-[#71869b]">文件保存在私有云端，不会进入公开代码。</p></div><button type="button" onClick={() => setShowUpload(false)} className="grid size-8 place-items-center rounded-lg bg-[#eef2f5]"><X className="size-4" /></button></div>
+            <label className="block text-sm"><span className="mb-1.5 block font-medium">选择文件</span><input name="file" type="file" required className="block w-full rounded-xl border border-[#d7e3ef] p-3 file:mr-3 file:rounded-lg file:border-0 file:bg-[#e7f0fa] file:px-3 file:py-2 file:text-[#174578]" /></label>
+            <ChoicePicker name="uploadFolder" label="文件夹" options={folderOptions} value={uploadFolder} onChange={setUploadFolder} />
+            <ChoicePicker name="uploadCategory" label="分类" options={driveCategories} value={uploadCategory} onChange={setUploadCategory} />
+            <Field name="note" label="备注（选填）" />
+            <button disabled={uploading} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#174578] font-medium text-white disabled:opacity-60"><Upload className="size-4" />{uploading ? '上传中…' : '确认上传'}</button>
+          </form>
+        </div>
+      )}
+      {editing && (
+        <div role="presentation" className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4" onMouseDown={(event) => event.target === event.currentTarget && setEditing(null)}>
+          <form onSubmit={saveEdit} className="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
+            <div className="flex items-center justify-between"><h2 className="font-semibold">编辑文件信息</h2><button type="button" onClick={() => setEditing(null)} className="grid size-8 place-items-center rounded-lg bg-[#eef2f5]"><X className="size-4" /></button></div>
+            <label className="block text-sm"><span className="mb-1.5 block font-medium">文件名</span><input value={editName} onChange={(event) => setEditName(event.target.value)} required className="h-10 w-full rounded-xl border border-[#d7e3ef] px-3" /></label>
+            <ChoicePicker name="editFolder" label="移动到文件夹" options={folderOptions} value={editFolder} onChange={setEditFolder} />
+            <ChoicePicker name="editCategory" label="分类" options={driveCategories} value={editCategory} onChange={setEditCategory} />
+            <label className="block text-sm"><span className="mb-1.5 block font-medium">备注</span><textarea value={editNote} onChange={(event) => setEditNote(event.target.value)} className="min-h-24 w-full rounded-xl border border-[#d7e3ef] p-3" /></label>
+            <button className="h-11 w-full rounded-xl bg-[#174578] font-medium text-white">保存修改</button>
+          </form>
+        </div>
+      )}
     </>
   );
 }
