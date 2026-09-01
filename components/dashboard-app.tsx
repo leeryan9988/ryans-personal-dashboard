@@ -12,6 +12,8 @@ import {
   Dumbbell,
   FileClock,
   BookOpen,
+  CalendarDays,
+  ImagePlus,
   LayoutDashboard,
   LineChart,
   LogOut,
@@ -32,6 +34,7 @@ import {
   BarChart as ReBarChart,
   CartesianGrid,
   Line,
+  Legend,
   LineChart as ReLineChart,
   Pie,
   PieChart,
@@ -51,7 +54,9 @@ import {
   type FinanceLog,
   type Goal,
   type HealthLog,
+  type PlanNote,
   type ProfitLog,
+  type WeeklyReflection,
   type WorkProduct,
 } from '@/lib/dashboard-data';
 import { getSupabase, isCloudConfigured } from '@/lib/supabase';
@@ -62,7 +67,8 @@ type Area =
   | '副业'
   | '身体'
   | '个人财务'
-  | '读书清单';
+  | '读书清单'
+  | '计划和感悟';
 type RecordKind =
   | '工作产品'
   | '副业利润'
@@ -136,7 +142,15 @@ const navigation: { label: Area; icon: typeof LayoutDashboard }[] = [
   { label: '身体', icon: Dumbbell },
   { label: '个人财务', icon: WalletCards },
   { label: '读书清单', icon: BookOpen },
+  { label: '计划和感悟', icon: NotebookPen },
 ];
+
+function currentWeekStart() {
+  const date = new Date();
+  const day = date.getDay() || 7;
+  date.setDate(date.getDate() - day + 1);
+  return date.toISOString().slice(0, 10);
+}
 
 export default function DashboardApp() {
   const [active, setActive] = useState<Area>('总目标');
@@ -146,6 +160,9 @@ export default function DashboardApp() {
   const [finance, setFinance] = useState<FinanceLog[]>(initialFinance);
   const [books, setBooks] = useState<Book[]>(initialBooks);
   const [goals, setGoals] = useState<Goal[]>(initialGoals);
+  const [reflections, setReflections] = useState<WeeklyReflection[]>([]);
+  const [planNotes, setPlanNotes] = useState<PlanNote[]>([]);
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [recordKind, setRecordKind] = useState<RecordKind | null>(null);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -159,13 +176,15 @@ export default function DashboardApp() {
   const loadCloudData = useCallback(async () => {
     const client = getSupabase();
     if (!client) return;
-    const [p, r, h, g, f, b] = await Promise.all([
+    const [p, r, h, g, f, b, w, n] = await Promise.all([
       client.from('work_products').select('*').order('created_at'),
       client.from('profit_logs').select('*').order('week_start'),
       client.from('health_logs').select('*').order('logged_at'),
       client.from('goals').select('*').order('started_at'),
       client.from('finance_logs').select('*').order('occurred_at'),
       client.from('books').select('*').order('created_at'),
+      client.from('weekly_reflections').select('*').order('week_start', { ascending: false }),
+      client.from('plan_notes').select('*').order('note_date', { ascending: false }),
     ]);
     setProducts(
         (p.data ?? []).map((x) => ({
@@ -186,6 +205,7 @@ export default function DashboardApp() {
           project: x.project,
           platform: x.platform,
           week: x.week_label,
+          weekStart: x.week_start,
           revenue: Number(x.revenue),
           cost: Number(x.cost),
           profit: Number(x.profit),
@@ -237,6 +257,26 @@ export default function DashboardApp() {
           finishedAt: x.finished_at,
         })),
       );
+    setReflections((w.data ?? []).map((x) => ({
+      id: x.id,
+      area: x.area,
+      weekStart: x.week_start,
+      review: x.review_text,
+      insight: x.insight_text,
+    })));
+    const nextNotes = (n.data ?? []).map((x) => ({
+      id: x.id,
+      title: x.title,
+      content: x.content,
+      noteDate: x.note_date,
+      imagePaths: x.image_paths ?? [],
+    }));
+    setPlanNotes(nextNotes);
+    const paths = nextNotes.flatMap((note) => note.imagePaths);
+    if (paths.length) {
+      const { data: signed } = await client.storage.from('journal-images').createSignedUrls(paths, 3600);
+      setImageUrls(Object.fromEntries((signed ?? []).filter((item) => item.signedUrl).map((item) => [item.path, item.signedUrl])));
+    } else setImageUrls({});
   }, []);
 
   useEffect(() => {
@@ -392,6 +432,8 @@ export default function DashboardApp() {
         },
         loadCloudData,
       )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'weekly_reflections', filter: `user_id=eq.${session.user.id}` }, loadCloudData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'plan_notes', filter: `user_id=eq.${session.user.id}` }, loadCloudData)
       .subscribe();
     return () => {
       void client.removeChannel(channel);
@@ -418,7 +460,7 @@ export default function DashboardApp() {
     redirect.searchParams.set('handoff_key', handoff.key);
     const { error } = await client.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true, emailRedirectTo: redirect.toString() },
+      options: { shouldCreateUser: false, emailRedirectTo: redirect.toString() },
     });
     if (error) {
       window.localStorage.removeItem('ryan-login-handoff');
@@ -444,6 +486,21 @@ export default function DashboardApp() {
         : 'Notion 已更新',
     );
     window.setTimeout(() => setSyncMessage(''), 4000);
+  }
+
+  async function saveReflection(area: Area, weekStart: string, review: string, insight: string) {
+    const client = getSupabase();
+    if (!client || !session) return '请先登录';
+    const { error } = await client.from('weekly_reflections').upsert({
+      user_id: session.user.id,
+      area,
+      week_start: weekStart,
+      review_text: review,
+      insight_text: insight,
+    }, { onConflict: 'user_id,area,week_start' });
+    if (error) return error.message;
+    await loadCloudData();
+    return '已保存';
   }
 
   if (!authReady)
@@ -531,6 +588,19 @@ export default function DashboardApp() {
               onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }}
             />
           )}
+          {active === '计划和感悟' && (
+            <PlanAndReflectionView
+              notes={planNotes}
+              imageUrls={imageUrls}
+              session={session}
+              onSaved={loadCloudData}
+            />
+          )}
+          <WeeklyReflectionPanel
+            area={active}
+            records={reflections.filter((item) => item.area === active)}
+            onSave={saveReflection}
+          />
         </div>
         <MobileNav active={active} setActive={setActive} />
       </div>
@@ -626,9 +696,9 @@ function Sidebar({
   session: Session | null;
 }) {
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[232px] flex-col border-r border-[#dfe5df] bg-[#153e32] text-white lg:flex">
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[232px] flex-col border-r border-[#183866] bg-[#102a56] text-white lg:flex">
       <div className="flex h-20 items-center gap-3 px-6">
-        <div className="grid size-10 place-items-center rounded-xl bg-[#d9f99d] text-[#153e32]">
+        <div className="grid size-10 place-items-center rounded-xl bg-[#b9dcff] text-[#102a56]">
           <Target className="size-5" />
         </div>
         <div>
@@ -649,7 +719,7 @@ function Sidebar({
         ))}
       </nav>
       <div className="m-3 rounded-2xl bg-white/8 p-4">
-        <div className="mb-2 flex items-center gap-2 text-xs text-[#d9f99d]">
+        <div className="mb-2 flex items-center gap-2 text-xs text-[#b9dcff]">
           <Sparkles className="size-3.5" /> 本周复盘
         </div>
         <p className="text-sm leading-6 text-white/80">
@@ -725,13 +795,13 @@ function TotalGoalsView({
       <PageIntro
         eyebrow="总目标"
         title="所有目标的总体达成情况"
-        detail="集中查看五大板块的目标数量、平均进度和状态分布；具体分析与历史仍保留在各自板块。"
+        detail="集中查看各目标板块的目标数量、平均进度和状态分布；具体分析与历史仍保留在各自板块。"
         action="设立新目标"
         onAction={() => openRecord('新目标')}
       />
       <section className="mb-5 grid gap-4 sm:grid-cols-3">
         <Metric label="总体达成率" value={`${overall}%`} note="按已达成目标数量计算" />
-        <Metric label="进行中" value={`${activeGoals.length} 个`} note="跨五大板块汇总" />
+        <Metric label="进行中" value={`${activeGoals.length} 个`} note="跨板块汇总" />
         <Metric label="累计目标" value={`${goals.length} 个`} note="包含达成和归档历史" />
       </section>
       <section className="mb-5 grid gap-5 lg:grid-cols-2">
@@ -1058,6 +1128,14 @@ function SideView({
       return acc;
     }, {}),
   ).sort((a, b) => b[1] - a[1]);
+  const incomeByDate = Object.values(
+    profits.reduce<Record<string, { date: string; 自媒体: number; 网盘拉新: number; 抖音电商: number }>>((acc, row) => {
+      const date = row.weekStart || row.week;
+      acc[date] ??= { date, 自媒体: 0, 网盘拉新: 0, 抖音电商: 0 };
+      acc[date][row.project] += row.revenue;
+      return acc;
+    }, {}),
+  ).sort((a, b) => a.date.localeCompare(b.date));
   return (
     <>
       <PageIntro
@@ -1069,25 +1147,21 @@ function SideView({
       />
       <section className="mb-5 grid gap-4 lg:grid-cols-[1.2fr_.8fr]">
         <ChartCard
-          title="每周利润趋势"
-          detail="用连续记录识别增长，而不是被单周波动影响"
+          title="按日期分类收入"
+          detail="三种副业收入按日期排列，不同颜色对应不同收入来源"
         >
           {profits.length ? <ResponsiveContainer width="100%" height={250}>
-            <ReLineChart data={profits}>
+            <ReBarChart data={incomeByDate}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
-              <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="profit"
-                name="利润"
-                stroke="#2f6d57"
-                strokeWidth={3}
-                dot={{ r: 4 }}
-              />
-            </ReLineChart>
-          </ResponsiveContainer> : <ChartEmpty label="记录每周盈利后显示趋势" />}
+              <Legend />
+              <Bar dataKey="自媒体" fill="#2563eb" radius={[5, 5, 0, 0]} />
+              <Bar dataKey="网盘拉新" fill="#f59e0b" radius={[5, 5, 0, 0]} />
+              <Bar dataKey="抖音电商" fill="#8b5cf6" radius={[5, 5, 0, 0]} />
+            </ReBarChart>
+          </ResponsiveContainer> : <ChartEmpty label="记录副业收入后显示分类柱状图" />}
         </ChartCard>
         <div className="rounded-2xl border border-[#dfe5df] bg-white p-5">
           <h2 className="font-semibold">平台贡献分析</h2>
@@ -1517,6 +1591,159 @@ function ReadingView({
         ))}
       </section>
       <AreaGoalSection area="读书清单" goals={goals} history={history} openRecord={openRecord} onEditGoal={onEditGoal} />
+    </>
+  );
+}
+
+function WeeklyReflectionPanel({
+  area,
+  records,
+  onSave,
+}: {
+  area: Area;
+  records: WeeklyReflection[];
+  onSave: (area: Area, weekStart: string, review: string, insight: string) => Promise<string>;
+}) {
+  const [weekStart, setWeekStart] = useState(currentWeekStart());
+  const current = records.find((item) => item.weekStart === weekStart);
+  const [review, setReview] = useState('');
+  const [insight, setInsight] = useState('');
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    setReview(current?.review ?? '');
+    setInsight(current?.insight ?? '');
+    setMessage('');
+  }, [area, weekStart, current?.id, current?.review, current?.insight]);
+
+  return (
+    <section className="mt-5 rounded-2xl border border-[#d7e3ef] bg-white p-5">
+      <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div>
+          <h2 className="font-semibold">{area} · 每周复盘与感悟</h2>
+          <p className="text-xs text-[#718078]">按周保存，后续修改只更新所选周，历史记录持续保留</p>
+        </div>
+        <label className="flex items-center gap-2 text-xs text-[#607184]">
+          <CalendarDays className="size-4" />
+          <input type="date" value={weekStart} onChange={(event) => setWeekStart(event.target.value)} className="h-9 rounded-xl border border-[#d7e3ef] px-3" />
+        </label>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <label className="text-sm">
+          <span className="mb-2 block font-medium">每周复盘</span>
+          <textarea value={review} onChange={(event) => setReview(event.target.value)} rows={5} placeholder="本周完成了什么、数据发生了什么变化、哪些地方需要调整……" className="w-full resize-y rounded-xl border border-[#d7e3ef] p-3 outline-none focus:border-[#4672a8]" />
+        </label>
+        <label className="text-sm">
+          <span className="mb-2 block font-medium">感悟</span>
+          <textarea value={insight} onChange={(event) => setInsight(event.target.value)} rows={5} placeholder="记录判断、经验、灵感和下一步想法……" className="w-full resize-y rounded-xl border border-[#d7e3ef] p-3 outline-none focus:border-[#4672a8]" />
+        </label>
+      </div>
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <span className="text-xs text-[#607184]">{message}</span>
+        <button onClick={async () => setMessage(await onSave(area, weekStart, review, insight))} className="rounded-xl bg-[#174578] px-4 py-2 text-sm font-medium text-white">保存本周记录</button>
+      </div>
+      {records.length > 0 && (
+        <details className="mt-5 border-t border-[#e6edf4] pt-4">
+          <summary className="cursor-pointer text-sm font-medium">查看历史复盘（{records.length}）</summary>
+          <div className="mt-3 space-y-3">
+            {records.map((item) => (
+              <article key={item.id} className="rounded-xl bg-[#f4f8fc] p-4 text-sm">
+                <b>{item.weekStart}</b>
+                <p className="mt-2 whitespace-pre-wrap text-[#536477]">复盘：{item.review || '—'}</p>
+                <p className="mt-1 whitespace-pre-wrap text-[#536477]">感悟：{item.insight || '—'}</p>
+              </article>
+            ))}
+          </div>
+        </details>
+      )}
+    </section>
+  );
+}
+
+function PlanAndReflectionView({
+  notes,
+  imageUrls,
+  session,
+  onSaved,
+}: {
+  notes: PlanNote[];
+  imageUrls: Record<string, string>;
+  session: Session | null;
+  onSaved: () => Promise<void>;
+}) {
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [noteDate, setNoteDate] = useState(new Date().toISOString().slice(0, 10));
+  const [files, setFiles] = useState<File[]>([]);
+  const [message, setMessage] = useState('');
+
+  async function saveNote(event: SyntheticEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const client = getSupabase();
+    if (!client || !session) return;
+    if (!content.trim() && !title.trim() && files.length === 0) {
+      setMessage('请输入文字或选择图片');
+      return;
+    }
+    setMessage('正在保存…');
+    const imagePaths: string[] = [];
+    for (const file of files.slice(0, 4)) {
+      if (file.size > 5 * 1024 * 1024) {
+        setMessage(`${file.name} 超过 5MB`);
+        return;
+      }
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+      const path = `${session.user.id}/${crypto.randomUUID()}-${safeName}`;
+      const { error } = await client.storage.from('journal-images').upload(path, file, { contentType: file.type, upsert: false });
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
+      imagePaths.push(path);
+    }
+    const { error } = await client.from('plan_notes').insert({
+      user_id: session.user.id,
+      title: title.trim(),
+      content: content.trim(),
+      note_date: noteDate,
+      image_paths: imagePaths,
+    });
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    setTitle('');
+    setContent('');
+    setFiles([]);
+    setMessage('已保存');
+    await onSaved();
+  }
+
+  return (
+    <>
+      <PageIntro eyebrow="计划和感悟" title="把计划、想法和图片留在同一处" detail="直接写下阶段计划、灵感与复盘材料；文字和私密图片都会随账户跨设备同步。" action="写一条记录" onAction={() => document.getElementById('plan-note-editor')?.scrollIntoView({ behavior: 'smooth' })} />
+      <form id="plan-note-editor" onSubmit={saveNote} className="mb-5 rounded-2xl border border-[#d7e3ef] bg-white p-5">
+        <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
+          <label className="text-sm"><span className="mb-1.5 block font-medium">标题（可选）</span><input value={title} onChange={(event) => setTitle(event.target.value)} className="h-10 w-full rounded-xl border border-[#d7e3ef] px-3" placeholder="例如：下周内容计划" /></label>
+          <label className="text-sm"><span className="mb-1.5 block font-medium">日期</span><input type="date" value={noteDate} onChange={(event) => setNoteDate(event.target.value)} className="h-10 w-full rounded-xl border border-[#d7e3ef] px-3" /></label>
+        </div>
+        <label className="mt-4 block text-sm"><span className="mb-1.5 block font-medium">计划与感悟</span><textarea value={content} onChange={(event) => setContent(event.target.value)} rows={7} className="w-full resize-y rounded-xl border border-[#d7e3ef] p-3" placeholder="直接输入文字……" /></label>
+        <div className="mt-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[#b9cbe0] px-4 py-2 text-sm text-[#174578]"><ImagePlus className="size-4" />选择图片（最多 4 张）<input type="file" accept="image/*" multiple className="hidden" onChange={(event) => setFiles(Array.from(event.target.files ?? []).slice(0, 4))} /></label>
+          <div className="flex items-center gap-3"><span className="text-xs text-[#607184]">{files.length ? `已选 ${files.length} 张 · ` : ''}{message}</span><button className="rounded-xl bg-[#174578] px-5 py-2 text-sm font-medium text-white">保存记录</button></div>
+        </div>
+      </form>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {notes.map((note) => (
+          <article key={note.id} className="rounded-2xl border border-[#d7e3ef] bg-white p-5">
+            <p className="text-xs text-[#718078]">{note.noteDate}</p>
+            <h2 className="mt-1 font-semibold">{note.title || '未命名记录'}</h2>
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#536477]">{note.content || '（图片记录）'}</p>
+            {note.imagePaths.length > 0 && <div className="mt-4 grid grid-cols-2 gap-2">{note.imagePaths.map((path) => imageUrls[path] ? <img key={path} src={imageUrls[path]} alt={note.title || '计划和感悟图片'} className="aspect-square w-full rounded-xl object-cover" /> : null)}</div>}
+          </article>
+        ))}
+        {notes.length === 0 && <div className="col-span-full rounded-2xl border border-dashed border-[#b9cbe0] bg-white/60 p-10 text-center text-sm text-[#718078]">还没有计划和感悟记录</div>}
+      </section>
     </>
   );
 }
@@ -1975,6 +2202,7 @@ function RecordDialog({
         project: formText(data, 'project') as ProfitLog['project'],
         platform: formText(data, 'platform'),
         week: formText(data, 'week'),
+        weekStart: formText(data, 'date'),
         revenue,
         cost,
         profit: revenue - cost,
@@ -1986,7 +2214,7 @@ function RecordDialog({
           project: row.project,
           platform: row.platform,
           week_label: row.week,
-          week_start: new Date().toISOString().slice(0, 10),
+          week_start: row.weekStart,
           revenue,
           cost,
           profit: row.profit,
@@ -2178,6 +2406,7 @@ function RecordDialog({
                 label="平台（抖音/小红书/YouTube/网盘等）"
                 required
               />
+              <Field name="date" label="收入日期" type="date" required />
               <Field name="week" label="周次（如 09/07）" required />
               <Field
                 name="revenue"

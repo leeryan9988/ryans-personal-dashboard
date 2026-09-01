@@ -15,6 +15,7 @@ export type ProfitLog = {
   project: '自媒体' | '网盘拉新' | '抖音电商';
   platform: string;
   week: string;
+  weekStart: string;
   revenue: number;
   cost: number;
   profit: number;
@@ -40,6 +41,22 @@ export type Goal = {
   deadline: string;
   status: '进行中' | '已达成' | '已归档';
   result?: string;
+};
+
+export type WeeklyReflection = {
+  id: string;
+  area: '总目标' | '工作' | '副业' | '身体' | '个人财务' | '读书清单' | '计划和感悟';
+  weekStart: string;
+  review: string;
+  insight: string;
+};
+
+export type PlanNote = {
+  id: string;
+  title: string;
+  content: string;
+  noteDate: string;
+  imagePaths: string[];
 };
 
 export type FinanceLog = {

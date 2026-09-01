@@ -13,14 +13,18 @@ Deno.serve(async (request) => {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authorization } } });
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('登录已失效');
+    const allowedUserId = Deno.env.get('ALLOWED_USER_ID');
+    if (!allowedUserId || user.id !== allowedUserId) throw new Error('该账户无权同步 Notion');
 
-    const [products, profits, goals, health, finance, books] = await Promise.all([
+    const [products, profits, goals, health, finance, books, reflections, notes] = await Promise.all([
       supabase.from('work_products').select('*').eq('user_id', user.id),
       supabase.from('profit_logs').select('*').eq('user_id', user.id),
       supabase.from('goals').select('*').eq('user_id', user.id),
       supabase.from('health_logs').select('*').eq('user_id', user.id).order('logged_at', { ascending: false }).limit(1),
       supabase.from('finance_logs').select('*').eq('user_id', user.id),
       supabase.from('books').select('*').eq('user_id', user.id),
+      supabase.from('weekly_reflections').select('*').eq('user_id', user.id).order('week_start', { ascending: false }).limit(7),
+      supabase.from('plan_notes').select('*').eq('user_id', user.id).order('note_date', { ascending: false }).limit(5),
     ]);
     const sideProfit = (profits.data ?? []).reduce((sum, row) => sum + Number(row.profit), 0);
     const productRows = products.data ?? [];
@@ -30,6 +34,8 @@ Deno.serve(async (request) => {
     const currentGoals = (goals.data ?? []).filter((row) => row.status === '进行中');
     const latestHealth = health.data?.[0];
     const finishedBooks = (books.data ?? []).filter((row) => row.status === '已读').length;
+    const reflectionCount = reflections.data?.length ?? 0;
+    const noteCount = notes.data?.length ?? 0;
 
     const notionToken = Deno.env.get('NOTION_API_KEY');
     const parentPageId = Deno.env.get('NOTION_PARENT_PAGE_ID');
@@ -55,6 +61,8 @@ Deno.serve(async (request) => {
           { object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: [{ type: 'text', text: { content: `已读：${finishedBooks} 本` } }] } },
           { object: 'block', type: 'heading_3', heading_3: { rich_text: [{ type: 'text', text: { content: '总目标' } }] } },
           { object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: [{ type: 'text', text: { content: `当前目标：${currentGoals.length} 个` } }] } },
+          { object: 'block', type: 'heading_3', heading_3: { rich_text: [{ type: 'text', text: { content: '计划和感悟' } }] } },
+          { object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: [{ type: 'text', text: { content: `近期复盘：${reflectionCount} 条；计划与感悟：${noteCount} 条` } }] } },
         ],
       }),
     });
