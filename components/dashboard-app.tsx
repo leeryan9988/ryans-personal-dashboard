@@ -84,6 +84,7 @@ type Area =
 type RecordKind =
   | '工作产品'
   | '副业利润'
+  | '修改副业收入'
   | '身体数据'
   | '财务流水'
   | '读书记录'
@@ -256,6 +257,7 @@ export default function DashboardApp() {
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [recordKind, setRecordKind] = useState<RecordKind | null>(null);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [editingProfit, setEditingProfit] = useState<ProfitLog | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(!isCloudConfigured);
   const [email, setEmail] = useState('');
@@ -302,6 +304,7 @@ export default function DashboardApp() {
           revenue: Number(x.revenue),
           cost: Number(x.cost),
           profit: Number(x.profit),
+          note: x.note ?? '',
         })),
       );
     setHealth(
@@ -668,6 +671,20 @@ export default function DashboardApp() {
     return '倒计时已更新';
   }
 
+  async function deleteProfit(row: ProfitLog) {
+    if (!window.confirm(`确认删除 ${row.weekStart || row.week} 的“${row.project} / ${row.platform}”收入记录吗？删除后无法恢复。`)) return;
+    const client = getSupabase();
+    if (!client || !session) return;
+    const { error } = await client.from('profit_logs').delete().eq('id', row.id);
+    if (error) {
+      setSyncMessage(`删除失败：${error.message}`);
+      return;
+    }
+    setProfits((current) => current.filter((item) => item.id !== row.id));
+    setSyncMessage('收入记录已删除');
+    window.setTimeout(() => setSyncMessage(''), 3000);
+  }
+
   if (!authReady)
     return (
       <CenteredMessage title="正在确认登录状态" detail="连接你的云端数据…" />
@@ -733,6 +750,8 @@ export default function DashboardApp() {
               goals={currentGoals.filter((goal) => goal.area === '副业')}
               history={archivedGoals.filter((goal) => goal.area === '副业')}
               openRecord={setRecordKind}
+              onEditProfit={(row) => { setEditingProfit(row); setRecordKind('修改副业收入'); }}
+              onDeleteProfit={deleteProfit}
               onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }}
             />
           )}
@@ -793,7 +812,7 @@ export default function DashboardApp() {
       {recordKind && (
         <RecordDialog
           kind={recordKind}
-          close={() => { setRecordKind(null); setEditingGoal(null); }}
+          close={() => { setRecordKind(null); setEditingGoal(null); setEditingProfit(null); }}
           products={products}
           setProducts={setProducts}
           profits={profits}
@@ -808,6 +827,7 @@ export default function DashboardApp() {
           setGoals={setGoals}
           session={session}
           editingGoal={editingGoal}
+          editingProfit={editingProfit}
         />
       )}
     </main>
@@ -1414,12 +1434,16 @@ function SideView({
   goals,
   history,
   openRecord,
+  onEditProfit,
+  onDeleteProfit,
   onEditGoal,
 }: {
   profits: ProfitLog[];
   goals: Goal[];
   history: Goal[];
   openRecord: (k: RecordKind) => void;
+  onEditProfit: (row: ProfitLog) => void;
+  onDeleteProfit: (row: ProfitLog) => void;
   onEditGoal: (goal: Goal) => void;
 }) {
   const today = localDateString();
@@ -1531,10 +1555,10 @@ function SideView({
             原始记录永久保留，可用于后续月度和目标周期复盘
           </p>
         </div>
-        <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto"><table className="w-full min-w-[860px] text-left text-sm">
           <thead className="bg-[#fafbf9] text-xs text-[#7b887f]">
             <tr>
-              {['日期', '项目', '平台', '收入'].map((h) => (
+              {['日期', '项目', '平台', '收入', '备注', '操作'].map((h) => (
                 <th key={h} className="px-4 py-3 font-medium">
                   {h}
                 </th>
@@ -1551,10 +1575,12 @@ function SideView({
                   <td className="px-4 py-3 font-medium">{row.project}</td>
                   <td className="px-4 py-3">{row.platform}</td>
                   <td className="px-4 py-3">¥{row.revenue}</td>
+                  <td className="max-w-64 truncate px-4 py-3 text-[#647168]" title={row.note}>{row.note || '—'}</td>
+                  <td className="px-4 py-3"><div className="flex gap-2"><button type="button" onClick={() => onEditProfit(row)} className="rounded-lg border border-[#cbd9e6] px-3 py-1.5 text-xs text-[#174578]">修改</button><button type="button" onClick={() => onDeleteProfit(row)} className="rounded-lg border border-[#efcaca] px-3 py-1.5 text-xs text-[#a13b3b]">删除</button></div></td>
                 </tr>
               ))}
           </tbody>
-        </table>
+        </table></div>
       </div>
       <AreaGoalSection area="副业" goals={goals} history={history} openRecord={openRecord} onEditGoal={onEditGoal} />
     </>
@@ -2763,6 +2789,7 @@ function RecordDialog({
   setGoals,
   session,
   editingGoal,
+  editingProfit,
 }: {
   kind: RecordKind;
   close: () => void;
@@ -2780,9 +2807,10 @@ function RecordDialog({
   setGoals: (v: Goal[]) => void;
   session: Session | null;
   editingGoal: Goal | null;
+  editingProfit: ProfitLog | null;
 }) {
   const [selected, setSelected] = useState<RecordKind>(kind);
-  const [sideProject, setSideProject] = useState<ProfitLog['project']>('自媒体');
+  const [sideProject, setSideProject] = useState<ProfitLog['project']>(editingProfit?.project ?? '自媒体');
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -2826,6 +2854,7 @@ function RecordDialog({
         revenue,
         cost: 0,
         profit: revenue,
+        note: formText(data, 'note'),
       };
       setProfits([...profits, row]);
       if (client && session)
@@ -2838,7 +2867,35 @@ function RecordDialog({
           revenue,
           cost: 0,
           profit: row.profit,
+          note: row.note,
         });
+    }
+    if (selected === '修改副业收入' && editingProfit) {
+      const revenue = Number(data.get('revenue'));
+      const date = formText(data, 'date');
+      const updated: ProfitLog = {
+        ...editingProfit,
+        project: formText(data, 'project') as ProfitLog['project'],
+        platform: formText(data, 'platform'),
+        week: date,
+        weekStart: date,
+        revenue,
+        cost: 0,
+        profit: revenue,
+        note: formText(data, 'note'),
+      };
+      setProfits(profits.map((item) => item.id === updated.id ? updated : item));
+      if (client && session)
+        await client.from('profit_logs').update({
+          project: updated.project,
+          platform: updated.platform,
+          week_label: updated.weekStart,
+          week_start: updated.weekStart,
+          revenue: updated.revenue,
+          cost: 0,
+          profit: updated.profit,
+          note: updated.note,
+        }).eq('id', updated.id);
     }
     if (selected === '身体数据') {
       const row: HealthLog = {
@@ -2968,7 +3025,7 @@ function RecordDialog({
       <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
         <div className="sticky top-0 flex items-center justify-between border-b border-[#e8ece8] bg-white p-5">
           <div>
-            <h2 className="font-semibold">新增记录</h2>
+            <h2 className="font-semibold">{kind === '修改副业收入' ? '修改副业收入' : '新增记录'}</h2>
             <p className="text-xs text-[#7b887f]">
               保存后立即进入汇总与历史分析
             </p>
@@ -2982,7 +3039,7 @@ function RecordDialog({
         </div>
         <div className="flex flex-wrap gap-1 border-b border-[#e8ece8] p-2">
           {(
-            (kind === '更新目标' ? ['更新目标'] : [
+            (kind === '更新目标' ? ['更新目标'] : kind === '修改副业收入' ? ['修改副业收入'] : [
               '工作产品',
               '副业利润',
               '身体数据',
@@ -3035,6 +3092,22 @@ function RecordDialog({
                 step="0.01"
                 required
               />
+              <Field name="note" label="备注（选填）" />
+            </>
+          )}
+          {selected === '修改副业收入' && editingProfit && (
+            <>
+              <ChoicePicker
+                name="project"
+                label="副业项目"
+                options={['自媒体', '网盘拉新', '抖音电商']}
+                value={sideProject}
+                onChange={(value) => setSideProject(value as ProfitLog['project'])}
+              />
+              <PlatformPicker project={sideProject} defaultValue={sideProject === editingProfit.project ? editingProfit.platform : undefined} />
+              <Field name="date" label="收入日期" type="date" required defaultValue={editingProfit.weekStart || editingProfit.week} />
+              <Field name="revenue" label="收入金额（元）" type="number" step="0.01" required defaultValue={editingProfit.revenue.toString()} />
+              <Field name="note" label="备注（选填）" defaultValue={editingProfit.note} />
             </>
           )}
           {selected === '身体数据' && (
@@ -3147,7 +3220,7 @@ function RecordDialog({
             </>
           )}
           <button className="h-10 w-full rounded-xl bg-[#153e32] text-sm font-medium text-white">
-            保存记录
+            {selected === '修改副业收入' ? '保存修改' : '保存记录'}
           </button>
         </form>
       </div>
@@ -3242,13 +3315,16 @@ const platformsByProject: Record<ProfitLog['project'], string[]> = {
   抖音电商: ['抖音商城', '抖音直播', '抖音橱窗', '其他渠道'],
 };
 
-function PlatformPicker({ project }: { project: ProfitLog['project'] }) {
+function PlatformPicker({ project, defaultValue }: { project: ProfitLog['project']; defaultValue?: string }) {
   const [open, setOpen] = useState(false);
-  const [platform, setPlatform] = useState(platformsByProject[project][0]);
+  const [platform, setPlatform] = useState(defaultValue ?? platformsByProject[project][0]);
+  const platformOptions = defaultValue && !platformsByProject[project].includes(defaultValue)
+    ? [defaultValue, ...platformsByProject[project]]
+    : platformsByProject[project];
   useEffect(() => {
-    setPlatform(platformsByProject[project][0]);
+    setPlatform(defaultValue ?? platformsByProject[project][0]);
     setOpen(false);
-  }, [project]);
+  }, [project, defaultValue]);
   return (
     <label className="block text-sm">
       <span className="mb-1.5 block font-medium">平台</span>
@@ -3259,7 +3335,7 @@ function PlatformPicker({ project }: { project: ProfitLog['project'] }) {
       </button>
       {open && (
         <div className="mt-2 grid grid-cols-2 gap-2 rounded-xl border border-[#d7e3ef] bg-white p-3 sm:grid-cols-3">
-          {platformsByProject[project].map((option) => (
+          {platformOptions.map((option) => (
             <button key={option} type="button" aria-pressed={platform === option} onClick={() => { setPlatform(option); setOpen(false); }} className={`rounded-xl border px-3 py-3 text-sm transition ${platform === option ? 'border-[#174578] bg-[#e7f0fa] font-medium text-[#174578]' : 'border-[#dfe7ef] bg-white text-[#566b7f] hover:border-[#89a9c9]'}`}>
               {option}
             </button>

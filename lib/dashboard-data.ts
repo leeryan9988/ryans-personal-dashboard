@@ -19,6 +19,7 @@ export type ProfitLog = {
   revenue: number;
   cost: number;
   profit: number;
+  note: string;
 };
 
 export type HealthLog = {
