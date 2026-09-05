@@ -96,6 +96,46 @@ function formText(data: FormData, name: string) {
   return typeof value === 'string' ? value : '';
 }
 
+function formatDecimal(value: number, digits = 2) {
+  return Number(value).toLocaleString('zh-CN', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}
+
+function formatMoney(value: number) {
+  return `¥${formatDecimal(value)}`;
+}
+
+function formatWeight(value: number) {
+  return formatDecimal(value);
+}
+
+function goalProgress(goal: Goal) {
+  if (goal.status === '已达成') return 100;
+  if (goal.current == null || goal.target == null) return 0;
+  const initial = goal.initial ?? goal.current;
+  if (initial === goal.target) return goal.current === goal.target ? 100 : 0;
+  const progress = ((goal.current - initial) / (goal.target - initial)) * 100;
+  return Math.max(0, Math.min(100, progress));
+}
+
+const GOAL_INITIAL_PATTERN = /^\[\[initial_value:([-+]?\d+(?:\.\d+)?)\]\]\n?/;
+
+function decodeGoalResult(raw: string | null | undefined) {
+  const result = raw ?? '';
+  const match = result.match(GOAL_INITIAL_PATTERN);
+  return {
+    initial: match ? Number(match[1]) : null,
+    result: result.replace(GOAL_INITIAL_PATTERN, '') || undefined,
+  };
+}
+
+function encodeGoalResult(initial: number | null, result?: string) {
+  const marker = initial == null ? '' : `[[initial_value:${initial}]]\n`;
+  return `${marker}${result ?? ''}`.trim() || null;
+}
+
 type StoredBookPlan = Pick<Book, 'category' | 'startDate' | 'plannedEndDate' | 'plannedHours' | 'dailyMinutes' | 'notes'> & {
   version: 1;
 };
@@ -317,19 +357,24 @@ export default function DashboardApp() {
         })),
       );
     setGoals(
-        (g.data ?? []).map((x) => ({
+        (g.data ?? []).map((x) => {
+          const current = x.current_value == null ? null : Number(x.current_value);
+          const stored = decodeGoalResult(x.result);
+          return {
           id: x.id,
           area: x.area,
           title: x.title,
           metric: x.metric,
-          current: x.current_value == null ? null : Number(x.current_value),
+          initial: stored.initial ?? (x.initial_value == null ? current : Number(x.initial_value)),
+          current,
           target: x.target_value == null ? null : Number(x.target_value),
           unit: x.unit,
           startedAt: x.started_at,
           deadline: x.deadline,
           status: x.status,
-          result: x.result,
-        })),
+          result: stored.result,
+        };
+        }),
       );
     setFinance(
         (f.data ?? []).map((x) => ({
@@ -1089,7 +1134,7 @@ function TotalGoalsView({
 }) {
   const completed = goals.filter((goal) => goal.status === '已达成').length;
   const activeGoals = goals.filter((goal) => goal.status === '进行中');
-  const overall = goals.length ? Math.round((completed / goals.length) * 100) : 0;
+  const overall = goals.length ? (completed / goals.length) * 100 : 0;
   const statusData = [
     { name: '进行中', value: activeGoals.length },
     { name: '已达成', value: completed },
@@ -1098,14 +1143,7 @@ function TotalGoalsView({
   const areaData = goalAreas.map((area) => {
     const rows = goals.filter((goal) => goal.area === area);
     const progress = rows.length
-      ? Math.round(
-          rows.reduce((sum, goal) => {
-            if (goal.status === '已达成') return sum + 100;
-            if (goal.target && goal.current != null)
-              return sum + Math.min(100, (goal.current / goal.target) * 100);
-            return sum;
-          }, 0) / rows.length,
-        )
+      ? rows.reduce((sum, goal) => sum + goalProgress(goal), 0) / rows.length
       : 0;
     return { area, progress, count: rows.length };
   });
@@ -1120,7 +1158,7 @@ function TotalGoalsView({
         onAction={() => openRecord('新目标')}
       />
       <section className="mb-5 grid gap-4 sm:grid-cols-3">
-        <Metric label="总体达成率" value={`${overall}%`} note="按已达成目标数量计算" />
+        <Metric label="总体达成率" value={`${formatDecimal(overall)}%`} note="按已达成目标数量计算" />
         <Metric label="进行中" value={`${activeGoals.length} 个`} note="跨板块汇总" />
         <Metric label="累计目标" value={`${goals.length} 个`} note="包含达成和归档历史" />
       </section>
@@ -1130,7 +1168,7 @@ function TotalGoalsView({
             <ResponsiveContainer width="100%" height={270}>
               <PieChart>
                 <Pie data={statusData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={96} paddingAngle={4} label />
-                <Tooltip />
+                <Tooltip formatter={(value) => [formatDecimal(Number(value)), '目标数量']} />
               </PieChart>
             </ResponsiveContainer>
           ) : <ChartEmpty label="设立目标后显示状态分布" />}
@@ -1142,7 +1180,7 @@ function TotalGoalsView({
                 <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
                 <XAxis dataKey="area" tick={{ fontSize: 11 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <Tooltip />
+                <Tooltip formatter={(value) => [`${formatDecimal(Number(value))}%`, '平均进度']} />
                 <Bar dataKey="progress" name="平均进度 %" fill="#2f6d57" radius={[8, 8, 0, 0]} />
               </ReBarChart>
             </ResponsiveContainer>
@@ -1248,7 +1286,7 @@ function _Overview({
           icon={CircleDollarSign}
           tone="side"
           label="副业 · 累计利润"
-          value={`¥${monthProfit.toLocaleString()}`}
+          value={formatMoney(monthProfit)}
           meta={
             recentProfit >= previousProfit
               ? '最近两周贡献正在提升'
@@ -1260,10 +1298,10 @@ function _Overview({
           icon={Activity}
           tone="health"
           label="身体 · 最近记录"
-          value={latestHealth ? `${latestHealth.weight} kg` : '待记录'}
+          value={latestHealth ? `${formatWeight(latestHealth.weight)} kg` : '待记录'}
           meta={
             latestHealth
-              ? `体脂率 ${latestHealth.bodyFat}% · 本周 ${latestHealth.workouts} 练`
+              ? `体脂率 ${formatDecimal(latestHealth.bodyFat)}% · 本周 ${latestHealth.workouts} 练`
               : '设置当前值与目标值'
           }
           progress={22}
@@ -1302,10 +1340,10 @@ function _Overview({
                 </div>
                 <b>{item.project}</b>
                 <div className="mt-2 text-xl font-semibold text-[#236c4d]">
-                  +¥{item.profit}
+                  +{formatMoney(item.profit)}
                 </div>
                 <div className="mt-1 text-xs text-[#8b948f]">
-                  收入 ¥{item.revenue} · 成本 ¥{item.cost}
+                  收入 {formatMoney(item.revenue)} · 成本 {formatMoney(item.cost)}
                 </div>
               </div>
             ))}
@@ -1343,7 +1381,7 @@ function WorkView({
       <section className="mb-5 grid gap-4 sm:grid-cols-3">
         <Metric
           label="平均预估毛利率"
-          value={`${avgMargin.toFixed(1)}%`}
+          value={`${formatDecimal(avgMargin)}%`}
           note="建议持续保持 30% 以上"
         />
         <Metric
@@ -1365,7 +1403,7 @@ function WorkView({
                 <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
+                <Tooltip formatter={(value) => [`${formatDecimal(Number(value))}%`, '毛利率']} />
                 <Bar dataKey="margin" name="毛利率 %" fill="#2f6d57" radius={[8, 8, 0, 0]} />
               </ReBarChart>
             </ResponsiveContainer>
@@ -1405,7 +1443,7 @@ function WorkView({
                   <td className="px-4 py-4 font-medium">{row.name}</td>
                   <td className="px-4 py-4 text-[#647168]">{row.category}</td>
                   <td className="px-4 py-4 font-semibold text-[#236c4d]">
-                    {row.margin}%
+                    {formatDecimal(row.margin)}%
                   </td>
                   <td className="px-4 py-4">{row.supplyChain}</td>
                   <td className="px-4 py-4">{row.patent}</td>
@@ -1514,7 +1552,7 @@ function SideView({
                 tickMargin={10}
               />
               <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
+              <Tooltip formatter={(value) => [formatMoney(Number(value)), '收入']} />
               <Legend />
               <Bar dataKey="自媒体" stackId="income" fill="#2563eb" maxBarSize={52} />
               <Bar dataKey="网盘拉新" stackId="income" fill="#f59e0b" maxBarSize={52} />
@@ -1532,7 +1570,7 @@ function SideView({
                   <span>
                     {i + 1}. {platform}
                   </span>
-                  <b>¥{total}</b>
+                  <b>{formatMoney(total)}</b>
                 </div>
                 <div className="h-2 rounded-full bg-[#edf0ec]">
                   <div
@@ -1574,7 +1612,7 @@ function SideView({
                   <td className="px-4 py-3">{row.weekStart || row.week}</td>
                   <td className="px-4 py-3 font-medium">{row.project}</td>
                   <td className="px-4 py-3">{row.platform}</td>
-                  <td className="px-4 py-3">¥{row.revenue}</td>
+                  <td className="px-4 py-3">{formatMoney(row.revenue)}</td>
                   <td className="max-w-64 truncate px-4 py-3 text-[#647168]" title={row.note}>{row.note || '—'}</td>
                   <td className="px-4 py-3"><div className="flex gap-2"><button type="button" onClick={() => onEditProfit(row)} className="rounded-lg border border-[#cbd9e6] px-3 py-1.5 text-xs text-[#174578]">修改</button><button type="button" onClick={() => onDeleteProfit(row)} className="rounded-lg border border-[#efcaca] px-3 py-1.5 text-xs text-[#a13b3b]">删除</button></div></td>
                 </tr>
@@ -1614,19 +1652,19 @@ function HealthView({
       <section className="mb-5 grid gap-4 sm:grid-cols-3">
         <Metric
           label="最新体重"
-          value={latest ? `${latest.weight} kg` : '待记录'}
+          value={latest ? `${formatWeight(latest.weight)} kg` : '待记录'}
           note={
             first && latest
-              ? `阶段变化 ${(latest.weight - first.weight).toFixed(1)} kg`
+              ? `阶段变化 ${formatWeight(latest.weight - first.weight)} kg`
               : '—'
           }
         />
         <Metric
           label="最新体脂率"
-          value={latest ? `${latest.bodyFat}%` : '待记录'}
+          value={latest ? `${formatDecimal(latest.bodyFat)}%` : '待记录'}
           note={
             first && latest
-              ? `阶段变化 ${(latest.bodyFat - first.bodyFat).toFixed(1)}%`
+              ? `阶段变化 ${formatDecimal(latest.bodyFat - first.bodyFat)}%`
               : '—'
           }
         />
@@ -1662,7 +1700,7 @@ function HealthView({
                 domain={['dataMin - 1', 'dataMax + 1']}
                 tick={{ fontSize: 11 }}
               />
-              <Tooltip />
+              <Tooltip formatter={(value) => [`${formatWeight(Number(value))} kg`, '体重']} />
               <Line
                 type="monotone"
                 dataKey="weight"
@@ -1682,7 +1720,7 @@ function HealthView({
                 domain={['dataMin - 1', 'dataMax + 1']}
                 tick={{ fontSize: 11 }}
               />
-              <Tooltip />
+              <Tooltip formatter={(value) => [`${formatDecimal(Number(value))}%`, '体脂率']} />
               <Line
                 type="monotone"
                 dataKey="bodyFat"
@@ -1740,19 +1778,19 @@ function FinanceView({
       <section className="mb-5 grid gap-4 sm:grid-cols-3">
         <Metric
           label="本月收入"
-          value={`¥${income.toLocaleString()}`}
+          value={formatMoney(income)}
           note="工资、副业及其他收入"
         />
         <Metric
           label="本月支出"
-          value={`¥${expense.toLocaleString()}`}
+          value={formatMoney(expense)}
           note={
-            income ? `占收入 ${Math.round((expense / income) * 100)}%` : '—'
+            income ? `占收入 ${formatDecimal((expense / income) * 100)}%` : '—'
           }
         />
         <Metric
           label="本月结余"
-          value={`¥${balance.toLocaleString()}`}
+          value={formatMoney(balance)}
           note={balance >= 0 ? '现金流保持为正' : '本月支出超过收入'}
         />
       </section>
@@ -1764,7 +1802,7 @@ function FinanceView({
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie data={categories.map(([name, value], index) => ({ name, value, fill: chartColors[index % chartColors.length] }))} dataKey="value" nameKey="name" outerRadius={82} label />
-                <Tooltip />
+                <Tooltip formatter={(value) => [formatMoney(Number(value)), '金额']} />
               </PieChart>
             </ResponsiveContainer>
           ) : <ChartEmpty label="记录支出后显示扇形图" />}
@@ -1773,7 +1811,7 @@ function FinanceView({
               <div key={category}>
                 <div className="mb-1.5 flex justify-between text-sm">
                   <span>{category}</span>
-                  <b>¥{amount.toLocaleString()}</b>
+                  <b>{formatMoney(amount)}</b>
                 </div>
                 <div className="h-2 rounded-full bg-[#edf0ec]">
                   <div
@@ -1827,7 +1865,7 @@ function FinanceView({
                       className={`px-4 py-3 font-semibold ${row.type === '收入' ? 'text-[#286444]' : 'text-[#9b5336]'}`}
                     >
                       {row.type === '收入' ? '+' : '-'}¥
-                      {row.amount.toLocaleString()}
+                      {formatDecimal(row.amount)}
                     </td>
                   </tr>
                 ))}
@@ -1884,7 +1922,7 @@ function ReadingView({
         />
         <Metric
           label="待完成计划时长"
-          value={`${plannedHours.toFixed(1)} 小时`}
+          value={`${formatDecimal(plannedHours)} 小时`}
           note={overdue.length ? `${overdue.length} 本已超过预计结束时间` : '当前没有逾期书目'}
         />
       </section>
@@ -1896,7 +1934,7 @@ function ReadingView({
                 <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
                 <XAxis dataKey="title" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(value) => [`${String(value)} 小时`, '计划时长']} />
+                <Tooltip formatter={(value) => [`${formatDecimal(Number(value))} 小时`, '计划时长']} />
                 <Bar dataKey="hours" name="计划时长" fill="#2563eb" radius={[8, 8, 0, 0]} maxBarSize={52} />
               </ReBarChart>
             </ResponsiveContainer>
@@ -1928,7 +1966,7 @@ function ReadingView({
             <div className="mt-5">
               <div className="mb-1.5 flex justify-between text-xs">
                 <span>阅读进度</span>
-                <span>{book.progress}%</span>
+                <span>{formatDecimal(book.progress)}%</span>
               </div>
               <div className="h-2 rounded-full bg-[#edf0ec]">
                 <div
@@ -1967,9 +2005,9 @@ const driveCategories = ['工作资料', '副业素材', '财务表格', '读书
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
-  return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
+  if (bytes < 1024 ** 2) return `${formatDecimal(bytes / 1024)} KB`;
+  if (bytes < 1024 ** 3) return `${formatDecimal(bytes / 1024 ** 2)} MB`;
+  return `${formatDecimal(bytes / 1024 ** 3)} GB`;
 }
 
 function CloudDriveView({ session }: { session: Session | null }) {
@@ -2153,7 +2191,7 @@ function CloudDriveView({ session }: { session: Session | null }) {
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 grid place-content-center text-center">
-              <span className="text-2xl font-semibold text-[#102a43]">{usagePercent.toFixed(1)}%</span>
+              <span className="text-2xl font-semibold text-[#102a43]">{formatDecimal(usagePercent)}%</span>
               <span className="mt-0.5 text-xs text-[#71869b]">已使用</span>
             </div>
           </div>
@@ -2488,10 +2526,8 @@ function GoalCard({
   compact?: boolean;
   onEdit?: () => void;
 }) {
-  const percent =
-    goal.target && goal.current != null
-      ? Math.min(100, Math.round((goal.current / goal.target) * 100))
-      : 0;
+  const percent = goalProgress(goal);
+  const digits = 2;
   return (
     <article
       className={`rounded-xl border border-[#e3e8e3] bg-[#fafbf9] ${compact ? 'p-4' : 'p-5'}`}
@@ -2511,12 +2547,12 @@ function GoalCard({
         <>
           <div className="mb-1.5 flex items-end justify-between">
             <b className="text-lg">
-              {goal.current.toLocaleString()}{' '}
+              {formatDecimal(goal.current, digits)}{' '}
               <small className="font-normal text-[#7b887f]">
-                / {goal.target.toLocaleString()} {goal.unit}
+                / {formatDecimal(goal.target, digits)} {goal.unit}
               </small>
             </b>
-            <span className="text-xs">{percent}%</span>
+            <span className="text-xs">{formatDecimal(percent)}%</span>
           </div>
           <div className="h-2 rounded-full bg-[#e7ebe7]">
             <div
@@ -2581,7 +2617,7 @@ function AnalysisPanel({
           label="工作"
           text={
             topProduct
-              ? `${topProduct.name} 的预估毛利率最高（${topProduct.margin}%），下一步优先验证供应链与专利风险。`
+              ? `${topProduct.name} 的预估毛利率最高（${formatDecimal(topProduct.margin)}%），下一步优先验证供应链与专利风险。`
               : '先新增产品记录，才能形成机会排序。'
           }
         />
@@ -2589,7 +2625,7 @@ function AnalysisPanel({
           label="副业"
           text={
             topPlatform
-              ? `${topPlatform[0]} 当前累计收入最高（¥${topPlatform[1]}），建议复盘其内容与转化路径。`
+              ? `${topPlatform[0]} 当前累计收入最高（${formatMoney(topPlatform[1])}），建议复盘其内容与转化路径。`
               : '先记录收入，才能分析平台贡献。'
           }
         />
@@ -2597,7 +2633,7 @@ function AnalysisPanel({
           label="身体"
           text={
             first && last
-              ? `体重阶段变化 ${(last.weight - first.weight).toFixed(1)} kg，体脂率变化 ${(last.bodyFat - first.bodyFat).toFixed(1)}%，继续看 4 周趋势。`
+              ? `体重阶段变化 ${formatWeight(last.weight - first.weight)} kg，体脂率变化 ${formatDecimal(last.bodyFat - first.bodyFat)}%，继续看 4 周趋势。`
               : '连续记录至少 4 周后生成趋势结论。'
           }
         />
@@ -2686,7 +2722,7 @@ function SummaryCard({
         >
           <Icon className="size-5" />
         </div>
-        <span className="text-xs text-[#89928d]">{progress}%</span>
+        <span className="text-xs text-[#89928d]">{formatDecimal(progress)}%</span>
       </div>
       <p className="text-xs text-[#728078]">{label}</p>
       <h2 className="mt-1 text-2xl font-semibold">{value}</h2>
@@ -2901,8 +2937,8 @@ function RecordDialog({
       const row: HealthLog = {
         id,
         date: formText(data, 'date'),
-        weight: Number(data.get('weight')),
-        bodyFat: Number(data.get('bodyFat')),
+        weight: Number(Number(data.get('weight')).toFixed(2)),
+        bodyFat: Number(Number(data.get('bodyFat')).toFixed(2)),
         workouts: Number(data.get('workouts')),
       };
       setHealth([...health, row]);
@@ -2973,6 +3009,7 @@ function RecordDialog({
         area: formText(data, 'area') as Goal['area'],
         title: formText(data, 'title'),
         metric: formText(data, 'metric'),
+        initial: data.get('current') ? Number(data.get('current')) : null,
         current: data.get('current') ? Number(data.get('current')) : null,
         target,
         unit: formText(data, 'unit'),
@@ -2993,6 +3030,7 @@ function RecordDialog({
           started_at: row.startedAt,
           deadline: row.deadline,
           status: row.status,
+          result: encodeGoalResult(row.initial),
         });
     }
     if (selected === '更新目标' && editingGoal) {
@@ -3011,7 +3049,7 @@ function RecordDialog({
           target_value: updated.target,
           deadline: updated.deadline,
           status: updated.status,
-          result: updated.result,
+          result: encodeGoalResult(updated.initial, updated.result),
         }).eq('id', updated.id);
     }
     close();
@@ -3066,6 +3104,7 @@ function RecordDialog({
                 name="margin"
                 label="预估毛利率（%）"
                 type="number"
+                step="0.01"
                 required
               />
               <Field name="supplyChain" label="供应链情况" />
@@ -3117,14 +3156,14 @@ function RecordDialog({
                 name="weight"
                 label="体重（kg）"
                 type="number"
-                step="0.1"
+                step="0.01"
                 required
               />
               <Field
                 name="bodyFat"
                 label="体脂率（%）"
                 type="number"
-                step="0.1"
+                step="0.01"
                 required
               />
               <Field
@@ -3191,8 +3230,8 @@ function RecordDialog({
               <Field name="title" label="目标名称" required />
               <Field name="metric" label="衡量指标" required />
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field name="current" label="当前值" type="number" />
-                <Field name="target" label="目标值" type="number" />
+                <Field name="current" label="当前值" type="number" step="0.01" />
+                <Field name="target" label="目标值" type="number" step="0.01" />
               </div>
               <Field name="unit" label="单位" required />
               <Field name="deadline" label="截止日期" type="date" required />

@@ -35,6 +35,7 @@ export type Goal = {
   area: '工作' | '副业' | '身体' | '个人财务' | '读书清单';
   title: string;
   metric: string;
+  initial: number | null;
   current: number | null;
   target: number | null;
   unit: string;
