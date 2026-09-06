@@ -253,23 +253,42 @@ type TargetCountdown = {
 };
 
 function currentWeekStart() {
-  const date = new Date();
-  const day = date.getDay() || 7;
-  date.setDate(date.getDate() - day + 1);
+  const today = localDateString();
+  const date = new Date(`${today}T12:00:00Z`);
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() - day + 1);
   return date.toISOString().slice(0, 10);
 }
 
 function localDateString(date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
+}
+
+function beijingDateTimeString(value: string) {
+  const parts = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(value));
+  const dateTime = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${dateTime.year}-${dateTime.month}-${dateTime.day} ${dateTime.hour}:${dateTime.minute}`;
 }
 
 function shiftDate(value: string, days: number) {
-  const date = new Date(`${value}T12:00:00`);
-  date.setDate(date.getDate() + days);
-  return localDateString(date);
+  const date = new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 type TimePreset = '7天' | '30天' | '90天' | '半年' | '全部' | '自定义';
@@ -314,7 +333,7 @@ function normalizedDate(value: string | null | undefined) {
   if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
   const short = value.match(/^(\d{1,2})[/.](\d{1,2})$/);
   if (!short) return '';
-  return `${new Date().getFullYear()}-${short[1].padStart(2, '0')}-${short[2].padStart(2, '0')}`;
+  return `${localDateString().slice(0, 4)}-${short[1].padStart(2, '0')}-${short[2].padStart(2, '0')}`;
 }
 
 function shortDateLabel(value: string) {
@@ -346,13 +365,13 @@ function TimeRangeFilter({ range }: { range: TimeRange }) {
 }
 
 function incomePeriodKey(dateValue: string, granularity: '日' | '周' | '月' | '季度') {
-  const date = new Date(`${dateValue}T12:00:00`);
+  const date = new Date(`${dateValue}T12:00:00Z`);
   if (granularity === '日') return dateValue;
   if (granularity === '月') return dateValue.slice(0, 7);
-  if (granularity === '季度') return `${date.getFullYear()} Q${Math.floor(date.getMonth() / 3) + 1}`;
-  const day = date.getDay() || 7;
-  date.setDate(date.getDate() - day + 1);
-  return `${localDateString(date)} 周`;
+  if (granularity === '季度') return `${date.getUTCFullYear()} Q${Math.floor(date.getUTCMonth() / 3) + 1}`;
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() - day + 1);
+  return `${date.toISOString().slice(0, 10)} 周`;
 }
 
 export default function DashboardApp() {
@@ -390,7 +409,7 @@ export default function DashboardApp() {
       client.from('finance_logs').select('*').order('occurred_at'),
       client.from('books').select('*').order('created_at'),
       client.from('weekly_reflections').select('*').order('week_start', { ascending: false }),
-      client.from('plan_notes').select('*').order('note_date', { ascending: false }),
+      client.from('plan_notes').select('*').order('note_date', { ascending: false }).order('created_at', { ascending: false }),
       client.from('target_countdowns').select('*').order('target_date'),
       client.from('dashboard_preferences').select('nav_order').maybeSingle(),
     ]);
@@ -495,6 +514,7 @@ export default function DashboardApp() {
       title: x.title,
       content: x.content,
       noteDate: x.note_date,
+      createdAt: x.created_at,
       imagePaths: x.image_paths ?? [],
     }));
     setPlanNotes(nextNotes);
@@ -1087,8 +1107,8 @@ function Sidebar({
 }
 
 function countdownText(targetDate: string) {
-  const target = new Date(`${targetDate}T00:00:00`);
-  const today = new Date(`${localDateString()}T00:00:00`);
+  const target = new Date(`${targetDate}T00:00:00Z`);
+  const today = new Date(`${localDateString()}T00:00:00Z`);
   const days = Math.round((target.getTime() - today.getTime()) / 86400000);
   if (days === 0) return '就是今天';
   if (days > 0) return `还有 ${days} 天`;
@@ -2005,7 +2025,7 @@ function ReadingView({
   const chartBooks = books.filter((book) => isInTimeRange(book.startDate || book.createdAt, chartRange));
   const reading = books.filter((book) => book.status === '在读');
   const finished = books.filter((book) => book.status === '已读');
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateString();
   const unfinished = books.filter((book) => book.status !== '已读');
   const plannedHours = unfinished.reduce((sum, book) => sum + book.plannedHours, 0);
   const overdue = unfinished.filter((book) => book.plannedEndDate && book.plannedEndDate < today);
@@ -2350,7 +2370,7 @@ function CloudDriveView({ session }: { session: Session | null }) {
               <div className="p-4">
                 <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h2 className="truncate font-semibold" title={file.name}>{file.name}</h2><p className="mt-1 text-xs text-[#71869b]">{file.category} · {file.folder}</p></div><span className="shrink-0 rounded-lg bg-[#eef4f9] px-2 py-1 text-xs text-[#45627e]">{formatFileSize(file.size)}</span></div>
                 <p className="mt-3 min-h-10 text-sm leading-5 text-[#65798d]">{file.note || '暂无备注'}</p>
-                <p className="mt-2 text-xs text-[#8a9aaa]">上传于 {new Date(file.createdAt).toLocaleDateString('zh-CN')}</p>
+                <p className="mt-2 text-xs text-[#8a9aaa]">上传于 {new Date(file.createdAt).toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' })}</p>
                 <div className="mt-4 grid grid-cols-3 gap-2"><button type="button" onClick={() => void downloadFile(file)} className="flex items-center justify-center gap-1 rounded-xl bg-[#174578] px-2 py-2 text-xs font-medium text-white"><Download className="size-3.5" />下载</button><button type="button" onClick={() => beginEdit(file)} className="rounded-xl border border-[#cfdbe7] px-2 py-2 text-xs text-[#174578]">编辑</button><button type="button" onClick={() => void deleteFile(file)} className="flex items-center justify-center gap-1 rounded-xl border border-[#f1c9c9] px-2 py-2 text-xs text-[#a13b3b]"><Trash2 className="size-3.5" />删除</button></div>
               </div>
             </article>
@@ -2463,10 +2483,12 @@ function PlanAndReflectionView({
 }) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [noteDate, setNoteDate] = useState(new Date().toISOString().slice(0, 10));
+  const [noteDate, setNoteDate] = useState(() => localDateString());
   const [files, setFiles] = useState<File[]>([]);
   const [message, setMessage] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteDate, setEditingNoteDate] = useState('');
   const previewUrls = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
 
   useEffect(() => () => previewUrls.forEach((url) => URL.revokeObjectURL(url)), [previewUrls]);
@@ -2545,6 +2567,20 @@ function PlanAndReflectionView({
     await onSaved();
   }
 
+  async function updateNoteDate(noteId: string) {
+    const client = getSupabase();
+    if (!client || !session || !editingNoteDate) return;
+    const { error } = await client.from('plan_notes').update({ note_date: editingNoteDate }).eq('id', noteId);
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    setEditingNoteId(null);
+    setEditingNoteDate('');
+    setMessage('日期已更新');
+    await onSaved();
+  }
+
   return (
     <>
       <PageIntro eyebrow="计划和感悟" title="把计划、想法和图片留在同一处" detail="直接写下阶段计划、灵感与复盘材料；文字和私密图片都会随账户跨设备同步。" action="写一条记录" onAction={() => document.getElementById('plan-note-editor')?.scrollIntoView({ behavior: 'smooth' })} />
@@ -2588,7 +2624,17 @@ function PlanAndReflectionView({
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {notes.map((note) => (
           <article key={note.id} className="rounded-2xl border border-[#d7e3ef] bg-white p-5">
-            <p className="text-xs text-[#718078]">{note.noteDate}</p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-[#718078]">{note.noteDate} · 记录于 {beijingDateTimeString(note.createdAt)}</p>
+              <button type="button" onClick={() => { setEditingNoteId(note.id); setEditingNoteDate(note.noteDate); }} className="text-xs text-[#174578] hover:underline">修改日期</button>
+            </div>
+            {editingNoteId === note.id && (
+              <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-[#f3f7fb] p-3">
+                <input aria-label="修改记录日期" type="date" value={editingNoteDate} onChange={(event) => setEditingNoteDate(event.target.value)} className="h-9 rounded-lg border border-[#b9cbe0] bg-white px-3 text-sm" />
+                <button type="button" onClick={() => void updateNoteDate(note.id)} className="h-9 rounded-lg bg-[#174578] px-3 text-sm text-white">保存日期</button>
+                <button type="button" onClick={() => setEditingNoteId(null)} className="h-9 rounded-lg px-3 text-sm text-[#536477]">取消</button>
+              </div>
+            )}
             <h2 className="mt-1 font-semibold">{note.title || '未命名记录'}</h2>
             <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#536477]">{note.content || '（图片记录）'}</p>
             {note.imagePaths.length > 0 && <div className="mt-4 grid grid-cols-2 gap-2">{note.imagePaths.map((path) => imageUrls[path] ? <img key={path} src={imageUrls[path]} alt={note.title || '计划和感悟图片'} className="aspect-square w-full rounded-xl object-cover" /> : null)}</div>}
@@ -3181,7 +3227,7 @@ function RecordDialog({
         plannedHours: Number(data.get('plannedHours')),
         dailyMinutes: Number(data.get('dailyMinutes')),
         notes: formText(data, 'notes'),
-        finishedAt: formText(data, 'finishedAt') || (status === '已读' ? new Date().toISOString().slice(0, 10) : undefined),
+        finishedAt: formText(data, 'finishedAt') || (status === '已读' ? localDateString() : undefined),
       };
       setBooks([...books, row]);
       if (client && session)
@@ -3207,7 +3253,7 @@ function RecordDialog({
         current: data.get('current') ? Number(data.get('current')) : null,
         target,
         unit: formText(data, 'unit'),
-        startedAt: new Date().toISOString().slice(0, 10),
+        startedAt: localDateString(),
         deadline: formText(data, 'deadline'),
         status: '进行中',
       };
@@ -3317,7 +3363,7 @@ function RecordDialog({
                 onChange={(value) => setSideProject(value as ProfitLog['project'])}
               />
               <PlatformPicker project={sideProject} />
-              <Field name="date" label="收入日期" type="date" required />
+              <Field name="date" label="收入日期" type="date" required defaultValue={localDateString()} />
               <Field
                 name="revenue"
                 label="收入金额（元）"
@@ -3345,7 +3391,7 @@ function RecordDialog({
           )}
           {selected === '身体数据' && (
             <>
-              <Field name="date" label="记录日期" type="date" required />
+              <Field name="date" label="记录日期" type="date" required defaultValue={localDateString()} />
               <Field
                 name="weight"
                 label="体重（kg）"
@@ -3370,7 +3416,7 @@ function RecordDialog({
           )}
           {selected === '财务流水' && (
             <>
-              <Field name="date" label="日期" type="date" required />
+              <Field name="date" label="日期" type="date" required defaultValue={localDateString()} />
               <SelectField
                 name="type"
                 label="流水类型"
@@ -3394,7 +3440,7 @@ function RecordDialog({
           {selected === '读书记录' && (
             <>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field name="startDate" label="开始日期" type="date" required />
+                <Field name="startDate" label="开始日期" type="date" required defaultValue={localDateString()} />
                 <Field name="plannedEndDate" label="预计结束日期" type="date" required />
               </div>
               <Field name="title" label="书名" required />
