@@ -2122,6 +2122,11 @@ function formatFileSize(bytes: number) {
   return `${formatDecimal(bytes / 1024 ** 3)} GB`;
 }
 
+function createStorageObjectPath(userId: string, fileName: string) {
+  const extension = fileName.match(/\.([a-zA-Z0-9]{1,10})$/)?.[1]?.toLowerCase();
+  return `${userId}/${crypto.randomUUID()}${extension ? `.${extension}` : ''}`;
+}
+
 function CloudDriveView({ session }: { session: Session | null }) {
   const chartRange = useTimeRange();
   const [files, setFiles] = useState<PersonalFile[]>([]);
@@ -2226,8 +2231,7 @@ function CloudDriveView({ session }: { session: Session | null }) {
     if (file.size > 50 * 1024 * 1024) { setMessage('单个文件不能超过 50 MB'); return; }
     setUploading(true);
     setMessage('正在上传…');
-    const safeName = file.name.replace(/[^\p{L}\p{N}._-]+/gu, '-');
-    const storagePath = `${session.user.id}/${crypto.randomUUID()}-${safeName}`;
+    const storagePath = createStorageObjectPath(session.user.id, file.name);
     const { error: uploadError } = await client.storage.from('personal-files').upload(storagePath, file, { contentType: file.type || undefined, upsert: false });
     if (uploadError) { setMessage(uploadError.message); setUploading(false); return; }
     const { error: rowError } = await client.from('personal_files').insert({
@@ -2515,8 +2519,7 @@ function PlanAndReflectionView({
         setMessage(`${file.name} 超过 5MB`);
         return;
       }
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
-      const path = `${session.user.id}/${crypto.randomUUID()}-${safeName}`;
+      const path = createStorageObjectPath(session.user.id, file.name);
       const { error } = await client.storage.from('journal-images').upload(path, file, { contentType: file.type, upsert: false });
       if (error) {
         setMessage(error.message);
