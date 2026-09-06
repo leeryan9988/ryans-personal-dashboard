@@ -37,7 +37,7 @@ import {
   WalletCards,
   X,
 } from 'lucide-react';
-import { type SyntheticEvent, useCallback, useEffect, useState } from 'react';
+import { type SyntheticEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Session } from '@supabase/supabase-js';
 import {
@@ -2345,6 +2345,43 @@ function PlanAndReflectionView({
   const [noteDate, setNoteDate] = useState(new Date().toISOString().slice(0, 10));
   const [files, setFiles] = useState<File[]>([]);
   const [message, setMessage] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const previewUrls = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
+
+  useEffect(() => () => previewUrls.forEach((url) => URL.revokeObjectURL(url)), [previewUrls]);
+
+  const addImages = useCallback((incoming: File[]) => {
+    const images = incoming.filter((file) => file.type.startsWith('image/'));
+    if (!images.length) {
+      setMessage('这里只能添加图片');
+      return;
+    }
+    setFiles((current) => {
+      const available = Math.max(0, 4 - current.length);
+      const accepted = images.slice(0, available);
+      if (!accepted.length) setMessage('最多只能添加 4 张图片');
+      else if (accepted.length < images.length) setMessage('已添加前 4 张图片');
+      else setMessage('图片已加入，保存记录后同步');
+      return [...current, ...accepted];
+    });
+  }, []);
+
+  useEffect(() => {
+    function handlePaste(event: ClipboardEvent) {
+      const itemImages = Array.from(event.clipboardData?.items ?? [])
+        .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => Boolean(file));
+      const images = itemImages.length
+        ? itemImages
+        : Array.from(event.clipboardData?.files ?? []).filter((file) => file.type.startsWith('image/'));
+      if (!images.length) return;
+      event.preventDefault();
+      addImages(images);
+    }
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [addImages]);
 
   async function saveNote(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2397,9 +2434,35 @@ function PlanAndReflectionView({
           <label className="text-sm"><span className="mb-1.5 block font-medium">日期</span><input type="date" value={noteDate} onChange={(event) => setNoteDate(event.target.value)} className="h-10 w-full rounded-xl border border-[#d7e3ef] px-3" /></label>
         </div>
         <label className="mt-4 block text-sm"><span className="mb-1.5 block font-medium">计划与感悟</span><textarea value={content} onChange={(event) => setContent(event.target.value)} rows={7} className="w-full resize-y rounded-xl border border-[#d7e3ef] p-3" placeholder="直接输入文字……" /></label>
-        <div className="mt-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[#b9cbe0] px-4 py-2 text-sm text-[#174578]"><ImagePlus className="size-4" />选择图片（最多 4 张）<input type="file" accept="image/*" multiple className="hidden" onChange={(event) => setFiles(Array.from(event.target.files ?? []).slice(0, 4))} /></label>
-          <div className="flex items-center gap-3"><span className="text-xs text-[#607184]">{files.length ? `已选 ${files.length} 张 · ` : ''}{message}</span><button className="rounded-xl bg-[#174578] px-5 py-2 text-sm font-medium text-white">保存记录</button></div>
+        <div
+          onDragEnter={(event) => { event.preventDefault(); setIsDragging(true); }}
+          onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; setIsDragging(true); }}
+          onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setIsDragging(false); }}
+          onDrop={(event) => { event.preventDefault(); setIsDragging(false); addImages(Array.from(event.dataTransfer.files)); }}
+          className={`mt-4 rounded-2xl border-2 border-dashed p-4 transition-colors ${isDragging ? 'border-[#174578] bg-[#eaf3fb]' : 'border-[#b9cbe0] bg-[#f7faff]'}`}
+        >
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-3">
+              <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#e5eef8] text-[#174578]"><ImagePlus className="size-5" /></div>
+              <div><p className="text-sm font-medium text-[#17324d]">把图片直接拖到这里</p><p className="mt-0.5 text-xs text-[#607184]">也可以复制图片后按 Ctrl + V，最多 4 张、单张 5MB</p></div>
+            </div>
+            <label className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#b9cbe0] bg-white px-4 py-2 text-sm text-[#174578]"><ImagePlus className="size-4" />选择图片<input type="file" accept="image/*" multiple className="hidden" onChange={(event) => { addImages(Array.from(event.target.files ?? [])); event.target.value = ''; }} /></label>
+          </div>
+          {files.length > 0 && (
+            <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[#dce7f1] pt-4 sm:grid-cols-4">
+              {files.map((file, index) => (
+                <div key={`${file.name}-${file.lastModified}-${index}`} className="relative overflow-hidden rounded-xl border border-[#d7e3ef] bg-white">
+                  <img src={previewUrls[index]} alt={`待上传图片 ${index + 1}`} className="aspect-square w-full object-cover" />
+                  <button type="button" aria-label={`移除 ${file.name}`} onClick={() => setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))} className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-full bg-[#102a43]/75 text-white"><X className="size-4" /></button>
+                  <p className="truncate px-2 py-1.5 text-[11px] text-[#607184]" title={file.name}>{file.name}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="mt-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <span className="text-xs text-[#607184]">{files.length ? `已加入 ${files.length} 张 · ` : ''}{message}</span>
+          <button className="rounded-xl bg-[#174578] px-5 py-2 text-sm font-medium text-white">保存记录</button>
         </div>
       </form>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
