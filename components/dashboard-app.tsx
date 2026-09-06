@@ -509,14 +509,31 @@ export default function DashboardApp() {
       review: x.review_text,
       insight: x.insight_text,
     })));
-    const nextNotes = (n.data ?? []).map((x) => ({
+    const noteRows = [...(n.data ?? [])];
+    const requestedDateCorrection = noteRows.find((x) => {
+      const createdAt = new Date(x.created_at).getTime();
+      return x.title === '副业时间安排上日程'
+        && x.note_date === '2026-09-06'
+        && createdAt >= Date.parse('2026-09-06T16:00:00Z')
+        && createdAt < Date.parse('2026-09-07T16:00:00Z');
+    });
+    if (requestedDateCorrection) {
+      const { error } = await client
+        .from('plan_notes')
+        .update({ note_date: '2026-09-07' })
+        .eq('id', requestedDateCorrection.id);
+      if (!error) requestedDateCorrection.note_date = '2026-09-07';
+    }
+    const nextNotes = noteRows
+      .sort((a, b) => b.note_date.localeCompare(a.note_date) || String(b.created_at).localeCompare(String(a.created_at)))
+      .map((x) => ({
       id: x.id,
       title: x.title,
       content: x.content,
       noteDate: x.note_date,
       createdAt: x.created_at,
       imagePaths: x.image_paths ?? [],
-    }));
+      }));
     setPlanNotes(nextNotes);
     setCountdowns((c.data ?? []).map((x) => ({
       id: x.id,
