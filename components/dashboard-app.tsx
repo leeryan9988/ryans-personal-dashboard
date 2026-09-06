@@ -317,6 +317,13 @@ function normalizedDate(value: string | null | undefined) {
   return `${new Date().getFullYear()}-${short[1].padStart(2, '0')}-${short[2].padStart(2, '0')}`;
 }
 
+function shortDateLabel(value: string) {
+  const date = normalizedDate(value);
+  if (!date) return value;
+  const [, month, day] = date.split('-');
+  return `${Number(month)}/${Number(day)}`;
+}
+
 function isInTimeRange(value: string | null | undefined, range: TimeRange) {
   if (range.preset === '全部') return true;
   const date = normalizedDate(value);
@@ -1726,7 +1733,17 @@ function HealthView({
     days.set(normalizedDate(row.date || row.loggedAt) || row.date, row);
     return days;
   }, new Map()).values());
-  const chartHealth = dailyHealth.filter((row) => isInTimeRange(row.date || row.loggedAt, chartRange));
+  const visibleHealth = dailyHealth.filter((row) => isInTimeRange(row.date || row.loggedAt, chartRange));
+  const visibleByDate = new Map(visibleHealth.map((row) => [normalizedDate(row.date || row.loggedAt), row]));
+  const chartHealth: Array<HealthLog | { date: string; loggedAt: string; createdAt: string; weight: null; bodyFat: null; workouts: number }> = [];
+  if (chartRange.start && chartRange.end) {
+    for (let cursor = chartRange.start, count = 0; cursor <= chartRange.end && count < 1000; cursor = shiftDate(cursor, 1), count += 1) {
+      const row = visibleByDate.get(cursor);
+      chartHealth.push(row ?? { date: shortDateLabel(cursor), loggedAt: cursor, createdAt: '', weight: null, bodyFat: null, workouts: 0 });
+    }
+  } else {
+    chartHealth.push(...visibleHealth);
+  }
   return (
     <>
       <PageIntro
@@ -1778,11 +1795,11 @@ function HealthView({
         </div>
       )}
       <section className="grid gap-5 lg:grid-cols-2">
-        <ChartCard title="体重趋势" detail="同一天有多条记录时显示最后保存的一条" timeRange={chartRange}>
-          {chartHealth.length ? <ResponsiveContainer width="100%" height={260}>
+        <ChartCard title="体重趋势" detail={`筛选范围内 ${visibleHealth.length} 条 / 共 ${dailyHealth.length} 条；同一天显示最后保存的一条`} timeRange={chartRange}>
+          {visibleHealth.length ? <ResponsiveContainer width="100%" height={260}>
             <ReLineChart data={chartHealth}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+              <XAxis dataKey="date" tickFormatter={shortDateLabel} minTickGap={24} tick={{ fontSize: 11 }} />
               <YAxis
                 domain={['dataMin - 1', 'dataMax + 1']}
                 tick={{ fontSize: 11 }}
@@ -1794,15 +1811,16 @@ function HealthView({
                 name="体重 kg"
                 stroke="#2f6d57"
                 strokeWidth={3}
+                connectNulls
               />
             </ReLineChart>
           </ResponsiveContainer> : <ChartEmpty label="记录身体数据后显示体重趋势" />}
         </ChartCard>
-        <ChartCard title="体脂率趋势" detail="与训练频率一起复盘" timeRange={chartRange}>
-          {chartHealth.length ? <ResponsiveContainer width="100%" height={260}>
+        <ChartCard title="体脂率趋势" detail={`筛选范围内 ${visibleHealth.length} 条 / 共 ${dailyHealth.length} 条`} timeRange={chartRange}>
+          {visibleHealth.length ? <ResponsiveContainer width="100%" height={260}>
             <ReLineChart data={chartHealth}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+              <XAxis dataKey="date" tickFormatter={shortDateLabel} minTickGap={24} tick={{ fontSize: 11 }} />
               <YAxis
                 domain={['dataMin - 1', 'dataMax + 1']}
                 tick={{ fontSize: 11 }}
@@ -1814,6 +1832,7 @@ function HealthView({
                 name="体脂率 %"
                 stroke="#c8753b"
                 strokeWidth={3}
+                connectNulls
               />
             </ReLineChart>
           </ResponsiveContainer> : <ChartEmpty label="记录身体数据后显示体脂趋势" />}
