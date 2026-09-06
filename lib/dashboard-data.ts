@@ -1,5 +1,6 @@
 export type WorkProduct = {
   id: string;
+  createdAt: string;
   name: string;
   category: string;
   margin: number;
@@ -25,6 +26,8 @@ export type ProfitLog = {
 export type HealthLog = {
   id: string;
   date: string;
+  loggedAt: string;
+  createdAt: string;
   weight: number;
   bodyFat: number;
   workouts: number;
@@ -64,6 +67,7 @@ export type PlanNote = {
 export type FinanceLog = {
   id: string;
   date: string;
+  occurredAt: string;
   type: '收入' | '支出';
   category: string;
   amount: number;
@@ -72,6 +76,7 @@ export type FinanceLog = {
 
 export type Book = {
   id: string;
+  createdAt: string;
   title: string;
   author: string;
   category: string;

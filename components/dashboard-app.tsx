@@ -272,6 +272,72 @@ function shiftDate(value: string, days: number) {
   return localDateString(date);
 }
 
+type TimePreset = '7天' | '30天' | '90天' | '半年' | '全部' | '自定义';
+type TimeRange = {
+  preset: TimePreset;
+  start: string;
+  end: string;
+  setPreset: (preset: TimePreset) => void;
+  setStart: (value: string) => void;
+  setEnd: (value: string) => void;
+};
+
+function useTimeRange(): TimeRange {
+  const today = localDateString();
+  const [preset, updatePreset] = useState<TimePreset>('全部');
+  const [start, updateStart] = useState('');
+  const [end, updateEnd] = useState('');
+  const setPreset = (next: TimePreset) => {
+    updatePreset(next);
+    if (next === '全部') {
+      updateStart('');
+      updateEnd('');
+      return;
+    }
+    const days = next === '7天' ? 6 : next === '30天' ? 29 : next === '90天' ? 89 : 182;
+    updateStart(shiftDate(today, -days));
+    updateEnd(today);
+  };
+  return {
+    preset,
+    start,
+    end,
+    setPreset,
+    setStart: (value) => { updateStart(value); updatePreset('自定义'); },
+    setEnd: (value) => { updateEnd(value); updatePreset('自定义'); },
+  };
+}
+
+function normalizedDate(value: string | null | undefined) {
+  if (!value) return '';
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const short = value.match(/^(\d{1,2})[/.](\d{1,2})$/);
+  if (!short) return '';
+  return `${new Date().getFullYear()}-${short[1].padStart(2, '0')}-${short[2].padStart(2, '0')}`;
+}
+
+function isInTimeRange(value: string | null | undefined, range: TimeRange) {
+  if (range.preset === '全部') return true;
+  const date = normalizedDate(value);
+  if (!date) return false;
+  return (!range.start || date >= range.start) && (!range.end || date <= range.end);
+}
+
+function TimeRangeFilter({ range }: { range: TimeRange }) {
+  return (
+    <div className="mt-3 flex flex-wrap items-end gap-2 border-t border-[#edf0ec] pt-3">
+      <div className="flex flex-wrap gap-1.5">
+        {(['7天', '30天', '90天', '半年', '全部'] as const).map((item) => (
+          <button key={item} type="button" onClick={() => range.setPreset(item)} className={`rounded-lg px-2.5 py-1.5 text-xs ${range.preset === item ? 'bg-[#174578] text-white' : 'bg-[#edf3f9] text-[#4d6277]'}`}>{item}</button>
+        ))}
+      </div>
+      <label className="text-[11px] text-[#657169]">开始<input type="date" value={range.start} onChange={(event) => range.setStart(event.target.value)} className="ml-1 h-8 rounded-lg border border-[#d7e3ef] bg-white px-2 text-xs" /></label>
+      <label className="text-[11px] text-[#657169]">结束<input type="date" value={range.end} min={range.start || undefined} onChange={(event) => range.setEnd(event.target.value)} className="ml-1 h-8 rounded-lg border border-[#d7e3ef] bg-white px-2 text-xs" /></label>
+    </div>
+  );
+}
+
 function incomePeriodKey(dateValue: string, granularity: '日' | '周' | '月' | '季度') {
   const date = new Date(`${dateValue}T12:00:00`);
   if (granularity === '日') return dateValue;
@@ -312,7 +378,7 @@ export default function DashboardApp() {
     const [p, r, h, g, f, b, w, n, c, d] = await Promise.all([
       client.from('work_products').select('*').order('created_at'),
       client.from('profit_logs').select('*').order('week_start'),
-      client.from('health_logs').select('*').order('logged_at'),
+      client.from('health_logs').select('*').order('logged_at').order('created_at'),
       client.from('goals').select('*').order('started_at'),
       client.from('finance_logs').select('*').order('occurred_at'),
       client.from('books').select('*').order('created_at'),
@@ -324,6 +390,7 @@ export default function DashboardApp() {
     setProducts(
         (p.data ?? []).map((x) => ({
           id: x.id,
+          createdAt: x.created_at,
           name: x.name,
           category: x.category,
           margin: Number(x.margin),
@@ -351,6 +418,8 @@ export default function DashboardApp() {
         (h.data ?? []).map((x) => ({
           id: x.id,
           date: x.date_label,
+          loggedAt: x.logged_at,
+          createdAt: x.created_at,
           weight: Number(x.weight),
           bodyFat: Number(x.body_fat),
           workouts: Number(x.workouts),
@@ -380,6 +449,7 @@ export default function DashboardApp() {
         (f.data ?? []).map((x) => ({
           id: x.id,
           date: x.date_label,
+          occurredAt: x.occurred_at,
           type: x.type,
           category: x.category,
           amount: Number(x.amount),
@@ -391,6 +461,7 @@ export default function DashboardApp() {
           const plan = decodeBookPlan(x.notes);
           return {
           id: x.id,
+          createdAt: x.created_at,
           title: x.title,
           author: x.author,
           category: plan.category,
@@ -1132,16 +1203,18 @@ function TotalGoalsView({
   openRecord: (k: RecordKind) => void;
   onEditGoal: (goal: Goal) => void;
 }) {
+  const chartRange = useTimeRange();
+  const chartGoals = goals.filter((goal) => isInTimeRange(goal.startedAt, chartRange));
   const completed = goals.filter((goal) => goal.status === '已达成').length;
   const activeGoals = goals.filter((goal) => goal.status === '进行中');
   const overall = goals.length ? (completed / goals.length) * 100 : 0;
   const statusData = [
-    { name: '进行中', value: activeGoals.length },
-    { name: '已达成', value: completed },
-    { name: '已归档', value: goals.filter((goal) => goal.status === '已归档').length },
+    { name: '进行中', value: chartGoals.filter((goal) => goal.status === '进行中').length },
+    { name: '已达成', value: chartGoals.filter((goal) => goal.status === '已达成').length },
+    { name: '已归档', value: chartGoals.filter((goal) => goal.status === '已归档').length },
   ].filter((item) => item.value > 0).map((item, index) => ({ ...item, fill: chartColors[index] }));
   const areaData = goalAreas.map((area) => {
-    const rows = goals.filter((goal) => goal.area === area);
+    const rows = chartGoals.filter((goal) => goal.area === area);
     const progress = rows.length
       ? rows.reduce((sum, goal) => sum + goalProgress(goal), 0) / rows.length
       : 0;
@@ -1163,7 +1236,7 @@ function TotalGoalsView({
         <Metric label="累计目标" value={`${goals.length} 个`} note="包含达成和归档历史" />
       </section>
       <section className="mb-5 grid gap-5 lg:grid-cols-2">
-        <ChartCard title="目标状态分布" detail="进行中、已达成与已归档">
+        <ChartCard title="目标状态分布" detail="按目标开始日期筛选" timeRange={chartRange}>
           {statusData.length ? (
             <ResponsiveContainer width="100%" height={270}>
               <PieChart>
@@ -1173,8 +1246,8 @@ function TotalGoalsView({
             </ResponsiveContainer>
           ) : <ChartEmpty label="设立目标后显示状态分布" />}
         </ChartCard>
-        <ChartCard title="各板块平均进度" detail="按目标当前值与目标值计算">
-          {goals.length ? (
+        <ChartCard title="各板块平均进度" detail="按目标当前值与目标值计算" timeRange={chartRange}>
+          {chartGoals.length ? (
             <ResponsiveContainer width="100%" height={270}>
               <ReBarChart data={areaData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
@@ -1366,6 +1439,8 @@ function WorkView({
   openRecord: (k: RecordKind) => void;
   onEditGoal: (goal: Goal) => void;
 }) {
+  const chartRange = useTimeRange();
+  const chartProducts = products.filter((product) => isInTimeRange(product.createdAt, chartRange));
   const avgMargin = products.length
     ? products.reduce((sum, p) => sum + p.margin, 0) / products.length
     : 0;
@@ -1396,10 +1471,10 @@ function WorkView({
         />
       </section>
       <section className="mb-5">
-        <ChartCard title="候选产品毛利率" detail="柱状图对比每个候选产品的预估毛利率">
-          {products.length ? (
+        <ChartCard title="候选产品毛利率" detail="按候选产品创建日期筛选" timeRange={chartRange}>
+          {chartProducts.length ? (
             <ResponsiveContainer width="100%" height={260}>
-              <ReBarChart data={products}>
+              <ReBarChart data={chartProducts}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
@@ -1491,6 +1566,8 @@ function SideView({
   const validRange = Boolean(rangeStart && rangeEnd && rangeStart <= rangeEnd);
   const platformTotals = Object.entries(
     profits.reduce<Record<string, number>>((acc, row) => {
+      const date = row.weekStart || row.week;
+      if (!validRange || !date || date < rangeStart || date > rangeEnd) return acc;
       acc[row.platform] = (acc[row.platform] || 0) + row.revenue;
       return acc;
     }, {}),
@@ -1638,8 +1715,18 @@ function HealthView({
   openRecord: (k: RecordKind) => void;
   onEditGoal: (goal: Goal) => void;
 }) {
-  const latest = health.at(-1);
-  const first = health[0];
+  const chartRange = useTimeRange();
+  const sortedHealth = health.slice().sort((a, b) => {
+    const dateOrder = normalizedDate(a.date || a.loggedAt).localeCompare(normalizedDate(b.date || b.loggedAt));
+    return dateOrder || a.createdAt.localeCompare(b.createdAt);
+  });
+  const latest = sortedHealth.at(-1);
+  const first = sortedHealth[0];
+  const dailyHealth = Array.from(sortedHealth.reduce<Map<string, HealthLog>>((days, row) => {
+    days.set(normalizedDate(row.date || row.loggedAt) || row.date, row);
+    return days;
+  }, new Map()).values());
+  const chartHealth = dailyHealth.filter((row) => isInTimeRange(row.date || row.loggedAt, chartRange));
   return (
     <>
       <PageIntro
@@ -1691,9 +1778,9 @@ function HealthView({
         </div>
       )}
       <section className="grid gap-5 lg:grid-cols-2">
-        <ChartCard title="体重趋势" detail="每周记录值">
-          {health.length ? <ResponsiveContainer width="100%" height={260}>
-            <ReLineChart data={health}>
+        <ChartCard title="体重趋势" detail="同一天有多条记录时显示最后保存的一条" timeRange={chartRange}>
+          {chartHealth.length ? <ResponsiveContainer width="100%" height={260}>
+            <ReLineChart data={chartHealth}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis
@@ -1711,9 +1798,9 @@ function HealthView({
             </ReLineChart>
           </ResponsiveContainer> : <ChartEmpty label="记录身体数据后显示体重趋势" />}
         </ChartCard>
-        <ChartCard title="体脂率趋势" detail="与训练频率一起复盘">
-          {health.length ? <ResponsiveContainer width="100%" height={260}>
-            <ReLineChart data={health}>
+        <ChartCard title="体脂率趋势" detail="与训练频率一起复盘" timeRange={chartRange}>
+          {chartHealth.length ? <ResponsiveContainer width="100%" height={260}>
+            <ReLineChart data={chartHealth}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis
@@ -1750,6 +1837,8 @@ function FinanceView({
   openRecord: (k: RecordKind) => void;
   onEditGoal: (goal: Goal) => void;
 }) {
+  const chartRange = useTimeRange();
+  const chartLogs = logs.filter((row) => isInTimeRange(row.occurredAt || row.date, chartRange));
   const income = logs
     .filter((x) => x.type === '收入')
     .reduce((sum, x) => sum + x.amount, 0);
@@ -1758,7 +1847,7 @@ function FinanceView({
     .reduce((sum, x) => sum + x.amount, 0);
   const balance = income - expense;
   const categories = Object.entries(
-    logs
+    chartLogs
       .filter((x) => x.type === '支出')
       .reduce<Record<string, number>>((acc, x) => {
         acc[x.category] = (acc[x.category] || 0) + x.amount;
@@ -1797,7 +1886,9 @@ function FinanceView({
       <section className="grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
         <div className="rounded-2xl border border-[#dfe5df] bg-white p-5">
           <h2 className="font-semibold">支出结构</h2>
-          <p className="mb-5 text-xs text-[#7b887f]">识别最值得优化的类别</p>
+          <p className="text-xs text-[#7b887f]">按流水日期筛选，识别最值得优化的类别</p>
+          <TimeRangeFilter range={chartRange} />
+          <div className="h-4" />
           {categories.length ? (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -1891,13 +1982,15 @@ function ReadingView({
   openRecord: (k: RecordKind) => void;
   onEditGoal: (goal: Goal) => void;
 }) {
+  const chartRange = useTimeRange();
+  const chartBooks = books.filter((book) => isInTimeRange(book.startDate || book.createdAt, chartRange));
   const reading = books.filter((book) => book.status === '在读');
   const finished = books.filter((book) => book.status === '已读');
   const today = new Date().toISOString().slice(0, 10);
   const unfinished = books.filter((book) => book.status !== '已读');
   const plannedHours = unfinished.reduce((sum, book) => sum + book.plannedHours, 0);
   const overdue = unfinished.filter((book) => book.plannedEndDate && book.plannedEndDate < today);
-  const readingPlan = books
+  const readingPlan = chartBooks
     .filter((book) => book.plannedHours > 0)
     .map((book) => ({ title: book.title, hours: book.plannedHours }));
   return (
@@ -1927,7 +2020,7 @@ function ReadingView({
         />
       </section>
       <section className="mb-5">
-        <ChartCard title="各书计划阅读时长" detail="按书目比较预计投入时间，便于安排每日阅读节奏">
+        <ChartCard title="各书计划阅读时长" detail="按阅读开始日期筛选" timeRange={chartRange}>
           {readingPlan.length ? (
             <ResponsiveContainer width="100%" height={240}>
               <ReBarChart data={readingPlan}>
@@ -2011,6 +2104,7 @@ function formatFileSize(bytes: number) {
 }
 
 function CloudDriveView({ session }: { session: Session | null }) {
+  const chartRange = useTimeRange();
   const [files, setFiles] = useState<PersonalFile[]>([]);
   const [folders, setFolders] = useState<PersonalFolder[]>([]);
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
@@ -2084,10 +2178,13 @@ function CloudDriveView({ session }: { session: Session | null }) {
   const totalSize = files.reduce((sum, file) => sum + file.size, 0);
   const driveCapacity = 1024 ** 3;
   const remainingSize = Math.max(0, driveCapacity - totalSize);
-  const usagePercent = Math.min(100, (totalSize / driveCapacity) * 100);
+  const chartFiles = files.filter((file) => isInTimeRange(file.createdAt, chartRange));
+  const chartSize = chartFiles.reduce((sum, file) => sum + file.size, 0);
+  const chartRemainingSize = Math.max(0, driveCapacity - chartSize);
+  const usagePercent = Math.min(100, (chartSize / driveCapacity) * 100);
   const capacityData = [
-    { name: '已使用', value: totalSize, fill: '#174578' },
-    { name: '剩余', value: remainingSize, fill: '#cfe2f3' },
+    { name: '筛选范围内上传', value: chartSize, fill: '#174578' },
+    { name: '其余容量', value: chartRemainingSize, fill: '#cfe2f3' },
   ];
 
   async function createFolder(event: SyntheticEvent<HTMLFormElement>) {
@@ -2183,6 +2280,7 @@ function CloudDriveView({ session }: { session: Session | null }) {
         <Metric label="文件夹" value={`${folders.length + 1} 个`} note="包含默认的未分类" />
       </section>
       <section className="mb-5 rounded-2xl border border-[#d7e3ef] bg-white p-5">
+        <div className="mb-4"><h2 className="font-semibold">网盘空间变化</h2><p className="text-xs text-[#71869b]">按文件上传日期筛选</p><TimeRangeFilter range={chartRange} /></div>
         <div className="grid items-center gap-5 md:grid-cols-[220px_1fr]">
           <div className="relative mx-auto h-48 w-48">
             <ResponsiveContainer width="100%" height="100%">
@@ -2192,7 +2290,7 @@ function CloudDriveView({ session }: { session: Session | null }) {
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 grid place-content-center text-center">
               <span className="text-2xl font-semibold text-[#102a43]">{formatDecimal(usagePercent)}%</span>
-              <span className="mt-0.5 text-xs text-[#71869b]">已使用</span>
+              <span className="mt-0.5 text-xs text-[#71869b]">筛选范围</span>
             </div>
           </div>
           <div>
@@ -2204,8 +2302,8 @@ function CloudDriveView({ session }: { session: Session | null }) {
               <div className="rounded-xl bg-[#f3f8fc] p-3"><p className="text-xs text-[#71869b]">剩余</p><p className="mt-1 font-semibold text-[#4d7699]">{formatFileSize(remainingSize)}</p></div>
             </div>
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[#60768a]">
-              <span className="flex items-center gap-2"><i className="size-2.5 rounded-full bg-[#174578]" />已使用</span>
-              <span className="flex items-center gap-2"><i className="size-2.5 rounded-full bg-[#cfe2f3]" />剩余</span>
+              <span className="flex items-center gap-2"><i className="size-2.5 rounded-full bg-[#174578]" />筛选范围内上传</span>
+              <span className="flex items-center gap-2"><i className="size-2.5 rounded-full bg-[#cfe2f3]" />其余容量</span>
             </div>
             <p className="mt-4 text-xs leading-5 text-[#8495a6]">此处按 1 GB 免费额度估算，仅统计个人网盘文件；“计划和感悟”中上传的图片也会占用 Supabase 总存储额度。</p>
           </div>
@@ -2716,10 +2814,12 @@ function Insight({ label, text }: { label: string; text: string }) {
 function ChartCard({
   title,
   detail,
+  timeRange,
   children,
 }: {
   title: string;
   detail: string;
+  timeRange?: TimeRange;
   children: React.ReactNode;
 }) {
   return (
@@ -2731,6 +2831,8 @@ function ChartCard({
           <p className="text-xs text-[#7b887f]">{detail}</p>
         </div>
       </div>
+      {timeRange && <TimeRangeFilter range={timeRange} />}
+      {timeRange && <div className="h-4" />}
       {children}
     </div>
   );
@@ -2918,6 +3020,7 @@ function RecordDialog({
     if (selected === '工作产品') {
       const row: WorkProduct = {
         id,
+        createdAt: new Date().toISOString(),
         name: formText(data, 'name'),
         category: formText(data, 'category'),
         margin: Number(data.get('margin')),
@@ -2997,9 +3100,12 @@ function RecordDialog({
         }).eq('id', updated.id);
     }
     if (selected === '身体数据') {
+      const loggedAt = formText(data, 'date');
       const row: HealthLog = {
         id,
-        date: formText(data, 'date'),
+        date: loggedAt,
+        loggedAt,
+        createdAt: new Date().toISOString(),
         weight: Number(Number(data.get('weight')).toFixed(2)),
         bodyFat: Number(Number(data.get('bodyFat')).toFixed(2)),
         workouts: Number(data.get('workouts')),
@@ -3009,16 +3115,18 @@ function RecordDialog({
         await client.from('health_logs').insert({
           user_id: session.user.id,
           date_label: row.date,
-          logged_at: new Date().toISOString().slice(0, 10),
+          logged_at: row.loggedAt,
           weight: row.weight,
           body_fat: row.bodyFat,
           workouts: row.workouts,
         });
     }
     if (selected === '财务流水') {
+      const occurredAt = formText(data, 'date');
       const row: FinanceLog = {
         id,
-        date: formText(data, 'date'),
+        date: occurredAt,
+        occurredAt,
         type: formText(data, 'type') as FinanceLog['type'],
         category: formText(data, 'category'),
         amount: Number(data.get('amount')),
@@ -3029,7 +3137,7 @@ function RecordDialog({
         await client.from('finance_logs').insert({
           user_id: session.user.id,
           date_label: row.date,
-          occurred_at: new Date().toISOString().slice(0, 10),
+          occurred_at: row.occurredAt,
           type: row.type,
           category: row.category,
           amount: row.amount,
@@ -3040,6 +3148,7 @@ function RecordDialog({
       const status = formText(data, 'status') as Book['status'];
       const row: Book = {
         id,
+        createdAt: new Date().toISOString(),
         title: formText(data, 'title'),
         author: formText(data, 'author'),
         category: formText(data, 'category'),
@@ -3214,7 +3323,7 @@ function RecordDialog({
           )}
           {selected === '身体数据' && (
             <>
-              <Field name="date" label="记录日期（如 09/07）" required />
+              <Field name="date" label="记录日期" type="date" required />
               <Field
                 name="weight"
                 label="体重（kg）"
@@ -3239,7 +3348,7 @@ function RecordDialog({
           )}
           {selected === '财务流水' && (
             <>
-              <Field name="date" label="日期（如 09/07）" required />
+              <Field name="date" label="日期" type="date" required />
               <SelectField
                 name="type"
                 label="流水类型"
