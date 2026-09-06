@@ -13,6 +13,7 @@ export type WorkProduct = {
 
 export type ProfitLog = {
   id: string;
+  createdAt: string;
   project: '自媒体' | '网盘拉新' | '抖音电商';
   platform: string;
   week: string;
@@ -35,6 +36,7 @@ export type HealthLog = {
 
 export type Goal = {
   id: string;
+  createdAt: string;
   area: '工作' | '副业' | '身体' | '个人财务' | '读书清单';
   title: string;
   metric: string;
@@ -50,6 +52,7 @@ export type Goal = {
 
 export type WeeklyReflection = {
   id: string;
+  createdAt: string;
   area: '总目标' | '工作' | '副业' | '身体' | '个人财务' | '读书清单' | '计划和感悟';
   weekStart: string;
   review: string;
@@ -67,6 +70,7 @@ export type PlanNote = {
 
 export type FinanceLog = {
   id: string;
+  createdAt: string;
   date: string;
   occurredAt: string;
   type: '收入' | '支出';

@@ -272,6 +272,7 @@ function localDateString(date = new Date()) {
 }
 
 function beijingDateTimeString(value: string) {
+  if (!value) return '—';
   const parts = new Intl.DateTimeFormat('zh-CN', {
     timeZone: 'Asia/Shanghai',
     year: 'numeric',
@@ -430,6 +431,7 @@ export default function DashboardApp() {
     setProfits(
         (r.data ?? []).map((x) => ({
           id: x.id,
+          createdAt: x.created_at,
           project: x.project,
           platform: x.platform,
           week: x.week_label,
@@ -457,6 +459,7 @@ export default function DashboardApp() {
           const stored = decodeGoalResult(x.result);
           return {
           id: x.id,
+          createdAt: x.created_at,
           area: x.area,
           title: x.title,
           metric: x.metric,
@@ -474,6 +477,7 @@ export default function DashboardApp() {
     setFinance(
         (f.data ?? []).map((x) => ({
           id: x.id,
+          createdAt: x.created_at,
           date: x.date_label,
           occurredAt: x.occurred_at,
           type: x.type,
@@ -504,6 +508,7 @@ export default function DashboardApp() {
       );
     setReflections((w.data ?? []).map((x) => ({
       id: x.id,
+      createdAt: x.created_at,
       area: x.area,
       weekStart: x.week_start,
       review: x.review_text,
@@ -1206,10 +1211,10 @@ function CountdownManager({
         {message && <p className="mt-3 rounded-xl bg-[#eef4f9] px-3 py-2 text-sm text-[#36536f]">{message}</p>}
         <section className="mt-6"><h3 className="font-semibold">进行中 <span className="text-sm font-normal text-[#7c8d9e]">{activeCountdowns.length}</span></h3>
           <div className="mt-3 space-y-3">{activeCountdowns.length ? activeCountdowns.map((item) => <article key={item.id} className="rounded-2xl border border-[#d7e3ef] p-4">
-            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start"><div><div className="flex flex-wrap items-center gap-2"><h4 className="font-semibold">{item.title}</h4><span className="rounded-lg bg-[#e7f0fa] px-2 py-1 text-xs font-medium text-[#174578]">{countdownText(item.targetDate)}</span></div><p className="mt-1 text-xs text-[#71869b]">{item.targetDate}</p>{item.note && <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#536b80]">{item.note}</p>}</div><div className="flex shrink-0 gap-2"><button type="button" onClick={() => { setEditing(item); setMessage(''); }} className="rounded-xl border border-[#d4e0ea] px-3 py-2 text-xs text-[#536b80]">编辑</button><button type="button" onClick={() => onSetCompleted(item.id, true)} className="rounded-xl border border-[#b9cddd] px-3 py-2 text-xs text-[#174578]">完成归档</button></div></div>
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start"><div><div className="flex flex-wrap items-center gap-2"><h4 className="font-semibold">{item.title}</h4><span className="rounded-lg bg-[#e7f0fa] px-2 py-1 text-xs font-medium text-[#174578]">{countdownText(item.targetDate)}</span></div><p className="mt-1 text-xs text-[#71869b]">目标日期 {item.targetDate} · 记录于 {beijingDateTimeString(item.createdAt)}</p>{item.note && <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#536b80]">{item.note}</p>}</div><div className="flex shrink-0 gap-2"><button type="button" onClick={() => { setEditing(item); setMessage(''); }} className="rounded-xl border border-[#d4e0ea] px-3 py-2 text-xs text-[#536b80]">编辑</button><button type="button" onClick={() => onSetCompleted(item.id, true)} className="rounded-xl border border-[#b9cddd] px-3 py-2 text-xs text-[#174578]">完成归档</button></div></div>
           </article>) : <p className="rounded-2xl bg-[#f5f8fa] py-8 text-center text-sm text-[#8192a2]">还没有进行中的倒计时</p>}</div>
         </section>
-        {completedCountdowns.length > 0 && <section className="mt-6 border-t border-[#e2e9ef] pt-5"><h3 className="font-semibold">历史记录 <span className="text-sm font-normal text-[#7c8d9e]">{completedCountdowns.length}</span></h3><div className="mt-3 space-y-2">{completedCountdowns.map((item) => <article key={item.id} className="flex flex-col justify-between gap-3 rounded-xl bg-[#f5f8fa] p-3 sm:flex-row sm:items-center"><div><p className="text-sm font-medium text-[#52677a]">{item.title}</p><p className="mt-1 text-xs text-[#8998a6]">目标日期 {item.targetDate}</p></div><button type="button" onClick={() => onSetCompleted(item.id, false)} className="text-xs text-[#174578]">恢复倒计时</button></article>)}</div></section>}
+        {completedCountdowns.length > 0 && <section className="mt-6 border-t border-[#e2e9ef] pt-5"><h3 className="font-semibold">历史记录 <span className="text-sm font-normal text-[#7c8d9e]">{completedCountdowns.length}</span></h3><div className="mt-3 space-y-2">{completedCountdowns.map((item) => <article key={item.id} className="flex flex-col justify-between gap-3 rounded-xl bg-[#f5f8fa] p-3 sm:flex-row sm:items-center"><div><p className="text-sm font-medium text-[#52677a]">{item.title}</p><p className="mt-1 text-xs text-[#8998a6]">目标日期 {item.targetDate} · 记录于 {beijingDateTimeString(item.createdAt)}{item.completedAt ? ` · 完成于 ${beijingDateTimeString(item.completedAt)}` : ''}</p></div><button type="button" onClick={() => onSetCompleted(item.id, false)} className="text-xs text-[#174578]">恢复倒计时</button></article>)}</div></section>}
       </div>
     </div>,
     document.body,
@@ -1342,7 +1347,7 @@ function AreaGoalSection({
           <div className="space-y-2">
             {history.map((goal) => (
               <div key={goal.id} className="flex flex-col justify-between gap-2 rounded-xl bg-[#fafbf9] px-4 py-3 text-sm sm:flex-row sm:items-center">
-                <div><b>{goal.title}</b><p className="mt-1 text-xs text-[#7b887f]">{goal.startedAt} — {goal.deadline}{goal.result ? ` · ${goal.result}` : ''}</p></div>
+                <div><b>{goal.title}</b><p className="mt-1 text-xs text-[#7b887f]">{goal.startedAt} — {goal.deadline}{goal.result ? ` · ${goal.result}` : ''}</p><p className="mt-1 text-xs text-[#8b9690]">记录于 {beijingDateTimeString(goal.createdAt)}</p></div>
                 <span className="w-fit rounded-full bg-[#e9f4ed] px-2.5 py-1 text-xs text-[#286444]">{goal.status}</span>
               </div>
             ))}
@@ -1450,7 +1455,7 @@ function _Overview({
             .map((item) => (
               <div key={item.id} className="bg-white p-5">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="text-xs text-[#7b887f]">{item.week}</span>
+                  <span className="text-xs text-[#7b887f]">业务日期 {item.week} · 记录于 {beijingDateTimeString(item.createdAt)}</span>
                   <span className="rounded-full bg-[#eef4ef] px-2 py-1 text-[11px]">
                     {item.platform}
                   </span>
@@ -1537,10 +1542,11 @@ function WorkView({
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-left text-sm">
+          <table className="w-full min-w-[1160px] text-left text-sm">
             <thead className="bg-[#fafbf9] text-xs text-[#7b887f]">
               <tr>
                 {[
+                  '记录时间',
                   '目标产品',
                   '目标类目',
                   '毛利率',
@@ -1559,6 +1565,7 @@ function WorkView({
             <tbody>
               {products.map((row) => (
                 <tr key={row.id} className="border-t border-[#edf0ec]">
+                  <td className="whitespace-nowrap px-4 py-4 text-xs text-[#647168]">{beijingDateTimeString(row.createdAt)}</td>
                   <td className="px-4 py-4 font-medium">{row.name}</td>
                   <td className="px-4 py-4 text-[#647168]">{row.category}</td>
                   <td className="px-4 py-4 font-semibold text-[#236c4d]">
@@ -1714,10 +1721,10 @@ function SideView({
             原始记录永久保留，可用于后续月度和目标周期复盘
           </p>
         </div>
-        <div className="overflow-x-auto"><table className="w-full min-w-[860px] text-left text-sm">
+        <div className="overflow-x-auto"><table className="w-full min-w-[1040px] text-left text-sm">
           <thead className="bg-[#fafbf9] text-xs text-[#7b887f]">
             <tr>
-              {['日期', '项目', '平台', '收入', '备注', '操作'].map((h) => (
+              {['业务日期', '记录时间', '项目', '平台', '收入', '备注', '操作'].map((h) => (
                 <th key={h} className="px-4 py-3 font-medium">
                   {h}
                 </th>
@@ -1731,6 +1738,7 @@ function SideView({
               .map((row) => (
                 <tr key={row.id} className="border-t border-[#edf0ec]">
                   <td className="px-4 py-3">{row.weekStart || row.week}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-xs text-[#647168]">{beijingDateTimeString(row.createdAt)}</td>
                   <td className="px-4 py-3 font-medium">{row.project}</td>
                   <td className="px-4 py-3">{row.platform}</td>
                   <td className="px-4 py-3">{formatMoney(row.revenue)}</td>
@@ -1875,6 +1883,13 @@ function HealthView({
           </ResponsiveContainer> : <ChartEmpty label="记录身体数据后显示体脂趋势" />}
         </ChartCard>
       </section>
+      <section className="mt-5 overflow-hidden rounded-2xl border border-[#dfe5df] bg-white">
+        <div className="border-b border-[#edf0ec] p-5"><h2 className="font-semibold">身体数据记录</h2><p className="text-xs text-[#7b887f]">业务日期与实际记录时间分别保留</p></div>
+        <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm">
+          <thead className="bg-[#fafbf9] text-xs text-[#7b887f]"><tr>{['业务日期', '记录时间', '体重', '体脂率', '训练次数'].map((heading) => <th key={heading} className="px-4 py-3 font-medium">{heading}</th>)}</tr></thead>
+          <tbody>{sortedHealth.slice().reverse().map((row) => <tr key={row.id} className="border-t border-[#edf0ec]"><td className="px-4 py-3">{normalizedDate(row.date || row.loggedAt)}</td><td className="whitespace-nowrap px-4 py-3 text-xs text-[#647168]">{beijingDateTimeString(row.createdAt)}</td><td className="px-4 py-3">{formatWeight(row.weight)} kg</td><td className="px-4 py-3">{formatDecimal(row.bodyFat)}%</td><td className="px-4 py-3">{row.workouts} 次</td></tr>)}</tbody>
+        </table></div>
+      </section>
       <AreaGoalSection area="身体" goals={goals} history={history} openRecord={openRecord} onEditGoal={onEditGoal} />
     </>
   );
@@ -1982,10 +1997,10 @@ function FinanceView({
               历史流水不会因新月份开始而清空
             </p>
           </div>
-          <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm">
             <thead className="bg-[#fafbf9] text-xs text-[#7b887f]">
               <tr>
-                {['日期', '类型', '分类', '说明', '金额'].map((h) => (
+                {['业务日期', '记录时间', '类型', '分类', '说明', '金额'].map((h) => (
                   <th key={h} className="px-4 py-3 font-medium">
                     {h}
                   </th>
@@ -1999,6 +2014,7 @@ function FinanceView({
                 .map((row) => (
                   <tr key={row.id} className="border-t border-[#edf0ec]">
                     <td className="px-4 py-3">{row.date}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-xs text-[#6f7973]">{beijingDateTimeString(row.createdAt)}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`rounded-full px-2 py-1 text-xs ${row.type === '收入' ? 'bg-[#e9f4ed] text-[#286444]' : 'bg-[#f8ece7] text-[#9b5336]'}`}
@@ -2017,7 +2033,7 @@ function FinanceView({
                   </tr>
                 ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </section>
       <AreaGoalSection area="个人财务" goals={goals} history={history} openRecord={openRecord} onEditGoal={onEditGoal} />
@@ -2108,6 +2124,7 @@ function ReadingView({
             </div>
             <h2 className="text-lg font-semibold">{book.title}</h2>
             <p className="mt-1 text-sm text-[#7b887f]">{book.author || '作者未填写'} · {book.category}</p>
+            <p className="mt-1 text-xs text-[#8797a7]">记录于 {beijingDateTimeString(book.createdAt)}</p>
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-[#657169]">
               <div className="rounded-xl bg-[#f4f8fc] p-3"><span className="block text-[#8797a7]">开始日期</span><b className="mt-1 block text-[#29445f]">{book.startDate || '待安排'}</b></div>
               <div className="rounded-xl bg-[#f4f8fc] p-3"><span className="block text-[#8797a7]">预计结束</span><b className="mt-1 block text-[#29445f]">{book.plannedEndDate || '待安排'}</b></div>
@@ -2387,7 +2404,7 @@ function CloudDriveView({ session }: { session: Session | null }) {
               <div className="p-4">
                 <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h2 className="truncate font-semibold" title={file.name}>{file.name}</h2><p className="mt-1 text-xs text-[#71869b]">{file.category} · {file.folder}</p></div><span className="shrink-0 rounded-lg bg-[#eef4f9] px-2 py-1 text-xs text-[#45627e]">{formatFileSize(file.size)}</span></div>
                 <p className="mt-3 min-h-10 text-sm leading-5 text-[#65798d]">{file.note || '暂无备注'}</p>
-                <p className="mt-2 text-xs text-[#8a9aaa]">上传于 {new Date(file.createdAt).toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' })}</p>
+                <p className="mt-2 text-xs text-[#8a9aaa]">上传于 {beijingDateTimeString(file.createdAt)}</p>
                 <div className="mt-4 grid grid-cols-3 gap-2"><button type="button" onClick={() => void downloadFile(file)} className="flex items-center justify-center gap-1 rounded-xl bg-[#174578] px-2 py-2 text-xs font-medium text-white"><Download className="size-3.5" />下载</button><button type="button" onClick={() => beginEdit(file)} className="rounded-xl border border-[#cfdbe7] px-2 py-2 text-xs text-[#174578]">编辑</button><button type="button" onClick={() => void deleteFile(file)} className="flex items-center justify-center gap-1 rounded-xl border border-[#f1c9c9] px-2 py-2 text-xs text-[#a13b3b]"><Trash2 className="size-3.5" />删除</button></div>
               </div>
             </article>
@@ -2475,7 +2492,7 @@ function WeeklyReflectionPanel({
           <div className="mt-3 space-y-3">
             {records.map((item) => (
               <article key={item.id} className="rounded-xl bg-[#f4f8fc] p-4 text-sm">
-                <b>{item.weekStart}</b>
+                <b>{item.weekStart}</b><span className="ml-2 text-xs font-normal text-[#718078]">记录于 {beijingDateTimeString(item.createdAt)}</span>
                 <p className="mt-2 whitespace-pre-wrap text-[#536477]">复盘：{item.review || '—'}</p>
                 <p className="mt-1 whitespace-pre-wrap text-[#536477]">感悟：{item.insight || '—'}</p>
               </article>
@@ -2504,8 +2521,6 @@ function PlanAndReflectionView({
   const [files, setFiles] = useState<File[]>([]);
   const [message, setMessage] = useState('');
   const [isDragging, setIsDragging] = useState(false);
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [editingNoteDate, setEditingNoteDate] = useState('');
   const previewUrls = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
 
   useEffect(() => () => previewUrls.forEach((url) => URL.revokeObjectURL(url)), [previewUrls]);
@@ -2584,20 +2599,6 @@ function PlanAndReflectionView({
     await onSaved();
   }
 
-  async function updateNoteDate(noteId: string) {
-    const client = getSupabase();
-    if (!client || !session || !editingNoteDate) return;
-    const { error } = await client.from('plan_notes').update({ note_date: editingNoteDate }).eq('id', noteId);
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
-    setEditingNoteId(null);
-    setEditingNoteDate('');
-    setMessage('日期已更新');
-    await onSaved();
-  }
-
   return (
     <>
       <PageIntro eyebrow="计划和感悟" title="把计划、想法和图片留在同一处" detail="直接写下阶段计划、灵感与复盘材料；文字和私密图片都会随账户跨设备同步。" action="写一条记录" onAction={() => document.getElementById('plan-note-editor')?.scrollIntoView({ behavior: 'smooth' })} />
@@ -2641,17 +2642,7 @@ function PlanAndReflectionView({
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {notes.map((note) => (
           <article key={note.id} className="rounded-2xl border border-[#d7e3ef] bg-white p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs text-[#718078]">{note.noteDate} · 记录于 {beijingDateTimeString(note.createdAt)}</p>
-              <button type="button" onClick={() => { setEditingNoteId(note.id); setEditingNoteDate(note.noteDate); }} className="text-xs text-[#174578] hover:underline">修改日期</button>
-            </div>
-            {editingNoteId === note.id && (
-              <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-[#f3f7fb] p-3">
-                <input aria-label="修改记录日期" type="date" value={editingNoteDate} onChange={(event) => setEditingNoteDate(event.target.value)} className="h-9 rounded-lg border border-[#b9cbe0] bg-white px-3 text-sm" />
-                <button type="button" onClick={() => void updateNoteDate(note.id)} className="h-9 rounded-lg bg-[#174578] px-3 text-sm text-white">保存日期</button>
-                <button type="button" onClick={() => setEditingNoteId(null)} className="h-9 rounded-lg px-3 text-sm text-[#536477]">取消</button>
-              </div>
-            )}
+            <p className="text-xs text-[#718078]">业务日期 {note.noteDate} · 记录于 {beijingDateTimeString(note.createdAt)}</p>
             <h2 className="mt-1 font-semibold">{note.title || '未命名记录'}</h2>
             <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#536477]">{note.content || '（图片记录）'}</p>
             {note.imagePaths.length > 0 && <div className="mt-4 grid grid-cols-2 gap-2">{note.imagePaths.map((path) => imageUrls[path] ? <img key={path} src={imageUrls[path]} alt={note.title || '计划和感悟图片'} className="aspect-square w-full rounded-xl object-cover" /> : null)}</div>}
@@ -2815,6 +2806,7 @@ function GoalCard({
       <div className="mt-3 flex items-center gap-1.5 text-xs text-[#7d8881]">
         <Clock3 className="size-3" /> 截止 {goal.deadline}
       </div>
+      <div className="mt-1 text-xs text-[#8b9690]">记录于 {beijingDateTimeString(goal.createdAt)}</div>
       {onEdit && (
         <button onClick={onEdit} className="mt-3 w-full rounded-lg border border-[#d9e1da] bg-white px-3 py-2 text-xs font-medium text-[#2f6d57]">
           更新进度或完成状态
@@ -3134,6 +3126,7 @@ function RecordDialog({
       const date = formText(data, 'date');
       const row: ProfitLog = {
         id,
+        createdAt: new Date().toISOString(),
         project: formText(data, 'project') as ProfitLog['project'],
         platform: formText(data, 'platform'),
         week: date,
@@ -3210,6 +3203,7 @@ function RecordDialog({
       const occurredAt = formText(data, 'date');
       const row: FinanceLog = {
         id,
+        createdAt: new Date().toISOString(),
         date: occurredAt,
         occurredAt,
         type: formText(data, 'type') as FinanceLog['type'],
@@ -3263,6 +3257,7 @@ function RecordDialog({
       const target = data.get('target') ? Number(data.get('target')) : null;
       const row: Goal = {
         id,
+        createdAt: new Date().toISOString(),
         area: formText(data, 'area') as Goal['area'],
         title: formText(data, 'title'),
         metric: formText(data, 'metric'),
