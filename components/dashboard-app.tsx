@@ -3089,11 +3089,20 @@ function RecordDialog({
 }) {
   const [selected, setSelected] = useState<RecordKind>(kind);
   const [sideProject, setSideProject] = useState<ProfitLog['project']>(editingProfit?.project ?? '自媒体');
+  const [submitError, setSubmitError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const id = crypto.randomUUID();
     const client = getSupabase();
+    if (!client || !session) {
+      setSubmitError('登录状态已失效，请重新登录后再保存。');
+      return;
+    }
+    setSubmitError('');
+    setIsSaving(true);
+    try {
     if (selected === '工作产品') {
       const row: WorkProduct = {
         id,
@@ -3107,9 +3116,7 @@ function RecordDialog({
         stage: formText(data, 'stage'),
         status: '进行中',
       };
-      setProducts([...products, row]);
-      if (client && session)
-        await client.from('work_products').insert({
+      const { error } = await client.from('work_products').insert({
           user_id: session.user.id,
           name: row.name,
           category: row.category,
@@ -3120,6 +3127,8 @@ function RecordDialog({
           stage: row.stage,
           status: row.status,
         });
+      if (error) throw error;
+      setProducts([...products, row]);
     }
     if (selected === '副业利润') {
       const revenue = Number(data.get('revenue'));
@@ -3136,9 +3145,7 @@ function RecordDialog({
         profit: revenue,
         note: formText(data, 'note'),
       };
-      setProfits([...profits, row]);
-      if (client && session)
-        await client.from('profit_logs').insert({
+      const { error } = await client.from('profit_logs').insert({
           user_id: session.user.id,
           project: row.project,
           platform: row.platform,
@@ -3149,6 +3156,8 @@ function RecordDialog({
           profit: row.profit,
           note: row.note,
         });
+      if (error) throw error;
+      setProfits([...profits, row]);
     }
     if (selected === '修改副业收入' && editingProfit) {
       const revenue = Number(data.get('revenue'));
@@ -3164,9 +3173,7 @@ function RecordDialog({
         profit: revenue,
         note: formText(data, 'note'),
       };
-      setProfits(profits.map((item) => item.id === updated.id ? updated : item));
-      if (client && session)
-        await client.from('profit_logs').update({
+      const { error } = await client.from('profit_logs').update({
           project: updated.project,
           platform: updated.platform,
           week_label: updated.weekStart,
@@ -3176,6 +3183,8 @@ function RecordDialog({
           profit: updated.profit,
           note: updated.note,
         }).eq('id', updated.id);
+      if (error) throw error;
+      setProfits(profits.map((item) => item.id === updated.id ? updated : item));
     }
     if (selected === '身体数据') {
       const loggedAt = formText(data, 'date');
@@ -3188,9 +3197,7 @@ function RecordDialog({
         bodyFat: Number(Number(data.get('bodyFat')).toFixed(2)),
         workouts: Number(data.get('workouts')),
       };
-      setHealth([...health, row]);
-      if (client && session)
-        await client.from('health_logs').insert({
+      const { error } = await client.from('health_logs').insert({
           user_id: session.user.id,
           date_label: row.date,
           logged_at: row.loggedAt,
@@ -3198,6 +3205,8 @@ function RecordDialog({
           body_fat: row.bodyFat,
           workouts: row.workouts,
         });
+      if (error) throw error;
+      setHealth([...health, row]);
     }
     if (selected === '财务流水') {
       const occurredAt = formText(data, 'date');
@@ -3211,9 +3220,7 @@ function RecordDialog({
         amount: Number(data.get('amount')),
         note: formText(data, 'note'),
       };
-      setFinance([...finance, row]);
-      if (client && session)
-        await client.from('finance_logs').insert({
+      const { error } = await client.from('finance_logs').insert({
           user_id: session.user.id,
           date_label: row.date,
           occurred_at: row.occurredAt,
@@ -3222,6 +3229,8 @@ function RecordDialog({
           amount: row.amount,
           note: row.note,
         });
+      if (error) throw error;
+      setFinance([...finance, row]);
     }
     if (selected === '读书记录') {
       const status = formText(data, 'status') as Book['status'];
@@ -3240,9 +3249,7 @@ function RecordDialog({
         notes: formText(data, 'notes'),
         finishedAt: formText(data, 'finishedAt') || (status === '已读' ? localDateString() : undefined),
       };
-      setBooks([...books, row]);
-      if (client && session)
-        await client.from('books').insert({
+      const { error } = await client.from('books').insert({
           user_id: session.user.id,
           title: row.title,
           author: row.author,
@@ -3252,6 +3259,8 @@ function RecordDialog({
           notes: encodeBookPlan(row),
           finished_at: row.finishedAt,
         });
+      if (error) throw error;
+      setBooks([...books, row]);
     }
     if (selected === '新目标') {
       const target = data.get('target') ? Number(data.get('target')) : null;
@@ -3269,9 +3278,7 @@ function RecordDialog({
         deadline: formText(data, 'deadline'),
         status: '进行中',
       };
-      setGoals([...goals, row]);
-      if (client && session)
-        await client.from('goals').insert({
+      const { error } = await client.from('goals').insert({
           user_id: session.user.id,
           area: row.area,
           title: row.title,
@@ -3284,6 +3291,8 @@ function RecordDialog({
           status: row.status,
           result: encodeGoalResult(row.initial),
         });
+      if (error) throw error;
+      setGoals([...goals, row]);
     }
     if (selected === '更新目标' && editingGoal) {
       const updated: Goal = {
@@ -3294,17 +3303,22 @@ function RecordDialog({
         status: formText(data, 'status') as Goal['status'],
         result: formText(data, 'result'),
       };
-      setGoals(goals.map((goal) => goal.id === updated.id ? updated : goal));
-      if (client && session)
-        await client.from('goals').update({
+      const { error } = await client.from('goals').update({
           current_value: updated.current,
           target_value: updated.target,
           deadline: updated.deadline,
           status: updated.status,
           result: encodeGoalResult(updated.initial, updated.result),
         }).eq('id', updated.id);
+      if (error) throw error;
+      setGoals(goals.map((goal) => goal.id === updated.id ? updated : goal));
     }
     close();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? `保存失败：${error.message}` : '保存失败，请稍后重试。');
+    } finally {
+      setIsSaving(false);
+    }
   }
   return (
     <div
@@ -3340,7 +3354,7 @@ function RecordDialog({
           ).map((item) => (
             <button
               key={item}
-              onClick={() => setSelected(item)}
+              onClick={() => { setSelected(item); setSubmitError(''); }}
               className={`flex-1 whitespace-nowrap rounded-lg px-2 py-2 text-xs ${selected === item ? 'bg-[#153e32] text-white' : 'text-[#6f7973] hover:bg-[#f1f3f1]'}`}
             >
               {item}
@@ -3510,8 +3524,13 @@ function RecordDialog({
               </div>
             </>
           )}
-          <button className="h-10 w-full rounded-xl bg-[#153e32] text-sm font-medium text-white">
-            {selected === '修改副业收入' ? '保存修改' : '保存记录'}
+          {submitError && (
+            <p role="alert" className="rounded-xl border border-[#efc6c6] bg-[#fff3f3] px-4 py-3 text-sm text-[#a13b3b]">
+              {submitError}
+            </p>
+          )}
+          <button disabled={isSaving} className="h-10 w-full rounded-xl bg-[#153e32] text-sm font-medium text-white disabled:cursor-wait disabled:opacity-60">
+            {isSaving ? '正在保存…' : selected === '修改副业收入' ? '保存修改' : '保存记录'}
           </button>
         </form>
       </div>
