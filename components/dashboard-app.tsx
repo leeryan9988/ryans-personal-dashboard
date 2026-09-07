@@ -37,7 +37,7 @@ import {
   WalletCards,
   X,
 } from 'lucide-react';
-import { type SyntheticEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Session } from '@supabase/supabase-js';
 import {
@@ -2521,6 +2521,8 @@ function PlanAndReflectionView({
   const [files, setFiles] = useState<File[]>([]);
   const [message, setMessage] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const saveLockRef = useRef(false);
   const previewUrls = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
 
   useEffect(() => () => previewUrls.forEach((url) => URL.revokeObjectURL(url)), [previewUrls]);
@@ -2560,43 +2562,54 @@ function PlanAndReflectionView({
 
   async function saveNote(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saveLockRef.current) return;
     const client = getSupabase();
-    if (!client || !session) return;
+    if (!client || !session) {
+      setMessage('登录状态已失效，请重新登录后再保存');
+      return;
+    }
     if (!content.trim() && !title.trim() && files.length === 0) {
       setMessage('请输入文字或选择图片');
       return;
     }
+    saveLockRef.current = true;
+    setIsSaving(true);
     setMessage('正在保存…');
-    const imagePaths: string[] = [];
-    for (const file of files.slice(0, 4)) {
-      if (file.size > 5 * 1024 * 1024) {
-        setMessage(`${file.name} 超过 5MB`);
-        return;
+    try {
+      const imagePaths: string[] = [];
+      for (const file of files.slice(0, 4)) {
+        if (file.size > 5 * 1024 * 1024) {
+          setMessage(`${file.name} 超过 5MB`);
+          return;
+        }
+        const path = createStorageObjectPath(session.user.id, file.name);
+        const { error } = await client.storage.from('journal-images').upload(path, file, { contentType: file.type, upsert: false });
+        if (error) {
+          setMessage(error.message);
+          return;
+        }
+        imagePaths.push(path);
       }
-      const path = createStorageObjectPath(session.user.id, file.name);
-      const { error } = await client.storage.from('journal-images').upload(path, file, { contentType: file.type, upsert: false });
+      const { error } = await client.from('plan_notes').insert({
+        user_id: session.user.id,
+        title: title.trim(),
+        content: content.trim(),
+        note_date: noteDate,
+        image_paths: imagePaths,
+      });
       if (error) {
         setMessage(error.message);
         return;
       }
-      imagePaths.push(path);
+      setTitle('');
+      setContent('');
+      setFiles([]);
+      setMessage('已保存');
+      await onSaved();
+    } finally {
+      saveLockRef.current = false;
+      setIsSaving(false);
     }
-    const { error } = await client.from('plan_notes').insert({
-      user_id: session.user.id,
-      title: title.trim(),
-      content: content.trim(),
-      note_date: noteDate,
-      image_paths: imagePaths,
-    });
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
-    setTitle('');
-    setContent('');
-    setFiles([]);
-    setMessage('已保存');
-    await onSaved();
   }
 
   return (
@@ -2636,7 +2649,7 @@ function PlanAndReflectionView({
         </div>
         <div className="mt-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <span className="text-xs text-[#607184]">{files.length ? `已加入 ${files.length} 张 · ` : ''}{message}</span>
-          <button className="rounded-xl bg-[#174578] px-5 py-2 text-sm font-medium text-white">保存记录</button>
+          <button disabled={isSaving} className="rounded-xl bg-[#174578] px-5 py-2 text-sm font-medium text-white disabled:cursor-wait disabled:opacity-60">{isSaving ? '正在保存…' : '保存记录'}</button>
         </div>
       </form>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -3091,8 +3104,10 @@ function RecordDialog({
   const [sideProject, setSideProject] = useState<ProfitLog['project']>(editingProfit?.project ?? '自媒体');
   const [submitError, setSubmitError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const submitLockRef = useRef(false);
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitLockRef.current) return;
     const data = new FormData(event.currentTarget);
     const id = crypto.randomUUID();
     const client = getSupabase();
@@ -3100,6 +3115,7 @@ function RecordDialog({
       setSubmitError('登录状态已失效，请重新登录后再保存。');
       return;
     }
+    submitLockRef.current = true;
     setSubmitError('');
     setIsSaving(true);
     try {
@@ -3317,6 +3333,7 @@ function RecordDialog({
     } catch (error) {
       setSubmitError(error instanceof Error ? `保存失败：${error.message}` : '保存失败，请稍后重试。');
     } finally {
+      submitLockRef.current = false;
       setIsSaving(false);
     }
   }
