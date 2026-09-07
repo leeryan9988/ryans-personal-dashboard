@@ -535,6 +535,7 @@ export default function DashboardApp() {
       id: x.id,
       title: x.title,
       content: x.content,
+      category: x.category || '未分类',
       noteDate: x.note_date,
       createdAt: x.created_at,
       imagePaths: x.image_paths ?? [],
@@ -2518,10 +2519,12 @@ function PlanAndReflectionView({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [noteDate, setNoteDate] = useState(() => localDateString());
+  const [category, setCategory] = useState('未分类');
   const [files, setFiles] = useState<File[]>([]);
   const [message, setMessage] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [managingNote, setManagingNote] = useState<PlanNote | null>(null);
   const saveLockRef = useRef(false);
   const previewUrls = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
 
@@ -2594,6 +2597,7 @@ function PlanAndReflectionView({
         user_id: session.user.id,
         title: title.trim(),
         content: content.trim(),
+        category,
         note_date: noteDate,
         image_paths: imagePaths,
       });
@@ -2603,6 +2607,7 @@ function PlanAndReflectionView({
       }
       setTitle('');
       setContent('');
+      setCategory('未分类');
       setFiles([]);
       setMessage('已保存');
       await onSaved();
@@ -2619,6 +2624,9 @@ function PlanAndReflectionView({
         <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
           <label className="text-sm"><span className="mb-1.5 block font-medium">标题（可选）</span><input value={title} onChange={(event) => setTitle(event.target.value)} className="h-10 w-full rounded-xl border border-[#d7e3ef] px-3" placeholder="例如：下周内容计划" /></label>
           <label className="text-sm"><span className="mb-1.5 block font-medium">日期</span><input type="date" value={noteDate} onChange={(event) => setNoteDate(event.target.value)} className="h-10 w-full rounded-xl border border-[#d7e3ef] px-3" /></label>
+        </div>
+        <div className="mt-4">
+          <ChoicePicker name="category" label="归类" options={['未分类', '工作', '副业', '身体', '财务', '读书', '生活', '灵感']} value={category} onChange={setCategory} />
         </div>
         <label className="mt-4 block text-sm"><span className="mb-1.5 block font-medium">计划与感悟</span><textarea value={content} onChange={(event) => setContent(event.target.value)} rows={7} className="w-full resize-y rounded-xl border border-[#d7e3ef] p-3" placeholder="直接输入文字……" /></label>
         <div
@@ -2655,7 +2663,10 @@ function PlanAndReflectionView({
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {notes.map((note) => (
           <article key={note.id} className="rounded-2xl border border-[#d7e3ef] bg-white p-5">
-            <p className="text-xs text-[#718078]">业务日期 {note.noteDate} · 记录于 {beijingDateTimeString(note.createdAt)}</p>
+            <div className="flex items-start justify-between gap-3">
+              <div><p className="text-xs text-[#718078]">业务日期 {note.noteDate} · 记录于 {beijingDateTimeString(note.createdAt)}</p><span className="mt-2 inline-flex rounded-lg bg-[#eaf1f8] px-2 py-1 text-xs text-[#174578]">{note.category || '未分类'}</span></div>
+              <button type="button" onClick={() => setManagingNote(note)} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[#bfd0e1] px-3 py-2 text-xs font-medium text-[#174578]"><SlidersHorizontal className="size-3.5" />管理</button>
+            </div>
             <h2 className="mt-1 font-semibold">{note.title || '未命名记录'}</h2>
             <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#536477]">{note.content || '（图片记录）'}</p>
             {note.imagePaths.length > 0 && <div className="mt-4 grid grid-cols-2 gap-2">{note.imagePaths.map((path) => imageUrls[path] ? <img key={path} src={imageUrls[path]} alt={note.title || '计划和感悟图片'} className="aspect-square w-full rounded-xl object-cover" /> : null)}</div>}
@@ -2663,7 +2674,100 @@ function PlanAndReflectionView({
         ))}
         {notes.length === 0 && <div className="col-span-full rounded-2xl border border-dashed border-[#b9cbe0] bg-white/60 p-10 text-center text-sm text-[#718078]">还没有计划和感悟记录</div>}
       </section>
+      {managingNote && <PlanNoteManagerDialog note={managingNote} session={session} close={() => setManagingNote(null)} onSaved={onSaved} />}
     </>
+  );
+}
+
+function PlanNoteManagerDialog({
+  note,
+  session,
+  close,
+  onSaved,
+}: {
+  note: PlanNote;
+  session: Session | null;
+  close: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const [title, setTitle] = useState(note.title);
+  const [content, setContent] = useState(note.content);
+  const [category, setCategory] = useState(note.category || '未分类');
+  const [message, setMessage] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const actionLockRef = useRef(false);
+
+  async function saveChanges() {
+    if (actionLockRef.current) return;
+    const client = getSupabase();
+    if (!client || !session) {
+      setMessage('登录状态已失效，请重新登录后再操作');
+      return;
+    }
+    actionLockRef.current = true;
+    setIsSaving(true);
+    setMessage('');
+    try {
+      const { error } = await client.from('plan_notes').update({ title: title.trim(), content: content.trim(), category }).eq('id', note.id);
+      if (error) {
+        setMessage(`保存失败：${error.message}`);
+        return;
+      }
+      await onSaved();
+      close();
+    } finally {
+      actionLockRef.current = false;
+      setIsSaving(false);
+    }
+  }
+
+  async function deleteNote() {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      setMessage('再次点击“确认删除”才会永久删除这条记录');
+      return;
+    }
+    if (actionLockRef.current) return;
+    const client = getSupabase();
+    if (!client || !session) {
+      setMessage('登录状态已失效，请重新登录后再操作');
+      return;
+    }
+    actionLockRef.current = true;
+    setIsSaving(true);
+    try {
+      const { error } = await client.from('plan_notes').delete().eq('id', note.id);
+      if (error) {
+        setMessage(`删除失败：${error.message}`);
+        return;
+      }
+      if (note.imagePaths.length) await client.storage.from('journal-images').remove(note.imagePaths);
+      await onSaved();
+      close();
+    } finally {
+      actionLockRef.current = false;
+      setIsSaving(false);
+    }
+  }
+
+  return createPortal(
+    <div role="presentation" className="fixed inset-0 z-50 grid place-items-center bg-black/25 p-4 backdrop-blur-sm" onMouseDown={(event) => event.target === event.currentTarget && close()}>
+      <div role="dialog" aria-modal="true" aria-label="管理计划和感悟记录" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#dfe7ef] bg-white p-5"><div><h2 className="font-semibold">管理记录</h2><p className="mt-1 text-xs text-[#718078]">记录于 {beijingDateTimeString(note.createdAt)} · 原始时间保持不变</p></div><button type="button" onClick={close} className="grid size-8 place-items-center rounded-lg bg-[#f1f4f7]"><X className="size-4" /></button></div>
+        <div className="space-y-4 p-5">
+          <label className="block text-sm"><span className="mb-1.5 block font-medium">标题</span><input value={title} onChange={(event) => setTitle(event.target.value)} className="h-10 w-full rounded-xl border border-[#d7e3ef] px-3" /></label>
+          <ChoicePicker name="managedCategory" label="归类" options={['未分类', '工作', '副业', '身体', '财务', '读书', '生活', '灵感']} value={category} onChange={setCategory} />
+          <label className="block text-sm"><span className="mb-1.5 block font-medium">正文</span><textarea value={content} onChange={(event) => setContent(event.target.value)} rows={7} className="w-full resize-y rounded-xl border border-[#d7e3ef] p-3" /></label>
+          {message && <p role="status" className={`rounded-xl px-4 py-3 text-sm ${confirmDelete ? 'bg-[#fff3f3] text-[#a13b3b]' : 'bg-[#eef4f9] text-[#36536f]'}`}>{message}</p>}
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+            <button type="button" disabled={isSaving} onClick={() => void deleteNote()} className="rounded-xl border border-[#efc6c6] px-4 py-2 text-sm font-medium text-[#a13b3b] disabled:opacity-60">{confirmDelete ? '确认删除' : '删除记录'}</button>
+            <div className="flex gap-2"><button type="button" onClick={close} className="rounded-xl px-4 py-2 text-sm text-[#607184]">取消</button><button type="button" disabled={isSaving} onClick={() => void saveChanges()} className="rounded-xl bg-[#174578] px-5 py-2 text-sm font-medium text-white disabled:opacity-60">{isSaving ? '处理中…' : '保存修改'}</button></div>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 

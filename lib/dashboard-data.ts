@@ -63,6 +63,7 @@ export type PlanNote = {
   id: string;
   title: string;
   content: string;
+  category: string;
   noteDate: string;
   createdAt: string;
   imagePaths: string[];
