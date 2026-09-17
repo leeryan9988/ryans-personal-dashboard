@@ -1018,7 +1018,7 @@ function Header({
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[#d9e9f7] bg-[#eef7ff]/90 px-4 backdrop-blur-xl sm:px-8">
       <div className="flex items-center gap-2 lg:hidden">
-        <div className="grid size-9 place-items-center rounded-xl bg-[#153e32] text-[#d9f99d]">
+        <div className="grid size-9 place-items-center rounded-xl bg-[#174578] text-[#d9e9f7]">
           <Target className="size-4" />
         </div>
         <span className="font-semibold">Ryan's 个人看板</span>
@@ -1028,7 +1028,7 @@ function Header({
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="h-9 w-full rounded-xl border border-[#dfe5df] bg-white pl-9 pr-3 text-sm outline-none focus:border-[#6f8f80]"
+          className="h-9 w-full rounded-xl border border-[#d7e3ef] bg-white pl-9 pr-3 text-sm outline-none focus:border-[#89a9c9]"
           placeholder="搜索产品、目标或记录"
         />
       </div>
@@ -1046,11 +1046,11 @@ function Header({
         </button>
         <button
           onClick={onAdd}
-          className="hidden h-9 items-center gap-2 rounded-xl bg-[#153e32] px-3 text-xs font-medium text-white sm:flex"
+          className="hidden h-9 items-center gap-2 rounded-xl bg-[#174578] px-3 text-xs font-medium text-white sm:flex"
         >
           <Plus className="size-3.5" /> 新增记录
         </button>
-        <div className="grid size-9 place-items-center rounded-full bg-[#e0ebe5] text-sm font-semibold text-[#153e32]">
+        <div className="grid size-9 place-items-center rounded-full bg-[#e5eef8] text-sm font-semibold text-[#174578]">
           我
         </div>
       </div>
@@ -1242,7 +1242,7 @@ function CloudSetupBanner() {
 }
 
 const goalAreas: Goal['area'][] = ['工作', '副业', '身体', '个人财务', '读书清单'];
-const chartColors = ['#2f6d57', '#c8753b', '#7d65a7', '#d6a63f', '#5d7fa3'];
+const chartColors = ['#4672a8', '#c8753b', '#7d65a7', '#d6a63f', '#5d7fa3'];
 
 function TotalGoalsView({
   goals,
@@ -1304,7 +1304,7 @@ function TotalGoalsView({
                 <XAxis dataKey="area" tick={{ fontSize: 11 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(value) => [`${formatDecimal(Number(value))}%`, '平均进度']} />
-                <Bar dataKey="progress" name="平均进度 %" fill="#2f6d57" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="progress" name="平均进度 %" fill="#4672a8" radius={[8, 8, 0, 0]} />
               </ReBarChart>
             </ResponsiveContainer>
           ) : <ChartEmpty label="设立目标后显示板块进度" />}
@@ -1335,7 +1335,7 @@ function AreaGoalSection({
           <h2 className="font-semibold">{area === '全部' ? '目标清单与历史' : `${area} · 目标与历史`}</h2>
           <p className="text-xs text-[#7b887f]">达成后保留结果和周期，新目标由你确认后继续建立</p>
         </div>
-        <button onClick={() => openRecord('新目标')} className="rounded-xl bg-[#153e32] px-3 py-2 text-xs font-medium text-white">新增目标</button>
+        <button onClick={() => openRecord('新目标')} className="rounded-xl bg-[#174578] px-3 py-2 text-xs font-medium text-white">新增目标</button>
       </div>
       {goals.length ? (
         <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -1349,7 +1349,7 @@ function AreaGoalSection({
             {history.map((goal) => (
               <div key={goal.id} className="flex flex-col justify-between gap-2 rounded-xl bg-[#fafbf9] px-4 py-3 text-sm sm:flex-row sm:items-center">
                 <div><b>{goal.title}</b><p className="mt-1 text-xs text-[#7b887f]">{goal.startedAt} — {goal.deadline}{goal.result ? ` · ${goal.result}` : ''}</p><p className="mt-1 text-xs text-[#8b9690]">记录于 {beijingDateTimeString(goal.createdAt)}</p></div>
-                <span className="w-fit rounded-full bg-[#e9f4ed] px-2.5 py-1 text-xs text-[#286444]">{goal.status}</span>
+                <span className="w-fit rounded-full bg-[#eaf3fb] px-2.5 py-1 text-xs text-[#174578]">{goal.status}</span>
               </div>
             ))}
           </div>
@@ -1424,7 +1424,7 @@ function _Overview({
           value={latestHealth ? `${formatWeight(latestHealth.weight)} kg` : '待记录'}
           meta={
             latestHealth
-              ? `体脂率 ${formatDecimal(latestHealth.bodyFat)}% · 本周 ${latestHealth.workouts} 练`
+              ? `体脂率 ${formatDecimal(latestHealth.bodyFat)}%`
               : '设置当前值与目标值'
           }
           progress={22}
@@ -1444,7 +1444,7 @@ function _Overview({
           </div>
           <button
             onClick={() => setActive('副业')}
-            className="text-xs font-medium text-[#2f6d57]"
+            className="text-xs font-medium text-[#174578]"
           >
             查看全部 →
           </button>
@@ -1457,12 +1457,12 @@ function _Overview({
               <div key={item.id} className="bg-white p-5">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="text-xs text-[#7b887f]">业务日期 {item.week} · 记录于 {beijingDateTimeString(item.createdAt)}</span>
-                  <span className="rounded-full bg-[#eef4ef] px-2 py-1 text-[11px]">
+                  <span className="rounded-full bg-[#eef4f9] px-2 py-1 text-[11px]">
                     {item.platform}
                   </span>
                 </div>
                 <b>{item.project}</b>
-                <div className="mt-2 text-xl font-semibold text-[#236c4d]">
+                <div className="mt-2 text-xl font-semibold text-[#174578]">
                   +{formatMoney(item.profit)}
                 </div>
                 <div className="mt-1 text-xs text-[#8b948f]">
@@ -1529,7 +1529,7 @@ function WorkView({
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(value) => [`${formatDecimal(Number(value))}%`, '毛利率']} />
-                <Bar dataKey="margin" name="毛利率 %" fill="#2f6d57" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="margin" name="毛利率 %" fill="#4672a8" radius={[8, 8, 0, 0]} />
               </ReBarChart>
             </ResponsiveContainer>
           ) : <ChartEmpty label="新增候选产品后显示毛利率对比" />}
@@ -1569,7 +1569,7 @@ function WorkView({
                   <td className="whitespace-nowrap px-4 py-4 text-xs text-[#647168]">{beijingDateTimeString(row.createdAt)}</td>
                   <td className="px-4 py-4 font-medium">{row.name}</td>
                   <td className="px-4 py-4 text-[#647168]">{row.category}</td>
-                  <td className="px-4 py-4 font-semibold text-[#236c4d]">
+                  <td className="px-4 py-4 font-semibold text-[#174578]">
                     {formatDecimal(row.margin)}%
                   </td>
                   <td className="px-4 py-4">{row.supplyChain}</td>
@@ -1579,7 +1579,7 @@ function WorkView({
                   </td>
                   <td className="px-4 py-4">{row.stage}</td>
                   <td className="px-4 py-4">
-                    <span className="rounded-full bg-[#eef4ef] px-2 py-1 text-xs">
+                    <span className="rounded-full bg-[#eef4f9] px-2 py-1 text-xs">
                       {row.status}
                     </span>
                   </td>
@@ -1703,7 +1703,7 @@ function SideView({
                 </div>
                 <div className="h-2 rounded-full bg-[#edf0ec]">
                   <div
-                    className="h-full rounded-full bg-[#6c8f7f]"
+                    className="h-full rounded-full bg-[#7c9ab5]"
                     style={{
                       width: `${Math.max(12, (total / (platformTotals[0]?.[1] || 1)) * 100)}%`,
                     }}
@@ -1795,11 +1795,11 @@ function HealthView({
       <PageIntro
         eyebrow="身体看板"
         title="六个月身体目标"
-        detail="记录体重、体脂率和训练次数，关注长期趋势与执行稳定性。"
+        detail="记录体重和体脂率，关注长期趋势与变化。"
         action="记录身体数据"
         onAction={() => openRecord('身体数据')}
       />
-      <section className="mb-5 grid gap-4 sm:grid-cols-3">
+      <section className="mb-5 grid gap-4 sm:grid-cols-2">
         <Metric
           label="最新体重"
           value={latest ? `${formatWeight(latest.weight)} kg` : '待记录'}
@@ -1817,11 +1817,6 @@ function HealthView({
               ? `阶段变化 ${formatDecimal(latest.bodyFat - first.bodyFat)}%`
               : '—'
           }
-        />
-        <Metric
-          label="本周训练"
-          value={latest ? `${latest.workouts} 次` : '待记录'}
-          note="建议关注每周稳定性"
         />
       </section>
       {goals.some((goal) => goal.target == null) && (
@@ -1855,7 +1850,7 @@ function HealthView({
                 type="monotone"
                 dataKey="weight"
                 name="体重 kg"
-                stroke="#2f6d57"
+                stroke="#4672a8"
                 strokeWidth={3}
                 connectNulls
               />
@@ -1887,8 +1882,8 @@ function HealthView({
       <section className="mt-5 overflow-hidden rounded-2xl border border-[#dfe5df] bg-white">
         <div className="border-b border-[#edf0ec] p-5"><h2 className="font-semibold">身体数据记录</h2><p className="text-xs text-[#7b887f]">业务日期与实际记录时间分别保留</p></div>
         <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="bg-[#fafbf9] text-xs text-[#7b887f]"><tr>{['业务日期', '记录时间', '体重', '体脂率', '训练次数'].map((heading) => <th key={heading} className="px-4 py-3 font-medium">{heading}</th>)}</tr></thead>
-          <tbody>{sortedHealth.slice().reverse().map((row) => <tr key={row.id} className="border-t border-[#edf0ec]"><td className="px-4 py-3">{normalizedDate(row.date || row.loggedAt)}</td><td className="whitespace-nowrap px-4 py-3 text-xs text-[#647168]">{beijingDateTimeString(row.createdAt)}</td><td className="px-4 py-3">{formatWeight(row.weight)} kg</td><td className="px-4 py-3">{formatDecimal(row.bodyFat)}%</td><td className="px-4 py-3">{row.workouts} 次</td></tr>)}</tbody>
+          <thead className="bg-[#f7faff] text-xs text-[#607184]"><tr>{['业务日期', '记录时间', '体重', '体脂率'].map((heading) => <th key={heading} className="px-4 py-3 font-medium">{heading}</th>)}</tr></thead>
+          <tbody>{sortedHealth.slice().reverse().map((row) => <tr key={row.id} className="border-t border-[#e6edf4]"><td className="px-4 py-3">{normalizedDate(row.date || row.loggedAt)}</td><td className="whitespace-nowrap px-4 py-3 text-xs text-[#536477]">{beijingDateTimeString(row.createdAt)}</td><td className="px-4 py-3">{formatWeight(row.weight)} kg</td><td className="px-4 py-3">{formatDecimal(row.bodyFat)}%</td></tr>)}</tbody>
         </table></div>
       </section>
       <AreaGoalSection area="身体" goals={goals} history={history} openRecord={openRecord} onEditGoal={onEditGoal} />
@@ -2018,7 +2013,7 @@ function FinanceView({
                     <td className="whitespace-nowrap px-4 py-3 text-xs text-[#6f7973]">{beijingDateTimeString(row.createdAt)}</td>
                     <td className="px-4 py-3">
                       <span
-                        className={`rounded-full px-2 py-1 text-xs ${row.type === '收入' ? 'bg-[#e9f4ed] text-[#286444]' : 'bg-[#f8ece7] text-[#9b5336]'}`}
+                        className={`rounded-full px-2 py-1 text-xs ${row.type === '收入' ? 'bg-[#eaf3fb] text-[#174578]' : 'bg-[#f8ece7] text-[#9b5336]'}`}
                       >
                         {row.type}
                       </span>
@@ -2026,7 +2021,7 @@ function FinanceView({
                     <td className="px-4 py-3">{row.category}</td>
                     <td className="px-4 py-3 text-[#6f7973]">{row.note}</td>
                     <td
-                      className={`px-4 py-3 font-semibold ${row.type === '收入' ? 'text-[#286444]' : 'text-[#9b5336]'}`}
+                      className={`px-4 py-3 font-semibold ${row.type === '收入' ? 'text-[#174578]' : 'text-[#9b5336]'}`}
                     >
                       {row.type === '收入' ? '+' : '-'}¥
                       {formatDecimal(row.amount)}
@@ -2118,7 +2113,7 @@ function ReadingView({
                 <BookOpen className="size-5" />
               </div>
               <span
-                className={`rounded-full px-2.5 py-1 text-xs ${book.status === '已读' ? 'bg-[#e9f4ed] text-[#286444]' : book.status === '在读' ? 'bg-[#fff4db] text-[#80651f]' : 'bg-[#eef0ee] text-[#66716a]'}`}
+                className={`rounded-full px-2.5 py-1 text-xs ${book.status === '已读' ? 'bg-[#eaf3fb] text-[#174578]' : book.status === '在读' ? 'bg-[#fff4db] text-[#80651f]' : 'bg-[#eef2f5] text-[#607184]'}`}
               >
                 {book.status}
               </span>
@@ -2819,7 +2814,7 @@ function _GoalArchive({
                     {goal.startedAt} — {goal.deadline} · {goal.result}
                   </p>
                 </div>
-                <span className="rounded-full bg-[#e9f4ed] px-3 py-1 text-xs text-[#286444]">
+                <span className="rounded-full bg-[#eaf3fb] px-3 py-1 text-xs text-[#174578]">
                   {goal.status}
                 </span>
               </div>
@@ -2857,7 +2852,7 @@ function GoalPulse({
         </div>
         <button
           onClick={onArchive}
-          className="text-xs font-medium text-[#2f6d57]"
+          className="text-xs font-medium text-[#174578]"
         >
           目标档案 →
         </button>
@@ -2893,7 +2888,7 @@ function GoalCard({
           </span>
           <h3 className="mt-1 font-semibold">{goal.title}</h3>
         </div>
-        <span className="whitespace-nowrap rounded-full bg-[#e8efe9] px-2 py-1 text-[10px] text-[#3a6652]">
+        <span className="whitespace-nowrap rounded-full bg-[#edf3f9] px-2 py-1 text-[10px] text-[#36536f]">
           {goal.status}
         </span>
       </div>
@@ -2910,7 +2905,7 @@ function GoalCard({
           </div>
           <div className="h-2 rounded-full bg-[#e7ebe7]">
             <div
-              className="h-full rounded-full bg-[#39765e]"
+              className="h-full rounded-full bg-[#4672a8]"
               style={{ width: `${percent}%` }}
             />
           </div>
@@ -2925,12 +2920,12 @@ function GoalCard({
       </div>
       <div className="mt-1 text-xs text-[#8b9690]">记录于 {beijingDateTimeString(goal.createdAt)}</div>
       {onEdit && (
-        <button onClick={onEdit} className="mt-3 w-full rounded-lg border border-[#d9e1da] bg-white px-3 py-2 text-xs font-medium text-[#2f6d57]">
+        <button onClick={onEdit} className="mt-3 w-full rounded-lg border border-[#d4e0ea] bg-white px-3 py-2 text-xs font-medium text-[#174578]">
           更新进度或完成状态
         </button>
       )}
       {percent >= 100 && (
-        <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-[#e8f4ec] p-2 text-xs font-medium text-[#286444]">
+        <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-[#edf4fa] p-2 text-xs font-medium text-[#174578]">
           <CheckCircle2 className="size-3.5" /> 已达标，请确认阶段总结与新目标
         </div>
       )}
@@ -2957,10 +2952,10 @@ function AnalysisPanel({
   const first = health[0];
   const last = health.at(-1);
   return (
-    <div className="rounded-2xl border border-[#dfe5df] bg-[#153e32] p-5 text-white">
+    <div className="rounded-2xl border border-[#d7e3ef] bg-[#174578] p-5 text-white">
       <div className="mb-5 flex items-center gap-3">
         <div className="grid size-9 place-items-center rounded-xl bg-white/10">
-          <BarChart3 className="size-4 text-[#d9f99d]" />
+          <BarChart3 className="size-4 text-[#d9e9f7]" />
         </div>
         <div>
           <h2 className="font-semibold">阶段数据结论</h2>
@@ -3000,7 +2995,7 @@ function AnalysisPanel({
 function Insight({ label, text }: { label: string; text: string }) {
   return (
     <div className="rounded-xl bg-white/7 p-3">
-      <span className="text-[11px] font-medium text-[#d9f99d]">{label}</span>
+      <span className="text-[11px] font-medium text-[#d9e9f7]">{label}</span>
       <p className="mt-1 text-sm leading-6 text-white/75">{text}</p>
     </div>
   );
@@ -3019,7 +3014,7 @@ function ChartCard({
   return (
     <div className="rounded-2xl border border-[#dfe5df] bg-white p-5">
       <div className="mb-4 flex items-center gap-3">
-        <LineChart className="size-4 text-[#39765e]" />
+        <LineChart className="size-4 text-[#4672a8]" />
         <div>
           <h2 className="font-semibold">{title}</h2>
           <p className="text-xs text-[#7b887f]">{detail}</p>
@@ -3064,12 +3059,12 @@ function SummaryCard({
   tone: 'work' | 'side' | 'health';
 }) {
   const colors = {
-    work: 'bg-[#e5eee9] text-[#1d5a43]',
+    work: 'bg-[#e7f0fa] text-[#174578]',
     side: 'bg-[#eee9f7] text-[#694aa0]',
     health: 'bg-[#f7eadf] text-[#a55b27]',
   };
   const bars = {
-    work: 'bg-[#35775d]',
+    work: 'bg-[#4672a8]',
     side: 'bg-[#8063ad]',
     health: 'bg-[#c8753b]',
   };
@@ -3121,7 +3116,7 @@ function PageIntro({
       </div>
       <button
         onClick={onAction}
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#153e32] px-4 text-sm font-medium text-white"
+        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#174578] px-4 text-sm font-medium text-white"
       >
         <Plus className="size-4" />
         {action}
@@ -3156,7 +3151,7 @@ function MobileNav({
         <button
           key={label}
           onClick={() => setActive(label)}
-          className={`flex min-w-16 shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[9px] ${active === label ? 'bg-[#e5eee9] text-[#153e32]' : 'text-[#78837d]'}`}
+          className={`flex min-w-16 shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[9px] ${active === label ? 'bg-[#e7f0fa] text-[#174578]' : 'text-[#607184]'}`}
         >
           <Icon className="size-4" />
           {label}
@@ -3315,7 +3310,7 @@ function RecordDialog({
         createdAt: new Date().toISOString(),
         weight: Number(Number(data.get('weight')).toFixed(2)),
         bodyFat: Number(Number(data.get('bodyFat')).toFixed(2)),
-        workouts: Number(data.get('workouts')),
+        workouts: 0,
       };
       const { error } = await client.from('health_logs').insert({
           user_id: session.user.id,
@@ -3476,7 +3471,7 @@ function RecordDialog({
             <button
               key={item}
               onClick={() => { setSelected(item); setSubmitError(''); }}
-              className={`flex-1 whitespace-nowrap rounded-lg px-2 py-2 text-xs ${selected === item ? 'bg-[#153e32] text-white' : 'text-[#6f7973] hover:bg-[#f1f3f1]'}`}
+              className={`flex-1 whitespace-nowrap rounded-lg px-2 py-2 text-xs ${selected === item ? 'bg-[#174578] text-white' : 'text-[#607184] hover:bg-[#f3f8fc]'}`}
             >
               {item}
             </button>
@@ -3551,12 +3546,6 @@ function RecordDialog({
                 label="体脂率（%）"
                 type="number"
                 step="0.01"
-                required
-              />
-              <Field
-                name="workouts"
-                label="本周训练次数"
-                type="number"
                 required
               />
             </>
@@ -3650,7 +3639,7 @@ function RecordDialog({
               {submitError}
             </p>
           )}
-          <button disabled={isSaving} className="h-10 w-full rounded-xl bg-[#153e32] text-sm font-medium text-white disabled:cursor-wait disabled:opacity-60">
+          <button disabled={isSaving} className="h-10 w-full rounded-xl bg-[#174578] text-sm font-medium text-white disabled:cursor-wait disabled:opacity-60">
             {isSaving ? '正在保存…' : selected === '修改副业收入' ? '保存修改' : '保存记录'}
           </button>
         </form>
@@ -3683,7 +3672,7 @@ function Field({
         required={required}
         step={step}
         defaultValue={defaultValue}
-        className="h-10 w-full rounded-xl border border-[#dfe5df] px-3 outline-none focus:border-[#6f8f80]"
+        className="h-10 w-full rounded-xl border border-[#d7e3ef] px-3 outline-none focus:border-[#89a9c9]"
       />
     </label>
   );
@@ -3792,7 +3781,7 @@ function Login({
   return (
     <main className="grid min-h-screen place-items-center bg-[#eef7ff] p-4">
       <div className="w-full max-w-md rounded-3xl bg-white p-7 shadow-xl">
-        <div className="mb-6 grid size-12 place-items-center rounded-2xl bg-[#153e32] text-[#d9f99d]">
+        <div className="mb-6 grid size-12 place-items-center rounded-2xl bg-[#174578] text-[#d9e9f7]">
           <Target />
         </div>
         <h1 className="text-2xl font-semibold">登录 Ryan's 个人看板</h1>
@@ -3808,15 +3797,15 @@ function Login({
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="h-10 w-full rounded-xl border border-[#dfe5df] px-3 outline-none focus:border-[#6f8f80]"
+              className="h-10 w-full rounded-xl border border-[#d7e3ef] px-3 outline-none focus:border-[#89a9c9]"
             />
           </label>
-          <button className="mt-4 h-11 w-full rounded-xl bg-[#153e32] text-sm font-medium text-white">
+          <button className="mt-4 h-11 w-full rounded-xl bg-[#174578] text-sm font-medium text-white">
             {handoffPending ? '重新发送登录链接' : '发送登录链接'}
           </button>
         </form>
         {message && (
-          <p className="mt-4 rounded-xl bg-[#eef4ef] p-3 text-sm">{message}</p>
+          <p className="mt-4 rounded-xl bg-[#eef4f9] p-3 text-sm">{message}</p>
         )}
         <p className="mt-5 text-xs text-[#8a948e]">
           Notion 邮箱可以不同；你的邮箱和数据不会写入公开代码。
@@ -3829,7 +3818,7 @@ function CenteredMessage({ title, detail }: { title: string; detail: string }) {
   return (
     <main className="grid min-h-screen place-items-center bg-[#eef7ff]">
       <div className="text-center">
-        <RefreshCw className="mx-auto mb-3 size-6 animate-spin text-[#39765e]" />
+        <RefreshCw className="mx-auto mb-3 size-6 animate-spin text-[#4672a8]" />
         <b>{title}</b>
         <p className="mt-1 text-sm text-[#7b887f]">{detail}</p>
       </div>
