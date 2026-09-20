@@ -2657,20 +2657,63 @@ function PlanAndReflectionView({
       </form>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {notes.map((note) => (
-          <article key={note.id} className="rounded-2xl border border-[#d7e3ef] bg-white p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div><p className="text-xs text-[#718078]">业务日期 {note.noteDate} · 记录于 {beijingDateTimeString(note.createdAt)}</p><span className="mt-2 inline-flex rounded-lg bg-[#eaf1f8] px-2 py-1 text-xs text-[#174578]">{note.category || '未分类'}</span></div>
-              <button type="button" onClick={() => setManagingNote(note)} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[#bfd0e1] px-3 py-2 text-xs font-medium text-[#174578]"><SlidersHorizontal className="size-3.5" />管理</button>
-            </div>
-            <h2 className="mt-1 font-semibold">{note.title || '未命名记录'}</h2>
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#536477]">{note.content || '（图片记录）'}</p>
-            {note.imagePaths.length > 0 && <div className="mt-4 grid grid-cols-2 gap-2">{note.imagePaths.map((path) => imageUrls[path] ? <img key={path} src={imageUrls[path]} alt={note.title || '计划和感悟图片'} className="aspect-square w-full rounded-xl object-cover" /> : null)}</div>}
-          </article>
+          <PlanNoteCard key={note.id} note={note} imageUrls={imageUrls} onManage={() => setManagingNote(note)} />
         ))}
         {notes.length === 0 && <div className="col-span-full rounded-2xl border border-dashed border-[#b9cbe0] bg-white/60 p-10 text-center text-sm text-[#718078]">还没有计划和感悟记录</div>}
       </section>
       {managingNote && <PlanNoteManagerDialog note={managingNote} session={session} close={() => setManagingNote(null)} onSaved={onSaved} />}
     </>
+  );
+}
+
+const planNotePreviewHeight = 320;
+
+function PlanNoteCard({
+  note,
+  imageUrls,
+  onManage,
+}: {
+  note: PlanNote;
+  imageUrls: Record<string, string>;
+  onManage: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [collapsible, setCollapsible] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const measureOverflow = useCallback(() => {
+    const content = contentRef.current;
+    if (!content) return;
+    setCollapsible(content.scrollHeight > planNotePreviewHeight + 1);
+  }, []);
+
+  useEffect(() => {
+    measureOverflow();
+    const content = contentRef.current;
+    if (!content || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measureOverflow);
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [imageUrls, measureOverflow, note.content, note.imagePaths]);
+
+  return (
+    <article className="self-start rounded-2xl border border-[#d7e3ef] bg-white p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div><p className="text-xs text-[#718078]">业务日期 {note.noteDate} · 记录于 {beijingDateTimeString(note.createdAt)}</p><span className="mt-2 inline-flex rounded-lg bg-[#eaf1f8] px-2 py-1 text-xs text-[#174578]">{note.category || '未分类'}</span></div>
+        <button type="button" onClick={onManage} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[#bfd0e1] px-3 py-2 text-xs font-medium text-[#174578]"><SlidersHorizontal className="size-3.5" />管理</button>
+      </div>
+      <h2 className="mt-1 font-semibold">{note.title || '未命名记录'}</h2>
+      <div ref={contentRef} className={`relative ${expanded ? '' : 'max-h-[320px] overflow-hidden'}`}>
+        <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#536477]">{note.content || '（图片记录）'}</p>
+        {note.imagePaths.length > 0 && <div className="mt-4 grid grid-cols-2 gap-2">{note.imagePaths.map((path) => imageUrls[path] ? <img key={path} src={imageUrls[path]} alt={note.title || '计划和感悟图片'} onLoad={measureOverflow} className="aspect-square w-full rounded-xl object-cover" /> : null)}</div>}
+        {!expanded && collapsible && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />}
+      </div>
+      {collapsible && (
+        <button type="button" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)} className="mt-3 w-full rounded-xl border border-[#cfdce8] bg-[#f7faff] px-4 py-2 text-sm font-medium text-[#174578]">
+          {expanded ? '收起内容' : '展开全部'}
+        </button>
+      )}
+    </article>
   );
 }
 
