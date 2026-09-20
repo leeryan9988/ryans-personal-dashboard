@@ -899,7 +899,7 @@ export default function DashboardApp() {
         <div className="mx-auto max-w-[1500px] px-4 py-6 pb-24 sm:px-8 sm:py-8 lg:pb-8">
           {!isCloudConfigured && <CloudSetupBanner />}
           {active === '总目标' && (
-            <TotalGoalsView goals={goals} openRecord={setRecordKind} onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }} />
+            <TotalGoalsView products={products} profits={profits} health={health} finance={finance} books={books} goals={goals} openRecord={setRecordKind} onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }} setActive={setActive} />
           )}
           {active === '工作' && (
             <WorkView
@@ -1245,72 +1245,145 @@ const goalAreas: Goal['area'][] = ['工作', '副业', '身体', '个人财务',
 const chartColors = ['#4672a8', '#c8753b', '#7d65a7', '#d6a63f', '#5d7fa3'];
 
 function TotalGoalsView({
+  products,
+  profits,
+  health,
+  finance,
+  books,
   goals,
   openRecord,
   onEditGoal,
+  setActive,
 }: {
+  products: WorkProduct[];
+  profits: ProfitLog[];
+  health: HealthLog[];
+  finance: FinanceLog[];
+  books: Book[];
   goals: Goal[];
   openRecord: (k: RecordKind) => void;
   onEditGoal: (goal: Goal) => void;
+  setActive: (area: Area) => void;
 }) {
   const chartRange = useTimeRange();
-  const chartGoals = goals.filter((goal) => isInTimeRange(goal.startedAt, chartRange));
-  const completed = goals.filter((goal) => goal.status === '已达成').length;
-  const activeGoals = goals.filter((goal) => goal.status === '进行中');
-  const overall = goals.length ? (completed / goals.length) * 100 : 0;
-  const statusData = [
-    { name: '进行中', value: chartGoals.filter((goal) => goal.status === '进行中').length },
-    { name: '已达成', value: chartGoals.filter((goal) => goal.status === '已达成').length },
-    { name: '已归档', value: chartGoals.filter((goal) => goal.status === '已归档').length },
-  ].filter((item) => item.value > 0).map((item, index) => ({ ...item, fill: chartColors[index] }));
+  const visibleGoals = goals.filter((goal) => isInTimeRange(goal.startedAt, chartRange));
+  const activeGoals = visibleGoals.filter((goal) => goal.status === '进行中');
+  const historicalGoals = visibleGoals.filter((goal) => goal.status !== '进行中');
+  const completed = visibleGoals.filter((goal) => goal.status === '已达成').length;
+  const archived = visibleGoals.filter((goal) => goal.status === '已归档').length;
+  const overall = visibleGoals.length
+    ? visibleGoals.reduce((sum, goal) => sum + goalProgress(goal), 0) / visibleGoals.length
+    : 0;
+  const overdue = activeGoals.filter((goal) => goal.deadline < localDateString()).length;
+  const visibleProducts = products.filter((item) => isInTimeRange(item.createdAt, chartRange));
+  const averageMargin = visibleProducts.length ? visibleProducts.reduce((sum, item) => sum + item.margin, 0) / visibleProducts.length : 0;
+  const visibleProfits = profits.filter((item) => isInTimeRange(item.weekStart || item.week, chartRange));
+  const sideProfit = visibleProfits.reduce((sum, item) => sum + item.profit, 0);
+  const topSideProject = Array.from(visibleProfits.reduce<Map<string, number>>((totals, item) => totals.set(item.project, (totals.get(item.project) ?? 0) + item.profit), new Map()).entries()).sort((a, b) => b[1] - a[1])[0];
+  const visibleHealth = health.filter((item) => isInTimeRange(item.loggedAt || item.date, chartRange)).slice().sort((a, b) => normalizedDate(a.loggedAt || a.date).localeCompare(normalizedDate(b.loggedAt || b.date)) || a.createdAt.localeCompare(b.createdAt));
+  const firstHealth = visibleHealth[0];
+  const latestHealth = visibleHealth.at(-1);
+  const weightChange = firstHealth && latestHealth ? latestHealth.weight - firstHealth.weight : 0;
+  const weightGoal = goals.find((goal) => goal.area === '身体' && goal.status === '进行中' && (goal.metric.includes('体重') || goal.title.includes('体重') || goal.unit.toLowerCase() === 'kg'));
+  const visibleFinance = finance.filter((item) => isInTimeRange(item.occurredAt || item.date, chartRange));
+  const financeIncome = visibleFinance.filter((item) => item.type === '收入').reduce((sum, item) => sum + item.amount, 0);
+  const financeExpense = visibleFinance.filter((item) => item.type === '支出').reduce((sum, item) => sum + item.amount, 0);
+  const visibleBooks = books.filter((item) => isInTimeRange(item.startDate || item.createdAt, chartRange));
+  const readingBooks = visibleBooks.filter((item) => item.status === '在读').length;
+  const finishedBooks = visibleBooks.filter((item) => item.status === '已读').length;
   const areaData = goalAreas.map((area) => {
-    const rows = chartGoals.filter((goal) => goal.area === area);
+    const rows = visibleGoals.filter((goal) => goal.area === area);
     const progress = rows.length
       ? rows.reduce((sum, goal) => sum + goalProgress(goal), 0) / rows.length
       : 0;
     return { area, progress, count: rows.length };
-  });
+  }).filter((item) => item.count > 0);
 
   return (
     <>
       <PageIntro
         eyebrow="总目标"
-        title="所有目标的总体达成情况"
-        detail="集中查看各目标板块的目标数量、平均进度和状态分布；具体分析与历史仍保留在各自板块。"
+        title="目标进度一眼看清"
+        detail="直接查看每个目标现在做到哪里、距离目标还有多少、何时截止，以及各板块的整体推进情况。"
         action="设立新目标"
         onAction={() => openRecord('新目标')}
       />
-      <section className="mb-5 grid gap-4 sm:grid-cols-3">
-        <Metric label="总体达成率" value={`${formatDecimal(overall)}%`} note="按已达成目标数量计算" />
-        <Metric label="进行中" value={`${activeGoals.length} 个`} note="跨板块汇总" />
-        <Metric label="累计目标" value={`${goals.length} 个`} note="包含达成和归档历史" />
+      <section className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Metric label="整体平均进度" value={`${formatDecimal(overall)}%`} note="按每个目标实际进度计算" />
+        <Metric label="进行中" value={`${activeGoals.length} 个`} note={overdue ? `${overdue} 个已超过截止日期` : '当前没有逾期目标'} />
+        <Metric label="已达成" value={`${completed} 个`} note="已完成目标" />
+        <Metric label="已归档" value={`${archived} 个`} note="保留在历史记录中" />
       </section>
-      <section className="mb-5 grid gap-5 lg:grid-cols-2">
-        <ChartCard title="目标状态分布" detail="按目标开始日期筛选" timeRange={chartRange}>
-          {statusData.length ? (
-            <ResponsiveContainer width="100%" height={270}>
-              <PieChart>
-                <Pie data={statusData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={96} paddingAngle={4} label />
-                <Tooltip formatter={(value) => [formatDecimal(Number(value)), '目标数量']} />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : <ChartEmpty label="设立目标后显示状态分布" />}
-        </ChartCard>
-        <ChartCard title="各板块平均进度" detail="按目标当前值与目标值计算" timeRange={chartRange}>
-          {chartGoals.length ? (
-            <ResponsiveContainer width="100%" height={270}>
-              <ReBarChart data={areaData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e9ede9" />
-                <XAxis dataKey="area" tick={{ fontSize: 11 }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(value) => [`${formatDecimal(Number(value))}%`, '平均进度']} />
-                <Bar dataKey="progress" name="平均进度 %" fill="#4672a8" radius={[8, 8, 0, 0]} />
-              </ReBarChart>
-            </ResponsiveContainer>
-          ) : <ChartEmpty label="设立目标后显示板块进度" />}
-        </ChartCard>
+      <section className="mb-5 rounded-2xl border border-[#d7e3ef] bg-white px-5 py-4">
+        <div><h2 className="font-semibold">查看范围</h2><p className="text-xs text-[#71869b]">按目标开始日期筛选下方汇总、当前目标与历史记录</p></div>
+        <TimeRangeFilter range={chartRange} />
       </section>
-      <AreaGoalSection area="全部" goals={activeGoals} history={goals.filter((goal) => goal.status !== '进行中')} openRecord={openRecord} onEditGoal={onEditGoal} />
+      <section className="mb-5">
+        <div className="mb-3"><h2 className="font-semibold">五大板块关键数据</h2><p className="text-xs text-[#71869b]">各板块最重要的信息集中展示，并跟随上方日期范围变化</p></div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <article className="flex min-h-[250px] flex-col rounded-2xl border border-[#d7e3ef] bg-white p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold"><BriefcaseBusiness className="size-4 text-[#4672a8]" />工作</div>
+            <p className="mt-5 text-3xl font-semibold">{visibleProducts.length}<small className="ml-1 text-sm font-normal text-[#71869b]">个产品</small></p>
+            <p className="mt-2 text-sm text-[#536477]">平均毛利率 <b className="text-[#174578]">{formatDecimal(averageMargin)}%</b></p>
+            <p className="mt-2 text-xs leading-5 text-[#71869b]">{visibleProducts.length ? `${visibleProducts.filter((item) => item.margin >= 30).length} 个产品毛利率达到 30%+` : '还没有产品记录'}</p>
+            <button type="button" onClick={() => setActive('工作')} className="mt-auto pt-4 text-left text-xs font-medium text-[#174578]">查看工作板块 →</button>
+          </article>
+          <article className="flex min-h-[250px] flex-col rounded-2xl border border-[#d7e3ef] bg-white p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold"><TrendingUp className="size-4 text-[#7d65a7]" />副业</div>
+            <p className="mt-5 text-2xl font-semibold">{formatMoney(sideProfit)}</p>
+            <p className="mt-2 text-sm text-[#536477]">筛选范围累计利润</p>
+            <p className="mt-2 text-xs leading-5 text-[#71869b]">{topSideProject ? `贡献最高：${topSideProject[0]} ${formatMoney(topSideProject[1])}` : '还没有副业收入记录'}</p>
+            <button type="button" onClick={() => setActive('副业')} className="mt-auto pt-4 text-left text-xs font-medium text-[#174578]">查看副业板块 →</button>
+          </article>
+          <article className="flex min-h-[250px] flex-col rounded-2xl border border-[#d7e3ef] bg-white p-4">
+            <div className="flex items-center justify-between gap-2"><div className="flex items-center gap-2 text-sm font-semibold"><Activity className="size-4 text-[#4672a8]" />身体</div>{weightGoal?.target != null && <span className="rounded-lg bg-[#e7f0fa] px-2 py-1 text-[11px] text-[#174578]">目标 {formatWeight(weightGoal.target)} kg</span>}</div>
+            <div className="mt-4 flex items-end justify-between gap-2"><p className="text-2xl font-semibold">{latestHealth ? `${formatWeight(latestHealth.weight)} kg` : '待记录'}</p>{latestHealth && firstHealth && <span className={`text-xs font-medium ${weightChange <= 0 ? 'text-[#174578]' : 'text-[#9b5336]'}`}>{weightChange > 0 ? '+' : ''}{formatWeight(weightChange)} kg</span>}</div>
+            {visibleHealth.length ? <div className="mt-3 h-20"><ResponsiveContainer width="100%" height="100%"><ReLineChart data={visibleHealth}><XAxis dataKey="date" hide /><YAxis domain={['dataMin - 1', 'dataMax + 1']} hide /><Tooltip formatter={(value) => [`${formatWeight(Number(value))} kg`, '体重']} labelFormatter={(value) => normalizedDate(String(value))} /><Line type="monotone" dataKey="weight" stroke="#4672a8" strokeWidth={2.5} dot={visibleHealth.length < 8} /></ReLineChart></ResponsiveContainer></div> : <p className="mt-4 text-xs text-[#71869b]">记录体重后显示变化趋势</p>}
+            <button type="button" onClick={() => setActive('身体')} className="mt-auto pt-3 text-left text-xs font-medium text-[#174578]">查看身体板块 →</button>
+          </article>
+          <article className="flex min-h-[250px] flex-col rounded-2xl border border-[#d7e3ef] bg-white p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold"><WalletCards className="size-4 text-[#4672a8]" />个人财务</div>
+            <p className={`mt-5 text-2xl font-semibold ${financeIncome - financeExpense >= 0 ? 'text-[#174578]' : 'text-[#9b5336]'}`}>{formatMoney(financeIncome - financeExpense)}</p>
+            <p className="mt-2 text-sm text-[#536477]">筛选范围净结余</p>
+            <div className="mt-3 space-y-1 text-xs text-[#71869b]"><p>收入 {formatMoney(financeIncome)}</p><p>支出 {formatMoney(financeExpense)}</p></div>
+            <button type="button" onClick={() => setActive('个人财务')} className="mt-auto pt-4 text-left text-xs font-medium text-[#174578]">查看财务板块 →</button>
+          </article>
+          <article className="flex min-h-[250px] flex-col rounded-2xl border border-[#d7e3ef] bg-white p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold"><BookOpen className="size-4 text-[#7d65a7]" />读书清单</div>
+            <p className="mt-5 text-3xl font-semibold">{readingBooks}<small className="ml-1 text-sm font-normal text-[#71869b]">本在读</small></p>
+            <p className="mt-2 text-sm text-[#536477]">已读 {finishedBooks} 本</p>
+            <p className="mt-2 text-xs leading-5 text-[#71869b]">{visibleBooks.length ? `共安排 ${visibleBooks.length} 本书` : '还没有读书计划'}</p>
+            <button type="button" onClick={() => setActive('读书清单')} className="mt-auto pt-4 text-left text-xs font-medium text-[#174578]">查看读书板块 →</button>
+          </article>
+        </div>
+      </section>
+      <section className="grid gap-5 xl:grid-cols-[1.35fr_.85fr]">
+        <div className="rounded-2xl border border-[#d7e3ef] bg-white p-5">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div><h2 className="font-semibold">当前目标</h2><p className="text-xs text-[#71869b]">当前值、目标值、完成比例和截止时间集中显示</p></div>
+            <span className="rounded-lg bg-[#e7f0fa] px-2.5 py-1 text-xs font-medium text-[#174578]">{activeGoals.length} 个进行中</span>
+          </div>
+          {activeGoals.length ? <div className="grid gap-4 lg:grid-cols-2">{activeGoals.map((goal) => <GoalCard key={goal.id} goal={goal} onEdit={() => onEditGoal(goal)} />)}</div> : <ChartEmpty label="当前筛选范围内没有进行中的目标" />}
+        </div>
+        <div className="rounded-2xl border border-[#d7e3ef] bg-white p-5">
+          <div className="mb-5"><h2 className="font-semibold">板块进度排行</h2><p className="text-xs text-[#71869b]">只显示已经设立目标的板块</p></div>
+          {areaData.length ? <div className="space-y-5">{areaData.sort((a, b) => b.progress - a.progress).map((item) => (
+            <div key={item.area}>
+              <div className="mb-2 flex items-end justify-between gap-3"><div><b className="text-sm">{item.area}</b><p className="text-xs text-[#71869b]">{item.count} 个目标</p></div><strong className="text-lg text-[#174578]">{formatDecimal(item.progress)}%</strong></div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-[#e7f0fa]"><div className="h-full rounded-full bg-[#4672a8] transition-[width]" style={{ width: `${item.progress}%` }} /></div>
+            </div>
+          ))}</div> : <ChartEmpty label="当前筛选范围内还没有目标" />}
+        </div>
+      </section>
+      <section className="mt-5 rounded-2xl border border-[#d7e3ef] bg-white p-5">
+        <div className="mb-4"><h2 className="font-semibold">已完成与归档</h2><p className="text-xs text-[#71869b]">达成结果和目标周期会永久保留</p></div>
+        {historicalGoals.length ? <div className="space-y-2">{historicalGoals.map((goal) => (
+          <div key={goal.id} className="flex flex-col justify-between gap-3 rounded-xl bg-[#f4f8fc] px-4 py-3 text-sm sm:flex-row sm:items-center">
+            <div><b>{goal.title}</b><p className="mt-1 text-xs text-[#607184]">{goal.area} · {goal.startedAt} — {goal.deadline}{goal.result ? ` · ${goal.result}` : ''}</p></div>
+            <span className="w-fit rounded-lg bg-[#e7f0fa] px-2.5 py-1 text-xs font-medium text-[#174578]">{goal.status}</span>
+          </div>
+        ))}</div> : <p className="rounded-xl bg-[#f7faff] px-4 py-8 text-center text-sm text-[#71869b]">还没有已完成或已归档的目标</p>}
+      </section>
     </>
   );
 }
