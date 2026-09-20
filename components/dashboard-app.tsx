@@ -2666,8 +2666,6 @@ function PlanAndReflectionView({
   );
 }
 
-const planNotePreviewHeight = 320;
-
 function PlanNoteCard({
   note,
   imageUrls,
@@ -2682,10 +2680,11 @@ function PlanNoteCard({
   const contentRef = useRef<HTMLDivElement>(null);
 
   const measureOverflow = useCallback(() => {
+    if (expanded) return;
     const content = contentRef.current;
     if (!content) return;
-    setCollapsible(content.scrollHeight > planNotePreviewHeight + 1);
-  }, []);
+    setCollapsible(content.scrollHeight > content.clientHeight + 1);
+  }, [expanded]);
 
   useEffect(() => {
     measureOverflow();
@@ -2697,13 +2696,13 @@ function PlanNoteCard({
   }, [imageUrls, measureOverflow, note.content, note.imagePaths]);
 
   return (
-    <article className="self-start rounded-2xl border border-[#d7e3ef] bg-white p-5">
+    <article className={`flex self-start flex-col rounded-2xl border border-[#d7e3ef] bg-white p-5 ${expanded ? '' : 'h-[426px]'}`}>
       <div className="flex items-start justify-between gap-3">
         <div><p className="text-xs text-[#718078]">业务日期 {note.noteDate} · 记录于 {beijingDateTimeString(note.createdAt)}</p><span className="mt-2 inline-flex rounded-lg bg-[#eaf1f8] px-2 py-1 text-xs text-[#174578]">{note.category || '未分类'}</span></div>
         <button type="button" onClick={onManage} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[#bfd0e1] px-3 py-2 text-xs font-medium text-[#174578]"><SlidersHorizontal className="size-3.5" />管理</button>
       </div>
       <h2 className="mt-1 font-semibold">{note.title || '未命名记录'}</h2>
-      <div ref={contentRef} className={`relative ${expanded ? '' : 'max-h-[320px] overflow-hidden'}`}>
+      <div ref={contentRef} className={`relative min-h-0 ${expanded ? '' : 'flex-1 overflow-hidden'}`}>
         <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#536477]">{note.content || '（图片记录）'}</p>
         {note.imagePaths.length > 0 && <div className="mt-4 grid grid-cols-2 gap-2">{note.imagePaths.map((path) => imageUrls[path] ? <img key={path} src={imageUrls[path]} alt={note.title || '计划和感悟图片'} onLoad={measureOverflow} className="aspect-square w-full rounded-xl object-cover" /> : null)}</div>}
         {!expanded && collapsible && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />}
