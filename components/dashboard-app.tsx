@@ -2810,7 +2810,7 @@ function PlanNoteCard({
       )}
       </article>
       {previewImage && typeof document !== 'undefined' && createPortal(
-        <div role="presentation" className="fixed inset-0 z-[100] flex items-center justify-center bg-[#dcecfb]/35 p-4 sm:justify-end sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && setPreviewImage(null)}>
+        <div role="presentation" className="fixed inset-0 z-[100] flex items-center justify-center bg-[#dcecfb]/35 p-4 sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && setPreviewImage(null)}>
           <div role="dialog" aria-modal="true" aria-label="查看原图" className="flex max-h-[92vh] w-full flex-col rounded-2xl border border-[#d7e3ef] bg-white p-3 shadow-2xl sm:w-[min(68vw,960px)] sm:p-4">
             <div className="mb-3 flex items-center justify-between gap-4 text-sm text-[#174578]">
               <span className="truncate">{previewImage.alt}</span>
