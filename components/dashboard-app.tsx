@@ -2810,13 +2810,13 @@ function PlanNoteCard({
       )}
       </article>
       {previewImage && typeof document !== 'undefined' && createPortal(
-        <div role="presentation" className="fixed inset-0 z-[100] flex items-center justify-center bg-[#071526]/92 p-4 backdrop-blur-sm" onMouseDown={(event) => event.target === event.currentTarget && setPreviewImage(null)}>
-          <div role="dialog" aria-modal="true" aria-label="查看原图" className="flex max-h-[96vh] max-w-[96vw] flex-col">
-            <div className="mb-3 flex items-center justify-between gap-4 text-sm text-white">
+        <div role="presentation" className="fixed inset-0 z-[100] flex items-center justify-center bg-[#dcecfb]/35 p-4 sm:justify-end sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && setPreviewImage(null)}>
+          <div role="dialog" aria-modal="true" aria-label="查看原图" className="flex max-h-[92vh] w-full flex-col rounded-2xl border border-[#d7e3ef] bg-white p-3 shadow-2xl sm:w-[min(68vw,960px)] sm:p-4">
+            <div className="mb-3 flex items-center justify-between gap-4 text-sm text-[#174578]">
               <span className="truncate">{previewImage.alt}</span>
-              <div className="flex shrink-0 items-center gap-2"><a href={previewImage.url} target="_blank" rel="noreferrer" className="rounded-xl bg-white/12 px-3 py-2 hover:bg-white/20">新窗口打开原图</a><button type="button" onClick={() => setPreviewImage(null)} aria-label="关闭原图" className="grid size-9 place-items-center rounded-xl bg-white/12 hover:bg-white/20"><X className="size-5" /></button></div>
+              <div className="flex shrink-0 items-center gap-2"><a href={previewImage.url} target="_blank" rel="noreferrer" className="rounded-xl bg-[#eef4f9] px-3 py-2 hover:bg-[#dce9f5]">新窗口打开原图</a><button type="button" onClick={() => setPreviewImage(null)} aria-label="关闭原图" className="grid size-9 place-items-center rounded-xl bg-[#eef4f9] hover:bg-[#dce9f5]"><X className="size-5" /></button></div>
             </div>
-            <img src={previewImage.url} alt={previewImage.alt} className="max-h-[88vh] max-w-[94vw] rounded-xl object-contain shadow-2xl" />
+            <img src={previewImage.url} alt={previewImage.alt} className="max-h-[calc(92vh-5rem)] w-full rounded-xl object-contain" />
           </div>
         </div>,
         document.body,
