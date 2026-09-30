@@ -2750,6 +2750,7 @@ function PlanNoteCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [collapsible, setCollapsible] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{ url: string; alt: string } | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const measureOverflow = useCallback(() => {
@@ -2768,8 +2769,23 @@ function PlanNoteCard({
     return () => observer.disconnect();
   }, [imageUrls, measureOverflow, note.content, note.imagePaths]);
 
+  useEffect(() => {
+    if (!previewImage) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPreviewImage(null);
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [previewImage]);
+
   return (
-    <article className={`flex self-start flex-col rounded-2xl border border-[#d7e3ef] bg-white p-5 ${expanded ? '' : 'h-[426px]'}`}>
+    <>
+      <article className={`flex self-start flex-col rounded-2xl border border-[#d7e3ef] bg-white p-5 ${expanded ? '' : 'h-[426px]'}`}>
       <div className="flex items-start justify-between gap-3">
         <div><p className="text-xs text-[#718078]">业务日期 {note.noteDate} · 记录于 {beijingDateTimeString(note.createdAt)}</p><span className="mt-2 inline-flex rounded-lg bg-[#eaf1f8] px-2 py-1 text-xs text-[#174578]">{note.category || '未分类'}</span></div>
         <button type="button" onClick={onManage} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[#bfd0e1] px-3 py-2 text-xs font-medium text-[#174578]"><SlidersHorizontal className="size-3.5" />管理</button>
@@ -2777,7 +2793,14 @@ function PlanNoteCard({
       <h2 className="mt-1 font-semibold">{note.title || '未命名记录'}</h2>
       <div ref={contentRef} className={`relative min-h-0 ${expanded ? '' : 'flex-1 overflow-hidden'}`}>
         <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#536477]">{note.content || '（图片记录）'}</p>
-        {note.imagePaths.length > 0 && <div className="mt-4 grid grid-cols-2 gap-2">{note.imagePaths.map((path) => imageUrls[path] ? <img key={path} src={imageUrls[path]} alt={note.title || '计划和感悟图片'} onLoad={measureOverflow} className="aspect-square w-full rounded-xl object-cover" /> : null)}</div>}
+        {note.imagePaths.length > 0 && <div className="mt-4 grid grid-cols-2 gap-2">{note.imagePaths.map((path) => {
+          const imageUrl = imageUrls[path];
+          const imageAlt = note.title || '计划和感悟图片';
+          return imageUrl ? <button key={path} type="button" onClick={() => setPreviewImage({ url: imageUrl, alt: imageAlt })} aria-label={`查看原图：${imageAlt}`} className="group relative aspect-square overflow-hidden rounded-xl bg-[#eef4f9] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4672a8]">
+            <img src={imageUrl} alt={imageAlt} onLoad={measureOverflow} className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]" />
+            <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#102a43]/80 to-transparent px-3 pb-2 pt-8 text-center text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">点击查看原图</span>
+          </button> : null;
+        })}</div>}
         {!expanded && collapsible && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />}
       </div>
       {collapsible && (
@@ -2785,7 +2808,20 @@ function PlanNoteCard({
           {expanded ? '收起内容' : '展开全部'}
         </button>
       )}
-    </article>
+      </article>
+      {previewImage && typeof document !== 'undefined' && createPortal(
+        <div role="presentation" className="fixed inset-0 z-[100] flex items-center justify-center bg-[#071526]/92 p-4 backdrop-blur-sm" onMouseDown={(event) => event.target === event.currentTarget && setPreviewImage(null)}>
+          <div role="dialog" aria-modal="true" aria-label="查看原图" className="flex max-h-[96vh] max-w-[96vw] flex-col">
+            <div className="mb-3 flex items-center justify-between gap-4 text-sm text-white">
+              <span className="truncate">{previewImage.alt}</span>
+              <div className="flex shrink-0 items-center gap-2"><a href={previewImage.url} target="_blank" rel="noreferrer" className="rounded-xl bg-white/12 px-3 py-2 hover:bg-white/20">新窗口打开原图</a><button type="button" onClick={() => setPreviewImage(null)} aria-label="关闭原图" className="grid size-9 place-items-center rounded-xl bg-white/12 hover:bg-white/20"><X className="size-5" /></button></div>
+            </div>
+            <img src={previewImage.url} alt={previewImage.alt} className="max-h-[88vh] max-w-[94vw] rounded-xl object-contain shadow-2xl" />
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }
 
