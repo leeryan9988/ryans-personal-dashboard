@@ -51,6 +51,8 @@ const dialog=()=>page.getByRole('dialog');
 const done=async()=>{await dialog().getByRole('button',{name:'完成',exact:true}).click();};
 try {
   await page.goto('http://127.0.0.1:5180/tests/sticky-test.html');
+  assert.equal(await page.getByRole('button',{name:'待办清单',exact:true}).last().getAttribute('aria-pressed'),'true');
+  await page.getByRole('button',{name:'全部',exact:true}).click();
   await page.getByRole('button',{name:'文字便签',exact:true}).first().click();
   await dialog().getByLabel('标题',{exact:true}).fill('E2E 文字便签');
   await dialog().getByLabel('便签正文').fill('# 测试标题\n**粗体**\n[坏链接](javascript:alert(1))\n<script>alert(1)</script>');
@@ -60,11 +62,13 @@ try {
   assert.equal(await dialog().locator('script').count(),0);
   await done();
   // A reload must rehydrate from the server, not just a local draft.
-  await page.reload(); await page.getByRole('button',{name:'E2E 文字便签',exact:true}).waitFor();
+  await page.reload(); await page.getByRole('button',{name:'全部',exact:true}).click(); await page.getByRole('button',{name:'E2E 文字便签',exact:true}).waitFor();
   await page.getByRole('button',{name:'待办清单',exact:true}).first().click();
   await dialog().getByLabel('标题',{exact:true}).fill('E2E 清单');
   await dialog().getByLabel('新增待办').fill('第一项\n第二项\n第三项');
   await dialog().getByRole('button',{name:'添加待办',exact:true}).click();
+  await dialog().getByLabel('待办 2 截止时间（北京时间）').fill('2030-06-01T09:45');
+  await wait(()=>[...rows.values()].some(r=>r.title==='E2E 清单' && r.items[1]?.due_at==='2030-06-01T01:45:00.000Z'),'Beijing deadline');
   await dialog().getByRole('checkbox',{name:'完成 第一项',exact:true}).check();
   await dialog().getByRole('button',{name:'下移待办',exact:true}).first().click();
   await wait(()=>[...rows.values()].some(r=>r.title==='E2E 清单' && r.items.length===3 && r.items[1].completed_at),'todos autosave');
@@ -72,6 +76,20 @@ try {
   await dialog().getByRole('button',{name:'E2E 文字便签',exact:true}).click();
   await wait(()=>[...rows.values()].some(r=>r.title==='E2E 清单' && r.items[0].linked_note_id),'link');
   await done();
+  await page.getByRole('button',{name:'添加一条'}).click();
+  await page.getByLabel('在E2E 清单新增待办').fill('第四项');
+  await page.getByLabel('在E2E 清单新增待办').press('Enter');
+  await page.getByRole('button',{name:'E2E 清单',exact:true}).click();
+  await dialog().getByLabel('新增待办').fill('第五项\n第六项\n第七项');
+  await dialog().getByRole('button',{name:'添加待办',exact:true}).click();
+  await done();
+  await page.getByText('第七项',{exact:true}).waitFor();
+  assert.equal(await page.locator('.sticky-list-row').count(),7);
+  assert.ok(await page.getByText(/还剩|已逾期/).first().isVisible(),'countdown is shown on list row');
+  const {stickyRemaining,stickyBeijingInput}=await page.evaluate(async()=>{const mod=await import('/lib/sticky-notes.ts');return {stickyRemaining:[mod.stickyRemaining('2030-06-01T01:45:00.000Z',null,Date.parse('2030-06-01T00:00:00Z')),mod.stickyRemaining('2030-06-01T01:45:00.000Z',null,Date.parse('2030-06-01T02:00:00Z'))],stickyBeijingInput:mod.stickyBeijingInput('2030-06-01T01:45:00.000Z')};});
+  assert.deepEqual(stickyRemaining,['还剩 0 天 1 小时 45 分','已逾期 0 天 0 小时 15 分']);
+  assert.equal(stickyBeijingInput,'2030-06-01T09:45');
+  await page.getByRole('button',{name:'全部',exact:true}).click();
   await page.getByRole('button',{name:'E2E 文字便签',exact:true}).click();
   await dialog().getByRole('button',{name:'归档',exact:true}).click();await done();
   await page.getByRole('button',{name:'已归档',exact:true}).click();await page.getByRole('button',{name:'E2E 文字便签',exact:true}).click();
@@ -85,7 +103,7 @@ try {
   await page.getByRole('button',{name:'E2E 文字便签',exact:true}).click();
   await dialog().getByLabel('便签正文').fill('离线草稿内容');
   await page.getByText('simulated offline write failure',{exact:true}).first().waitFor();
-  await page.reload(); await page.getByRole('button',{name:'E2E 文字便签',exact:true}).waitFor();
+  await page.reload(); await page.getByRole('button',{name:'全部',exact:true}).click(); await page.getByRole('button',{name:'E2E 文字便签',exact:true}).waitFor();
   failWrites=false;
   await page.evaluate(()=>window.dispatchEvent(new Event('online')));
   await wait(()=>[...rows.values()].some(r=>r.content==='离线草稿内容'),'retry');
@@ -115,12 +133,14 @@ try {
   await page.getByRole('dialog',{name:'查看原图'}).waitFor();
   assert.ok(await page.getByRole('dialog',{name:'查看原图'}).evaluate(el=>{const r=el.getBoundingClientRect();return Math.abs(r.left+r.width/2-innerWidth/2)<2;}),'centered viewer');
   await page.keyboard.press('Escape');await done();
+  await page.getByRole('button',{name:'待办清单',exact:true}).last().click();
   await page.screenshot({path:'work/sticky-desktop.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth),'mobile horizontal overflow');
+  await page.screenshot({path:'work/sticky-mobile-list.png',fullPage:true});
   await page.getByRole('button',{name:'最终内容',exact:true}).click();
   assert.ok(await dialog().evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight;}),'mobile dialog bounds');
   await page.screenshot({path:'work/sticky-mobile.png',fullPage:true});
   assert.deepEqual(faults,[]);
-  console.log(JSON.stringify({passed:['autosave','reload','safe Markdown','multiline todos','complete and reorder','link','archive restore','trash restore','failed-save recovery','conflict preserve both','typing during save','duplicate click guard','Chinese filename image upload','centered image viewer','mobile layout'],rows:rows.size,pageErrors:faults}));
+  console.log(JSON.stringify({passed:['autosave','reload','safe Markdown','multiline todos','Beijing deadline','live countdown','seven visible rows','quick add','complete and reorder','link','archive restore','trash restore','failed-save recovery','conflict preserve both','typing during save','duplicate click guard','Chinese filename image upload','centered image viewer','mobile layout'],rows:rows.size,pageErrors:faults}));
 } finally { await browser.close(); server.kill(); }

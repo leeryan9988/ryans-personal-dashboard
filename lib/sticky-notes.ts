@@ -5,6 +5,7 @@ export type StickyItem = {
   text: string;
   completed_at: string | null;
   linked_note_id: string | null;
+  due_at?: string | null;
 };
 export type StickyNote = {
   id: string;
@@ -73,6 +74,7 @@ export function splitStickyItems(text: string): StickyItem[] {
       text: line.slice(0, 2000),
       completed_at: null,
       linked_note_id: null,
+      due_at: null,
     }));
 }
 
@@ -110,6 +112,45 @@ export function stickyTime(value: string | null): string {
     minute: '2-digit',
     hourCycle: 'h23',
   }).format(new Date(value));
+}
+
+// datetime-local contains wall-clock numbers. Treat them as Beijing time even
+// when the browser is running in another timezone.
+export function stickyBeijingInput(value: string | null | undefined): string {
+  if (!value) return '';
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(value));
+  const field = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? '';
+  return `${field('year')}-${field('month')}-${field('day')}T${field('hour')}:${field('minute')}`;
+}
+
+export function stickyBeijingDeadline(value: string): string | null {
+  if (!value) return null;
+  const parsed = new Date(`${value}+08:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
+
+export function stickyRemaining(
+  dueAt: string | null | undefined,
+  completedAt: string | null,
+  now = Date.now(),
+): string | null {
+  if (!dueAt) return null;
+  const deadline = Date.parse(dueAt);
+  if (Number.isNaN(deadline)) return null;
+  if (completedAt) return `已完成 · 截止 ${stickyTime(dueAt)}`;
+  const minutes = Math.ceil(Math.abs(deadline - now) / 60000);
+  if (deadline <= now)
+    return `已逾期 ${Math.floor(minutes / 1440)} 天 ${Math.floor((minutes % 1440) / 60)} 小时 ${minutes % 60} 分`;
+  return `还剩 ${Math.floor(minutes / 1440)} 天 ${Math.floor((minutes % 1440) / 60)} 小时 ${minutes % 60} 分`;
 }
 
 // The server owns timestamps/version. Every update is a compare-and-swap of one paper.

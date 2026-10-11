@@ -16,6 +16,7 @@ import {
   ArrowDown,
   ArrowUp,
   CheckSquare,
+  Clock3,
   ChevronDown,
   ChevronUp,
   GripVertical,
@@ -29,6 +30,9 @@ import { getSupabase } from '@/lib/supabase';
 import {
   moveStickyItem,
   splitStickyItems,
+  stickyBeijingDeadline,
+  stickyBeijingInput,
+  stickyRemaining,
   stickyTime,
   STICKY_BUCKET,
   STICKY_IMAGE_BYTES,
@@ -139,11 +143,14 @@ export function StickyNotesBoard({
 }) {
   const state = useStickyNotes(userId);
   const { notes, edit } = state;
-  const [filter, setFilter] = useState('全部');
+  const [filter, setFilter] = useState('待办清单');
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
   const [newItem, setNewItem] = useState('');
+  const [quickAddId, setQuickAddId] = useState<string | null>(null);
+  const [quickText, setQuickText] = useState('');
+  const [now, setNow] = useState(() => Date.now());
   const [linkItem, setLinkItem] = useState<string | null>(null);
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [imageError, setImageError] = useState('');
@@ -181,6 +188,11 @@ export function StickyNotesBoard({
   const pathsKey = JSON.stringify(
     [...new Set(notes.flatMap((n) => n.image_paths))].sort(),
   );
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!active) {
@@ -240,6 +252,7 @@ export function StickyNotesBoard({
   const create = (kind: 'note' | 'todo') => {
     if (createLock.current || !state.ready) return;
     createLock.current = true;
+    setFilter(kind === 'todo' ? '待办清单' : '文字便签');
     open(state.create(kind));
     setTimeout(() => {
       createLock.current = false;
@@ -305,6 +318,22 @@ export function StickyNotesBoard({
     }
     edit(note.id, { items: [...note.items, ...added] });
     setNewItem('');
+  };
+  const addQuickItem = (n: StickyNote) => {
+    if (
+      !quickText.trim() ||
+      n.deleted_at ||
+      n.archived_at ||
+      n.id in state.conflicts
+    )
+      return;
+    const added = splitStickyItems(quickText);
+    if (n.items.length + added.length > 500) {
+      window.alert('每张清单最多 500 项，请新建另一张清单。');
+      return;
+    }
+    edit(n.id, { items: [...n.items, ...added] });
+    setQuickText('');
   };
   const upload = async (files: File[]) => {
     if (!note || readOnly || uploadLock.current || !files.length) return;
@@ -403,15 +432,15 @@ export function StickyNotesBoard({
         <div className="sticky-actions">
           <button
             className="sticky-primary"
-            onClick={() => create('note')}
+            onClick={() => create('todo')}
             disabled={!state.ready}
           >
-            <Plus size={17} />
-            文字便签
-          </button>
-          <button onClick={() => create('todo')} disabled={!state.ready}>
             <CheckSquare size={17} />
             待办清单
+          </button>
+          <button onClick={() => create('note')} disabled={!state.ready}>
+            <Plus size={17} />
+            文字便签
           </button>
         </div>
       </div>
@@ -498,7 +527,9 @@ export function StickyNotesBoard({
                 ? '回收站是空的'
                 : filter === '已归档'
                   ? '还没有归档的便签'
-                  : '给想法留一张便签'}
+                  : filter === '待办清单'
+                    ? '还没有待办，先添加一张清单'
+                    : '给想法留一张便签'}
           </h2>
           <p>
             {filter === '全部' && !search
@@ -507,7 +538,7 @@ export function StickyNotesBoard({
           </p>
         </div>
       )}
-      <div className="sticky-grid">
+      <div className="sticky-list">
         {visible.map((n, index) => (
           <article
             key={n.id}
@@ -583,8 +614,8 @@ export function StickyNotesBoard({
                           max={n.items.length || 1}
                         />
                       </div>
-                      {n.items.slice(0, 6).map((item) => (
-                        <div className="sticky-check" key={item.id}>
+                      {n.items.map((item) => (
+                        <div className="sticky-list-row" key={item.id}>
                           <input
                             type="checkbox"
                             checked={!!item.completed_at}
@@ -598,18 +629,79 @@ export function StickyNotesBoard({
                           />
                           <span className={item.completed_at ? 'done' : ''}>
                             {item.text}
+                            {item.due_at && (
+                              <small
+                                className={`sticky-countdown ${!item.completed_at && Date.parse(item.due_at) <= now ? 'is-overdue' : ''}`}
+                              >
+                                <Clock3 size={13} />
+                                {stickyRemaining(
+                                  item.due_at,
+                                  item.completed_at,
+                                  now,
+                                )}
+                              </small>
+                            )}
                           </span>
                           {item.linked_note_id && (
                             <button onClick={() => open(item.linked_note_id!)}>
                               便签 ↗
                             </button>
                           )}
+                          <button
+                            type="button"
+                            aria-label={`管理待办 ${item.text}`}
+                            onClick={() => open(n.id)}
+                          >
+                            <GripVertical size={15} />
+                          </button>
                         </div>
                       ))}
-                      {n.items.length > 6 && (
-                        <button onClick={() => open(n.id)}>
-                          查看全部 {n.items.length} 项
-                        </button>
+                      {!n.deleted_at && !n.archived_at && (
+                        <div className="sticky-quick-add">
+                          {quickAddId === n.id ? (
+                            <>
+                              <input
+                                aria-label={`在${n.title || '未命名清单'}新增待办`}
+                                value={quickText}
+                                placeholder="写一条待办，回车添加"
+                                onChange={(e) => setQuickText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (
+                                    e.key === 'Enter' &&
+                                    !e.nativeEvent.isComposing
+                                  ) {
+                                    e.preventDefault();
+                                    addQuickItem(n);
+                                  }
+                                }}
+                              />
+                              <button
+                                disabled={!quickText.trim()}
+                                onClick={() => addQuickItem(n)}
+                              >
+                                添加
+                              </button>
+                              <button
+                                aria-label="关闭快捷添加"
+                                onClick={() => {
+                                  setQuickAddId(null);
+                                  setQuickText('');
+                                }}
+                              >
+                                <X size={15} />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setQuickAddId(n.id);
+                                setQuickText('');
+                              }}
+                            >
+                              <Plus size={15} /> 添加一条
+                            </button>
+                          )}
+                        </div>
                       )}
                     </>
                   )}
@@ -863,10 +955,37 @@ export function StickyNotesBoard({
                       />
                     </div>
                     <div className="sticky-item-tools">
+                      <label className="sticky-deadline-field">
+                        截止时间（北京时间）
+                        <input
+                          type="datetime-local"
+                          aria-label={`待办 ${index + 1} 截止时间（北京时间）`}
+                          value={stickyBeijingInput(item.due_at)}
+                          disabled={readOnly}
+                          onChange={(e) =>
+                            edit(note.id, {
+                              items: note.items.map((i) =>
+                                i.id === item.id
+                                  ? {
+                                      ...i,
+                                      due_at: stickyBeijingDeadline(
+                                        e.target.value,
+                                      ),
+                                    }
+                                  : i,
+                              ),
+                            })
+                          }
+                        />
+                      </label>
                       <small>
                         {item.completed_at
                           ? `完成于 ${stickyTime(item.completed_at)}`
-                          : '未完成'}
+                          : stickyRemaining(
+                              item.due_at,
+                              item.completed_at,
+                              now,
+                            ) || '未完成'}
                       </small>
                       {item.linked_note_id && (
                         <button onClick={() => open(item.linked_note_id!)}>

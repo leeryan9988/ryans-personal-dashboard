@@ -123,6 +123,107 @@
   min-width: 0;
   box-shadow: 0 3px 12px #12375c04;
 }
+.sticky-list {
+  max-width: 1040px;
+  background: #fff;
+  border: 1px solid #cbdff2;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.sticky-list .sticky-card {
+  background: transparent !important;
+  border: 0;
+  border-bottom: 1px solid #dce7f3;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 12px 22px;
+}
+.sticky-list .sticky-card:last-child {
+  border-bottom: 0;
+}
+.sticky-list .sticky-card .sticky-title {
+  padding: 5px 0 8px;
+}
+.sticky-list .sticky-card-body {
+  height: auto;
+  overflow: visible;
+  padding: 0;
+}
+.sticky-list .sticky-progress {
+  margin: 0 0 7px;
+}
+.sticky-list .sticky-progress progress {
+  display: none;
+}
+.sticky-list .sticky-card footer {
+  margin-top: 4px;
+  padding-top: 7px;
+  border-top: 0;
+}
+.sticky-list-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 45px;
+  padding: 9px 2px;
+  border-bottom: 1px solid #e8eff6;
+  font-size: 15px;
+}
+.sticky-list-row input[type='checkbox'] {
+  flex: none;
+  width: 19px;
+  height: 19px;
+  margin: 1px 0 0;
+  accent-color: #4d76a3;
+}
+.sticky-list-row > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+.sticky-list-row .done {
+  color: #8c98a6;
+  text-decoration: line-through;
+}
+.sticky-list-row > button {
+  padding: 2px 5px;
+  border-color: transparent;
+  background: transparent;
+  color: #9caec0;
+}
+.sticky-list-row > button:hover {
+  color: #356cb1;
+}
+.sticky-countdown {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  color: #49769e;
+  font-size: 12px;
+  text-decoration: none;
+}
+.sticky-countdown.is-overdue {
+  color: #b34f4f;
+}
+.sticky-quick-add {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 2px;
+}
+.sticky-quick-add input {
+  flex: 1;
+}
+.sticky-quick-add > button:first-child {
+  justify-content: flex-start;
+  width: 100%;
+  border: 0;
+  background: #f6f9fd;
+  color: #6e879f;
+}
 .sticky-blue {
   background: #f1f7ff !important;
 }
@@ -449,9 +550,18 @@
   font-size: 11px;
 }
 .sticky-item-editor {
-  padding: 10px;
-  border: 1px solid #dce8f4;
-  border-radius: 11px;
+  padding: 9px 0;
+  border: 0;
+  border-bottom: 1px solid #dce8f4;
+  border-radius: 0;
+}
+.sticky-deadline-field {
+  flex: 1 0 190px;
+  margin-right: auto;
+}
+.sticky-deadline-field input {
+  width: 100%;
+  max-width: 250px;
 }
 .sticky-item-editor .sticky-check {
   align-items: center;
@@ -583,6 +693,15 @@
   }
   .sticky-card-body {
     height: 235px;
+  }
+  .sticky-list .sticky-card-body {
+    height: auto;
+  }
+  .sticky-list .sticky-card {
+    padding: 12px;
+  }
+  .sticky-list-row {
+    gap: 9px;
   }
   .sticky-dialog button {
     min-height: 34px;
