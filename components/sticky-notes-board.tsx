@@ -11,7 +11,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 import {
   ArrowDown,
   ArrowUp,
@@ -149,7 +149,12 @@ export function StickyNotesBoard({
   const [preview, setPreview] = useState(false);
   const [newItem, setNewItem] = useState('');
   const [quickAddId, setQuickAddId] = useState<string | null>(null);
-  const [sortingId, setSortingId] = useState<string | null>(null);
+  const [dragPosition, setDragPosition] = useState<{
+    id: string;
+    offset: number;
+    targetId: string | null;
+    after: boolean;
+  } | null>(null);
   const [quickText, setQuickText] = useState('');
   const [now, setNow] = useState(() => Date.now());
   const [linkItem, setLinkItem] = useState<string | null>(null);
@@ -160,7 +165,14 @@ export function StickyNotesBoard({
   const uploadLock = useRef(false);
   const createLock = useRef(false);
   const uploadInput = useRef<HTMLInputElement>(null);
-  const dragged = useRef<string | null>(null);
+  const dragGesture = useRef<{
+    id: string;
+    pointerId: number;
+    startY: number;
+    moved: boolean;
+    targetId: string | null;
+    after: boolean;
+  } | null>(null);
   const draggedItem = useRef<number | null>(null);
   const latestNotes = useRef(notes);
   useLayoutEffect(() => {
@@ -298,6 +310,64 @@ export function StickyNotesBoard({
       ? (group[index + 1]?.sort_order ?? target.sort_order + 2048)
       : group[index].sort_order;
     edit(id, { sort_order: (before + behind) / 2 });
+  };
+  const dragMove = (clientY: number) => {
+    const gesture = dragGesture.current;
+    if (!gesture) return;
+    const offset = clientY - gesture.startY;
+    if (!gesture.moved && Math.abs(offset) < 7) return;
+    gesture.moved = true;
+    const source = visible.find((n) => n.id === gesture.id);
+    const candidates = Array.from(
+      document.querySelectorAll<HTMLElement>('.sticky-list .sticky-card[data-sticky-id]'),
+    ).filter((element) => {
+      const note = visible.find((n) => n.id === element.dataset.stickyId);
+      return note && note.id !== gesture.id && note.pinned === source?.pinned;
+    });
+    const target = candidates.find((element) => clientY < element.getBoundingClientRect().bottom)
+      ?? candidates.at(-1);
+    const targetId = target?.dataset.stickyId ?? null;
+    const after = !!target && clientY > (target.getBoundingClientRect().top + target.getBoundingClientRect().bottom) / 2;
+    gesture.targetId = targetId;
+    gesture.after = after;
+    setDragPosition({ id: gesture.id, offset, targetId, after });
+    if (clientY < 70) window.scrollBy(0, -12);
+    else if (clientY > window.innerHeight - 70) window.scrollBy(0, 12);
+  };
+  const finishDrag = (cancelled = false) => {
+    const gesture = dragGesture.current;
+    if (!gesture) return;
+    dragGesture.current = null;
+    if (cancelled || !gesture.moved || !gesture.targetId) {
+      setDragPosition(null);
+      return;
+    }
+    const sourceIndex = visible.findIndex((n) => n.id === gesture.id);
+    const targetIndex = visible.findIndex((n) => n.id === gesture.targetId);
+    if (
+      (targetIndex === sourceIndex + 1 && !gesture.after) ||
+      (targetIndex === sourceIndex - 1 && gesture.after)
+    ) {
+      setDragPosition(null);
+      return;
+    }
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('.sticky-list .sticky-card[data-sticky-id]'));
+    const before = new Map(cards.map((card) => [card.dataset.stickyId, card.getBoundingClientRect().top]));
+    flushSync(() => {
+      setDragPosition(null);
+      move(gesture.id, gesture.targetId!, gesture.after);
+    });
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    cards.forEach((card) => {
+      const start = before.get(card.dataset.stickyId);
+      if (start === undefined) return;
+      const delta = start - card.getBoundingClientRect().top;
+      if (Math.abs(delta) < 2) return;
+      card.animate(
+        [{ transform: `translateY(${delta}px)` }, { transform: 'translateY(0)' }],
+        { duration: 240, easing: 'cubic-bezier(.2,.8,.2,1)' },
+      );
+    });
   };
   const toggle = (n: StickyNote, item: StickyItem) =>
     edit(n.id, {
@@ -539,21 +609,13 @@ export function StickyNotesBoard({
           </p>
         </div>
       )}
-      <div className="sticky-list">
-        {visible.map((n, index) => (
+      <div className={`sticky-list ${dragPosition ? 'is-sorting' : ''}`}>
+        {visible.map((n) => (
           <article
             key={n.id}
-            className={`sticky-card sticky-${n.color} ${n.collapsed ? 'is-collapsed' : ''}`}
-            onDragOver={(e) => {
-              if (dragged.current) e.preventDefault();
-            }}
-            onDrop={(e) => {
-              if (dragged.current) {
-                e.preventDefault();
-                move(dragged.current, n.id, false);
-                dragged.current = null;
-              }
-            }}
+            data-sticky-id={n.id}
+            className={`sticky-card sticky-${n.color} ${n.collapsed ? 'is-collapsed' : ''} ${dragPosition?.id === n.id ? 'is-dragging' : ''} ${dragPosition?.targetId === n.id ? (dragPosition.after ? 'is-drop-after' : 'is-drop-before') : ''}`}
+            style={dragPosition?.id === n.id ? { transform: `translateY(${dragPosition.offset}px)` } : undefined}
           >
             <div className="sticky-card-top">
               <span>
@@ -568,20 +630,32 @@ export function StickyNotesBoard({
               <div className="sticky-actions">
                 {!n.deleted_at && !n.archived_at && (
                   <button
-                    draggable
+                    type="button"
+                    className="sticky-drag-handle"
                     aria-label={`调整“${n.title || '未命名清单'}”的顺序`}
-                    aria-expanded={sortingId === n.id}
-                    title="点击显示排序操作，也可按住拖动"
-                    onClick={() =>
-                      setSortingId(sortingId === n.id ? null : n.id)
-                    }
-                    onDragStart={(e) => {
-                      dragged.current = n.id;
-                      e.dataTransfer.setData('text/plain', n.id);
+                    title="按住并上下拖动排序"
+                    onPointerDown={(e) => {
+                      if (e.pointerType === 'mouse' && e.button !== 0) return;
+                      dragGesture.current = {
+                        id: n.id,
+                        pointerId: e.pointerId,
+                        startY: e.clientY,
+                        moved: false,
+                        targetId: null,
+                        after: false,
+                      };
+                      e.currentTarget.setPointerCapture(e.pointerId);
                     }}
-                    onDragEnd={() => {
-                      dragged.current = null;
+                    onPointerMove={(e) => {
+                      if (dragGesture.current?.pointerId === e.pointerId)
+                        dragMove(e.clientY);
                     }}
+                    onPointerUp={(e) => {
+                      if (dragGesture.current?.pointerId === e.pointerId)
+                        finishDrag();
+                    }}
+                    onPointerCancel={() => finishDrag(true)}
+                    onClick={(e) => e.preventDefault()}
                   >
                     <GripVertical size={16} />
                   </button>
@@ -599,30 +673,6 @@ export function StickyNotesBoard({
                 </button>
               </div>
             </div>
-            {sortingId === n.id && !n.deleted_at && !n.archived_at && (
-              <div className="sticky-sort-panel">
-                <span>调整清单顺序：也可按住点阵拖动</span>
-                <button
-                  disabled={
-                    index === 0 || visible[index - 1]?.pinned !== n.pinned
-                  }
-                  onClick={() => move(n.id, visible[index - 1].id, false)}
-                >
-                  <ArrowUp size={15} />
-                  上移
-                </button>
-                <button
-                  disabled={
-                    index === visible.length - 1 ||
-                    visible[index + 1]?.pinned !== n.pinned
-                  }
-                  onClick={() => move(n.id, visible[index + 1].id, true)}
-                >
-                  <ArrowDown size={15} />
-                  下移
-                </button>
-              </div>
-            )}
             <button className="sticky-title" onClick={() => open(n.id)}>
               {n.title || '未命名便签'}
             </button>
@@ -758,36 +808,6 @@ export function StickyNotesBoard({
                           : '已同步'}
                   </small>
                   <div className="sticky-actions">
-                    {!n.deleted_at && !n.archived_at && (
-                      <>
-                        <button
-                          title="上移"
-                          aria-label="上移便签"
-                          disabled={
-                            index === 0 ||
-                            visible[index - 1]?.pinned !== n.pinned
-                          }
-                          onClick={() =>
-                            move(n.id, visible[index - 1].id, false)
-                          }
-                        >
-                          <ArrowUp size={15} />
-                        </button>
-                        <button
-                          title="下移"
-                          aria-label="下移便签"
-                          disabled={
-                            index === visible.length - 1 ||
-                            visible[index + 1]?.pinned !== n.pinned
-                          }
-                          onClick={() =>
-                            move(n.id, visible[index + 1].id, true)
-                          }
-                        >
-                          <ArrowDown size={15} />
-                        </button>
-                      </>
-                    )}
                     {n.deleted_at && (
                       <button onClick={() => edit(n.id, { deleted_at: null })}>
                         恢复

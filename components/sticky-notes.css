@@ -130,7 +130,12 @@
   border-radius: 16px;
   overflow: hidden;
 }
+.sticky-list.is-sorting {
+  overflow: visible;
+  user-select: none;
+}
 .sticky-list .sticky-card {
+  position: relative;
   background: transparent !important;
   border: 0;
   border-bottom: 1px solid #dce7f3;
@@ -138,6 +143,26 @@
   box-shadow: none;
   padding: 12px 22px;
 }
+.sticky-list .sticky-card.is-dragging {
+  z-index: 2;
+  background: #f3f8fe !important;
+  box-shadow: 0 12px 28px #173f6b25;
+  opacity: .94;
+  cursor: grabbing;
+}
+.sticky-list .sticky-card.is-drop-before::before,
+.sticky-list .sticky-card.is-drop-after::after {
+  content: '';
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  height: 3px;
+  border-radius: 3px;
+  background: #477fc0;
+  z-index: 3;
+}
+.sticky-list .sticky-card.is-drop-before::before { top: -2px; }
+.sticky-list .sticky-card.is-drop-after::after { bottom: -2px; }
 .sticky-list .sticky-card:last-child {
   border-bottom: 0;
 }
@@ -253,20 +278,12 @@
   padding: 6px;
   font-size: 12px;
 }
-.sticky-sort-panel {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-  padding: 8px 10px;
-  border-radius: 9px;
-  background: #eef5fd;
-  font-size: 12px;
-  color: #527391;
+.sticky-card-top .sticky-drag-handle {
+  touch-action: none;
+  cursor: grab;
 }
-.sticky-sort-panel span {
-  margin-right: auto;
+.sticky-list .sticky-card.is-dragging .sticky-drag-handle {
+  cursor: grabbing;
 }
 .sticky-card .sticky-title {
   display: block;

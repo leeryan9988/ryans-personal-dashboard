@@ -90,9 +90,15 @@ try {
   assert.deepEqual(stickyRemaining,['还剩 0 天 1 小时 45 分','已逾期 0 天 0 小时 15 分']);
   assert.equal(stickyBeijingInput,'2030-06-01T09:45');
   await page.getByRole('button',{name:'全部',exact:true}).click();
-  await page.getByRole('button',{name:'调整“E2E 清单”的顺序'}).click();
-  await page.getByText('调整清单顺序：也可按住点阵拖动').waitFor();
-  await page.locator('.sticky-sort-panel').getByRole('button',{name:'上移'}).click();
+  const grip=page.getByRole('button',{name:'调整“E2E 清单”的顺序'});
+  await grip.click();
+  assert.equal(await page.locator('.sticky-sort-panel').count(),0,'a tap does not open sort buttons');
+  const gripBox=await grip.boundingBox();
+  const firstBox=await page.locator('.sticky-list .sticky-card').first().boundingBox();
+  await page.mouse.move(gripBox.x+gripBox.width/2,gripBox.y+gripBox.height/2);
+  await page.mouse.down();
+  await page.mouse.move(gripBox.x+gripBox.width/2,firstBox.y+10,{steps:12});
+  await page.mouse.up();
   assert.equal(await page.locator('.sticky-card').first().getByRole('button',{name:'E2E 清单',exact:true}).count(),1);
   await page.getByRole('button',{name:'E2E 文字便签',exact:true}).click();
   await dialog().getByRole('button',{name:'归档',exact:true}).click();await done();
@@ -146,5 +152,5 @@ try {
   assert.ok(await dialog().evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight;}),'mobile dialog bounds');
   await page.screenshot({path:'work/sticky-mobile.png',fullPage:true});
   assert.deepEqual(faults,[]);
-  console.log(JSON.stringify({passed:['autosave','reload','safe Markdown','multiline todos','Beijing deadline','live countdown','seven visible rows','quick add','click sorter and move list','complete and reorder','link','archive restore','trash restore','failed-save recovery','conflict preserve both','typing during save','duplicate click guard','Chinese filename image upload','centered image viewer','mobile layout'],rows:rows.size,pageErrors:faults}));
+  console.log(JSON.stringify({passed:['autosave','reload','safe Markdown','multiline todos','Beijing deadline','live countdown','seven visible rows','quick add','drag to reorder without click menu','complete and reorder','link','archive restore','trash restore','failed-save recovery','conflict preserve both','typing during save','duplicate click guard','Chinese filename image upload','centered image viewer','mobile layout'],rows:rows.size,pageErrors:faults}));
 } finally { await browser.close(); server.kill(); }
