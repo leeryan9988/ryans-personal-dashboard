@@ -71,6 +71,7 @@ import {
   type WorkProduct,
 } from '@/lib/dashboard-data';
 import { getSupabase, isCloudConfigured } from '@/lib/supabase';
+import { StickyNotesBoard } from './sticky-notes-board';
 
 type Area =
   | '总目标'
@@ -80,6 +81,7 @@ type Area =
   | '个人财务'
   | '读书清单'
   | '个人网盘'
+  | '记事便签'
   | '计划和感悟';
 type RecordKind =
   | '工作产品'
@@ -239,6 +241,7 @@ const navigation: { label: Area; icon: typeof LayoutDashboard }[] = [
   { label: '读书清单', icon: BookOpen },
   { label: '个人网盘', icon: HardDrive },
   { label: '计划和感悟', icon: NotebookPen },
+  { label: '记事便签', icon: NotebookPen },
 ];
 
 const defaultNavigationOrder = navigation.map((item) => item.label);
@@ -957,7 +960,8 @@ export default function DashboardApp() {
             />
           )}
           {active === '个人网盘' && <CloudDriveView session={session} />}
-          {active !== '个人网盘' && (
+          {session && <StickyNotesBoard key={session.user.id} userId={session.user.id} active={active === '记事便签'} />}
+          {active !== '个人网盘' && active !== '记事便签' && (
             <WeeklyReflectionPanel
               area={active}
               records={reflections.filter((item) => item.area === active)}
