@@ -81,7 +81,7 @@ type Area =
   | '个人财务'
   | '读书清单'
   | '个人网盘'
-  | '记事便签'
+  | '待办清单'
   | '计划和感悟';
 type RecordKind =
   | '工作产品'
@@ -241,7 +241,7 @@ const navigation: { label: Area; icon: typeof LayoutDashboard }[] = [
   { label: '读书清单', icon: BookOpen },
   { label: '个人网盘', icon: HardDrive },
   { label: '计划和感悟', icon: NotebookPen },
-  { label: '记事便签', icon: NotebookPen },
+  { label: '待办清单', icon: CheckCircle2 },
 ];
 
 const defaultNavigationOrder = navigation.map((item) => item.label);
@@ -960,8 +960,8 @@ export default function DashboardApp() {
             />
           )}
           {active === '个人网盘' && <CloudDriveView session={session} />}
-          {session && <StickyNotesBoard key={session.user.id} userId={session.user.id} active={active === '记事便签'} />}
-          {active !== '个人网盘' && active !== '记事便签' && (
+          {session && <StickyNotesBoard key={session.user.id} userId={session.user.id} active={active === '待办清单'} />}
+          {active !== '个人网盘' && active !== '待办清单' && (
             <WeeklyReflectionPanel
               area={active}
               records={reflections.filter((item) => item.area === active)}

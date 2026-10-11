@@ -149,6 +149,7 @@ export function StickyNotesBoard({
   const [preview, setPreview] = useState(false);
   const [newItem, setNewItem] = useState('');
   const [quickAddId, setQuickAddId] = useState<string | null>(null);
+  const [sortingId, setSortingId] = useState<string | null>(null);
   const [quickText, setQuickText] = useState('');
   const [now, setNow] = useState(() => Date.now());
   const [linkItem, setLinkItem] = useState<string | null>(null);
@@ -425,9 +426,9 @@ export function StickyNotesBoard({
     <section hidden={!active} className="sticky-board">
       <div className="sticky-hero">
         <div>
-          <span className="sticky-eyebrow">记事便签</span>
-          <h1>随手记下，逐件完成</h1>
-          <p>灵感、备忘和待办清单 · 自动保存 · 跨设备同步</p>
+          <span className="sticky-eyebrow">待办清单</span>
+          <h1>一件一件，按时完成</h1>
+          <p>逐条记录 · 截止倒计时 · 自动保存与跨设备同步</p>
         </div>
         <div className="sticky-actions">
           <button
@@ -568,8 +569,12 @@ export function StickyNotesBoard({
                 {!n.deleted_at && !n.archived_at && (
                   <button
                     draggable
-                    aria-label="拖动排序"
-                    title="拖动排序，也可使用下方上下移按钮"
+                    aria-label={`调整“${n.title || '未命名清单'}”的顺序`}
+                    aria-expanded={sortingId === n.id}
+                    title="点击显示排序操作，也可按住拖动"
+                    onClick={() =>
+                      setSortingId(sortingId === n.id ? null : n.id)
+                    }
                     onDragStart={(e) => {
                       dragged.current = n.id;
                       e.dataTransfer.setData('text/plain', n.id);
@@ -594,6 +599,30 @@ export function StickyNotesBoard({
                 </button>
               </div>
             </div>
+            {sortingId === n.id && !n.deleted_at && !n.archived_at && (
+              <div className="sticky-sort-panel">
+                <span>调整清单顺序：也可按住点阵拖动</span>
+                <button
+                  disabled={
+                    index === 0 || visible[index - 1]?.pinned !== n.pinned
+                  }
+                  onClick={() => move(n.id, visible[index - 1].id, false)}
+                >
+                  <ArrowUp size={15} />
+                  上移
+                </button>
+                <button
+                  disabled={
+                    index === visible.length - 1 ||
+                    visible[index + 1]?.pinned !== n.pinned
+                  }
+                  onClick={() => move(n.id, visible[index + 1].id, true)}
+                >
+                  <ArrowDown size={15} />
+                  下移
+                </button>
+              </div>
+            )}
             <button className="sticky-title" onClick={() => open(n.id)}>
               {n.title || '未命名便签'}
             </button>
