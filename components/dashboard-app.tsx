@@ -14,6 +14,7 @@ import {
   Dumbbell,
   FileClock,
   File as FileIcon,
+  Github,
   BookOpen,
   CalendarDays,
   CalendarClock,
@@ -72,6 +73,7 @@ import {
 } from '@/lib/dashboard-data';
 import { getSupabase, isCloudConfigured } from '@/lib/supabase';
 import { StickyNotesBoard } from './sticky-notes-board';
+import { GithubUsageView } from './github-usage';
 
 type Area =
   | '总目标'
@@ -82,7 +84,8 @@ type Area =
   | '读书清单'
   | '个人网盘'
   | '待办清单'
-  | '计划和感悟';
+  | '计划和感悟'
+  | 'github使用';
 type RecordKind =
   | '工作产品'
   | '副业利润'
@@ -242,6 +245,7 @@ const navigation: { label: Area; icon: typeof LayoutDashboard }[] = [
   { label: '个人网盘', icon: HardDrive },
   { label: '计划和感悟', icon: NotebookPen },
   { label: '待办清单', icon: CheckCircle2 },
+  { label: 'github使用', icon: Github },
 ];
 
 const defaultNavigationOrder = navigation.map((item) => item.label);
@@ -960,8 +964,9 @@ export default function DashboardApp() {
             />
           )}
           {active === '个人网盘' && <CloudDriveView session={session} />}
+          {active === 'github使用' && <GithubUsageView />}
           {session && <StickyNotesBoard key={session.user.id} userId={session.user.id} active={active === '待办清单'} />}
-          {active !== '个人网盘' && active !== '待办清单' && (
+          {active !== '个人网盘' && active !== '待办清单' && active !== 'github使用' && (
             <WeeklyReflectionPanel
               area={active}
               records={reflections.filter((item) => item.area === active)}
