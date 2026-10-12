@@ -8,9 +8,95 @@ export type GithubPick = {
   audience: string;
 };
 
-export const githubUsageEdition = {
+export type GithubUsageEdition = {
+  title: string;
+  publishedAt: string;
+  publishedAtIso: string;
+  growthWindow: string;
+  risingSource: string;
+  rising: GithubPick[];
+  established: GithubPick[];
+};
+
+export const githubUsageEditions: GithubUsageEdition[] = [
+{
+  "title": "GitHub 使用",
+  "publishedAt": "2026-10-12 22:49 北京时间",
+  "publishedAtIso": "2026-10-12T14:49:00Z",
+  "growthWindow": "2026.10.06—2026.10.11",
+  "risingSource": "https://github.com/OpenGithubs/github-weekly-rank",
+  "rising": [
+    {
+      "name": "storytold/artcraft",
+      "url": "https://github.com/storytold/artcraft",
+      "stars": 20389,
+      "weeklyGain": 6359,
+      "functionZh": "面向创作者的图像与视频工作台，可在二维画布和三维场景里安排构图、人物与镜头，再调用不同模型生成或修改素材。",
+      "reasonZh": "比单纯输入提示词多了可视化编排，适合需要反复调整画面、保持场景一致性的设计与视频工作。",
+      "audience": "图像与视频创作"
+    },
+    {
+      "name": "cloudflare/security-audit-skill",
+      "url": "https://github.com/cloudflare/security-audit-skill",
+      "stars": 28603,
+      "weeklyGain": 3637,
+      "functionZh": "给编程智能体使用的安全审计流程，涵盖代码侦察、覆盖检查、漏洞候选复核和结构化报告。",
+      "reasonZh": "将发现与独立验证分开，并记录未证实的问题；适合想建立可追溯代码审计流程的团队。",
+      "audience": "开发与安全"
+    },
+    {
+      "name": "earthtojake/text-to-cad",
+      "url": "https://github.com/earthtojake/text-to-cad",
+      "stars": 19515,
+      "weeklyGain": 2348,
+      "functionZh": "为 AI 助手加入 CAD 建模能力，可在对话中生成、查看和继续修改三维模型，并提供浏览器模型查看器。",
+      "reasonZh": "把文字需求连接到可查看的设计结果，适合快速制作零件原型或探索 AI 辅助建模。",
+      "audience": "三维设计与制作"
+    },
+    {
+      "name": "pingdotgg/t3code",
+      "url": "https://github.com/pingdotgg/t3code",
+      "stars": 27145,
+      "weeklyGain": 2209,
+      "functionZh": "集中控制本机的 Codex、Claude Code 等编程智能体，可用桌面、网页及手机端查看与接续任务。",
+      "reasonZh": "有 Windows 安装方式与移动端入口，适合同时使用多个编程智能体、需要远程跟进任务的人。",
+      "audience": "编程与效率"
+    }
+  ],
+  "established": [
+    {
+      "name": "microsoft/PowerToys",
+      "url": "https://github.com/microsoft/PowerToys",
+      "stars": 139220,
+      "weeklyGain": null,
+      "functionZh": "微软的 Windows 实用工具合集，包含窗口分区、批量重命名、文字提取、颜色拾取和快捷启动等功能。",
+      "reasonZh": "直接改善常见桌面操作，官方持续维护；Windows 用户可以先挑一两个工具试用。",
+      "audience": "Windows 效率"
+    },
+    {
+      "name": "obsproject/obs-studio",
+      "url": "https://github.com/obsproject/obs-studio",
+      "stars": 77383,
+      "weeklyGain": null,
+      "functionZh": "免费的屏幕录制与直播软件，可组合多个画面和音频来源，制作场景并进行实时切换。",
+      "reasonZh": "录教程、演示软件或直播都用得上，生态成熟且跨平台。",
+      "audience": "录屏与直播"
+    },
+    {
+      "name": "jellyfin/jellyfin",
+      "url": "https://github.com/jellyfin/jellyfin",
+      "stars": 58021,
+      "weeklyGain": null,
+      "functionZh": "可自行部署的媒体服务器，用来整理、管理和在多种设备上播放个人电影、剧集与音乐库。",
+      "reasonZh": "适合已有本地媒体收藏、想在家中设备间统一浏览播放的人。",
+      "audience": "家庭媒体管理"
+    }
+  ]
+},
+{
   title: 'GitHub 使用',
   publishedAt: '2026-10-12 20:22 北京时间',
+  publishedAtIso: '2026-10-12T12:22:00Z',
   growthWindow: '2026.10.06—2026.10.11',
   risingSource: 'https://github.com/OpenGithubs/github-weekly-rank',
   rising: [
@@ -80,5 +166,7 @@ export const githubUsageEdition = {
       audience: '跨设备文件传输',
     },
   ] satisfies GithubPick[],
-};
+},
+];
+
 
