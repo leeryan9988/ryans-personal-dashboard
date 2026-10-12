@@ -1,4 +1,4 @@
-import { ArrowUpRight, Github, Sparkles, Star, TrendingUp } from 'lucide-react';
+import { ArrowUpRight, Sparkles, Star, TrendingUp } from 'lucide-react';
 import { githubUsageEdition, type GithubPick } from '@/lib/github-usage-data';
 
 const number = new Intl.NumberFormat('zh-CN');
@@ -41,7 +41,7 @@ export function GithubUsageView() {
       <div className="relative overflow-hidden bg-[radial-gradient(circle_at_85%_0%,#2556ae_0%,transparent_42%),radial-gradient(circle_at_10%_10%,#143a7d_0%,transparent_42%)] px-5 pb-6 pt-8 sm:px-8 sm:pt-10">
         <div className="pointer-events-none absolute right-[-50px] top-[-90px] size-72 rounded-full border border-sky-300/20" />
         <div className="relative">
-          <div className="mb-3 flex items-center gap-2 text-xs font-semibold tracking-[.18em] text-cyan-200"><Github className="size-4" /> RYAN'S GITHUB PICKS</div>
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold tracking-[.18em] text-cyan-200"><Star className="size-4" /> RYAN'S GITHUB PICKS</div>
           <h1 className="text-3xl font-black tracking-tight sm:text-5xl">GitHub <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-violet-300 bg-clip-text text-transparent">使用精选</span></h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-200 sm:text-base">每周三、周五更新。4 个近期飙升项目，加上 3 个高星实用项目；优先看功能和使用价值。</p>
           <div className="mt-5 flex flex-wrap gap-2 text-xs text-sky-100">

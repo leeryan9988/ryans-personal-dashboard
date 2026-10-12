@@ -14,7 +14,6 @@ import {
   Dumbbell,
   FileClock,
   File as FileIcon,
-  Github,
   BookOpen,
   CalendarDays,
   CalendarClock,
@@ -245,7 +244,7 @@ const navigation: { label: Area; icon: typeof LayoutDashboard }[] = [
   { label: '个人网盘', icon: HardDrive },
   { label: '计划和感悟', icon: NotebookPen },
   { label: '待办清单', icon: CheckCircle2 },
-  { label: 'github使用', icon: Github },
+  { label: 'github使用', icon: FolderOpen },
 ];
 
 const defaultNavigationOrder = navigation.map((item) => item.label);
