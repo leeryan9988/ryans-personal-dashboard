@@ -54,9 +54,10 @@ try {
   const searchChecks=await page.evaluate(async()=>{
     const {searchDashboardData,matchesDashboardSearch}=await import('/lib/dashboard-search.ts');
     const empty={products:[],goals:[],profits:[],health:[],finance:[],books:[],reflections:[],planNotes:[],countdowns:[]};
-    const plan=searchDashboardData('github',{...empty,planNotes:[{id:'plan-1',title:'周计划',content:'学习 GitHub 项目',category:'工作',noteDate:'2026-10-13',createdAt:'',imagePaths:[]}]});
-    const picks=searchDashboardData('storytold/artcraft',empty);
-    return {plan:plan.some(item=>item.id==='plan-1'&&item.area==='计划和感悟'),picks:picks.some(item=>item.title==='storytold/artcraft'&&item.area==='github使用'),jellyfin:searchDashboardData('jellyfin/jellyfin',empty).some(item=>item.title==='jellyfin/jellyfin'),caseInsensitive:matchesDashboardSearch('GITHUB','学习 GitHub 项目')};
+    const data={...empty,planNotes:[{id:'plan-1',title:'周计划',content:'学习 GitHub 视频项目',category:'工作',noteDate:'2026-10-13',createdAt:'',imagePaths:[]}]};
+    const plan=searchDashboardData('视频',data,'计划和感悟');
+    const picks=searchDashboardData('视频',data,'github使用');
+    return {plan:plan.some(item=>item.id==='plan-1')&&plan.every(item=>item.area==='计划和感悟'),picks:picks.length>0&&picks.every(item=>item.area==='github使用'),jellyfin:searchDashboardData('jellyfin/jellyfin',empty,'github使用').some(item=>item.title==='jellyfin/jellyfin'),caseInsensitive:matchesDashboardSearch('GITHUB','学习 GitHub 项目')};
   });
   assert.deepEqual(searchChecks,{plan:true,picks:true,jellyfin:true,caseInsensitive:true});
   assert.equal(await page.getByRole('button',{name:'待办清单',exact:true}).last().getAttribute('aria-pressed'),'true');

@@ -384,6 +384,9 @@ function incomePeriodKey(dateValue: string, granularity: '日' | '周' | '月' |
 
 export default function DashboardApp() {
   const [active, setActive] = useState<Area>('总目标');
+  const [queries, setQueries] = useState<Partial<Record<Area, string>>>({});
+  const query = queries[active] ?? '';
+  const setQuery = (value: string) => setQueries((current) => ({ ...current, [active]: value }));
   const [products, setProducts] = useState<WorkProduct[]>(initialProducts);
   const [profits, setProfits] = useState<ProfitLog[]>(initialProfits);
   const [health, setHealth] = useState<HealthLog[]>(initialHealth);
@@ -403,7 +406,6 @@ export default function DashboardApp() {
   const [email, setEmail] = useState('');
   const [handoffPending, setHandoffPending] = useState(false);
   const [authMessage, setAuthMessage] = useState('');
-  const [query, setQuery] = useState('');
   const [syncMessage, setSyncMessage] = useState('');
 
   const loadCloudData = useCallback(async () => {
@@ -876,13 +878,11 @@ export default function DashboardApp() {
   const currentGoals = goals.filter((goal) => goal.status === '进行中');
   const archivedGoals = goals.filter((goal) => goal.status !== '进行中');
   const filteredProducts = products.filter((row) =>
-    `${row.name}${row.category}${row.stage}`
-      .toLowerCase()
-      .includes(query.toLowerCase()),
+    matchesDashboardSearch(query, row.name, row.category, row.stage),
   );
   const searchResults = searchDashboardData(query, {
     products, goals, profits, health, finance, books, reflections, planNotes, countdowns,
-  }).sort((a, b) => Number(b.area === active) - Number(a.area === active));
+  }, active);
 
   return (
     <main className="min-h-screen bg-[#eef7ff] text-[#18221d]">
@@ -1063,7 +1063,7 @@ function Header({
             }
           }}
           className="h-9 w-full rounded-xl border border-[#d7e3ef] bg-white pl-9 pr-9 text-sm outline-none focus:border-[#89a9c9]"
-          placeholder="搜索产品、目标、记录或 GitHub 项目"
+          placeholder={`搜索${active}内容`}
         />
         {query && <button type="button" aria-label="清空搜索" onClick={() => { setQuery(''); setSearchOpen(false); }} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[#71879c] hover:bg-[#edf3f9]"><X className="size-4" /></button>}
         {searchOpen && query.trim() && (
@@ -1077,7 +1077,6 @@ function Header({
             ))}
             {results.length > 15 && <p className="px-2 py-1 text-xs text-[#71879c]">仅显示前 15 条，请输入更具体的关键词。</p>}
             {results.length === 0 && <p className="px-2 py-3 text-sm text-[#607184]">看板内没有匹配内容。</p>}
-            {active === 'github使用' && <a href={`https://github.com/search?q=${encodeURIComponent(query.trim())}&type=repositories`} target="_blank" rel="noopener noreferrer" className="mt-1 block rounded-lg border-t border-[#e5edf5] px-2 py-2 text-sm text-[#174578] hover:bg-[#edf5fc]">去 GitHub 搜索“{query.trim()}” ↗</a>}
           </div>
         )}
       </div>

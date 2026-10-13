@@ -64,7 +64,7 @@ export function GithubUsageView({ searchQuery = '' }: { searchQuery?: string }) 
       </header>
       <div className="space-y-2.5 p-3 sm:p-5">
         {searchQuery.trim() && <p className="text-sm text-sky-100">GitHub 精选：找到 {matchCount} 个匹配项目</p>}
-        {searchQuery.trim() && matchCount === 0 && <div className="rounded-xl border border-sky-300/20 bg-[#0a1c42] p-5 text-sm text-sky-100">当前精选中没有匹配项目。<a href={`https://github.com/search?q=${encodeURIComponent(searchQuery.trim())}&type=repositories`} target="_blank" rel="noopener noreferrer" className="ml-2 text-cyan-200 underline">去 GitHub 搜索 ↗</a></div>}
+        {searchQuery.trim() && matchCount === 0 && <div className="rounded-xl border border-sky-300/20 bg-[#0a1c42] p-5 text-sm text-sky-100">当前精选中没有匹配项目。</div>}
         {editions.map((edition, index) => (
           <details key={edition.publishedAtIso} open={index === 0} className="group overflow-hidden rounded-xl border border-sky-300/20 bg-[#0a1c42]">
             <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 px-3 py-2.5 text-sm font-semibold marker:hidden sm:px-5 [&::-webkit-details-marker]:hidden">

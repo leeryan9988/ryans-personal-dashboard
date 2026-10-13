@@ -37,11 +37,12 @@ export function searchDashboardData(
     planNotes: PlanNote[];
     countdowns: { id: string; title: string; note: string; targetDate: string }[];
   },
+  currentArea: string,
 ): DashboardSearchResult[] {
   if (!query.trim()) return [];
   const results: DashboardSearchResult[] = [];
   const add = (area: string, id: string, title: string, detail: string, ...values: unknown[]) => {
-    if (matchesDashboardSearch(query, area, title, detail, ...values))
+    if (matchesDashboardSearch(query, title, detail, ...values))
       results.push({ area, id, title, detail });
   };
   data.products.forEach((item) => add('工作', item.id, item.name, item.category, item.stage, item.status, item.supplyChain, item.patent, item.reviews));
@@ -58,5 +59,8 @@ export function searchDashboardData(
       add('github使用', `${edition.publishedAtIso}:${pick.url}`, pick.name, `${edition.publishedAt} · ${pick.audience}`, pick.functionZh, pick.reasonZh),
     );
   });
-  return results;
+  return results.filter((result) =>
+    result.area === currentArea ||
+    (currentArea === '总目标' && data.goals.some((goal) => goal.id === result.id)),
+  );
 }
