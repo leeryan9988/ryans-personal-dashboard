@@ -137,14 +137,20 @@ function Dialog({
 export function StickyNotesBoard({
   userId,
   active,
+  searchQuery,
+  onSearchChange,
 }: {
   userId: string;
   active: boolean;
+  searchQuery?: string;
+  onSearchChange?: (value: string) => void;
 }) {
   const state = useStickyNotes(userId);
   const { notes, edit } = state;
   const [filter, setFilter] = useState('待办清单');
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
+  const search = searchQuery ?? localSearch;
+  const setSearch = onSearchChange ?? setLocalSearch;
   const [editing, setEditing] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
   const [newItem, setNewItem] = useState('');

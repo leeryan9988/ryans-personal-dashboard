@@ -877,12 +877,12 @@ export default function DashboardApp() {
 
   const currentGoals = goals.filter((goal) => goal.status === '进行中');
   const archivedGoals = goals.filter((goal) => goal.status !== '进行中');
-  const filteredProducts = products.filter((row) =>
-    matchesDashboardSearch(query, row.name, row.category, row.stage),
-  );
   const searchResults = searchDashboardData(query, {
     products, goals, profits, health, finance, books, reflections, planNotes, countdowns,
   }, active);
+  const matchedIds = new Set(searchResults.map((result) => result.id));
+  const matchingRecords = <T extends { id: string }>(records: T[]) =>
+    query.trim() ? records.filter((record) => matchedIds.has(record.id)) : records;
 
   return (
     <main className="min-h-screen bg-[#eef7ff] text-[#18221d]">
@@ -912,22 +912,22 @@ export default function DashboardApp() {
         <div className="mx-auto max-w-[1500px] px-4 py-6 pb-24 sm:px-8 sm:py-8 lg:pb-8">
           {!isCloudConfigured && <CloudSetupBanner />}
           {active === '总目标' && (
-            <TotalGoalsView products={products} profits={profits} health={health} finance={finance} books={books} goals={goals} openRecord={setRecordKind} onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }} setActive={setActive} />
+            <TotalGoalsView products={products} profits={profits} health={health} finance={finance} books={books} goals={matchingRecords(goals)} openRecord={setRecordKind} onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }} setActive={setActive} />
           )}
           {active === '工作' && (
             <WorkView
-              products={filteredProducts}
-              goals={currentGoals.filter((goal) => goal.area === '工作')}
-              history={archivedGoals.filter((goal) => goal.area === '工作')}
+              products={matchingRecords(products)}
+              goals={matchingRecords(currentGoals.filter((goal) => goal.area === '工作'))}
+              history={matchingRecords(archivedGoals.filter((goal) => goal.area === '工作'))}
               openRecord={setRecordKind}
               onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }}
             />
           )}
           {active === '副业' && (
             <SideView
-              profits={profits}
-              goals={currentGoals.filter((goal) => goal.area === '副业')}
-              history={archivedGoals.filter((goal) => goal.area === '副业')}
+              profits={matchingRecords(profits)}
+              goals={matchingRecords(currentGoals.filter((goal) => goal.area === '副业'))}
+              history={matchingRecords(archivedGoals.filter((goal) => goal.area === '副业'))}
               openRecord={setRecordKind}
               onEditProfit={(row) => { setEditingProfit(row); setRecordKind('修改副业收入'); }}
               onDeleteProfit={deleteProfit}
@@ -936,27 +936,27 @@ export default function DashboardApp() {
           )}
           {active === '身体' && (
             <HealthView
-              health={health}
-              goals={currentGoals.filter((item) => item.area === '身体')}
-              history={archivedGoals.filter((goal) => goal.area === '身体')}
+              health={matchingRecords(health)}
+              goals={matchingRecords(currentGoals.filter((item) => item.area === '身体'))}
+              history={matchingRecords(archivedGoals.filter((goal) => goal.area === '身体'))}
               openRecord={setRecordKind}
               onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }}
             />
           )}
           {active === '个人财务' && (
             <FinanceView
-              logs={finance}
-              goals={currentGoals.filter((goal) => goal.area === '个人财务')}
-              history={archivedGoals.filter((goal) => goal.area === '个人财务')}
+              logs={matchingRecords(finance)}
+              goals={matchingRecords(currentGoals.filter((goal) => goal.area === '个人财务'))}
+              history={matchingRecords(archivedGoals.filter((goal) => goal.area === '个人财务'))}
               openRecord={setRecordKind}
               onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }}
             />
           )}
           {active === '读书清单' && (
             <ReadingView
-              books={books}
-              goals={currentGoals.filter((goal) => goal.area === '读书清单')}
-              history={archivedGoals.filter((goal) => goal.area === '读书清单')}
+              books={matchingRecords(books)}
+              goals={matchingRecords(currentGoals.filter((goal) => goal.area === '读书清单'))}
+              history={matchingRecords(archivedGoals.filter((goal) => goal.area === '读书清单'))}
               openRecord={setRecordKind}
               onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }}
             />
@@ -970,13 +970,14 @@ export default function DashboardApp() {
               onSaved={loadCloudData}
             />
           )}
-          {active === '个人网盘' && <CloudDriveView session={session} />}
+          {active === '个人网盘' && <CloudDriveView session={session} searchQuery={query} onSearchChange={setQuery} />}
           {active === 'github使用' && <GithubUsageView searchQuery={query} />}
-          {session && <StickyNotesBoard key={session.user.id} userId={session.user.id} active={active === '待办清单'} />}
+          {session && <StickyNotesBoard key={session.user.id} userId={session.user.id} active={active === '待办清单'} searchQuery={queries['待办清单'] ?? ''} onSearchChange={(value) => setQueries((current) => ({ ...current, 待办清单: value }))} />}
           {active !== '个人网盘' && active !== '待办清单' && active !== 'github使用' && (
             <WeeklyReflectionPanel
               area={active}
               records={reflections.filter((item) => item.area === active)}
+              searchQuery={query}
               onSave={saveReflection}
             />
           )}
@@ -1066,7 +1067,7 @@ function Header({
           placeholder={`搜索${active}内容`}
         />
         {query && <button type="button" aria-label="清空搜索" onClick={() => { setQuery(''); setSearchOpen(false); }} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[#71879c] hover:bg-[#edf3f9]"><X className="size-4" /></button>}
-        {searchOpen && query.trim() && (
+        {searchOpen && query.trim() && active !== '个人网盘' && active !== '待办清单' && (
           <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-80 overflow-y-auto rounded-xl border border-[#cbdff2] bg-white p-2 shadow-xl">
             <p className="px-2 py-1 text-xs text-[#607184]" role="status" aria-live="polite">找到 {results.length} 条匹配结果</p>
             {results.slice(0, 15).map((result) => (
@@ -2298,12 +2299,11 @@ function createStorageObjectPath(userId: string, fileName: string) {
   return `${userId}/${crypto.randomUUID()}${extension ? `.${extension}` : ''}`;
 }
 
-function CloudDriveView({ session }: { session: Session | null }) {
+function CloudDriveView({ session, searchQuery, onSearchChange }: { session: Session | null; searchQuery: string; onSearchChange: (value: string) => void }) {
   const chartRange = useTimeRange();
   const [files, setFiles] = useState<PersonalFile[]>([]);
   const [folders, setFolders] = useState<PersonalFolder[]>([]);
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
-  const [search, setSearch] = useState('');
   const [folderFilter, setFolderFilter] = useState('全部文件');
   const [showUpload, setShowUpload] = useState(false);
   const [uploadFolder, setUploadFolder] = useState('未分类');
@@ -2367,8 +2367,7 @@ function CloudDriveView({ session }: { session: Session | null }) {
   const folderOptions = ['未分类', ...folders.map((folder) => folder.name).filter((name) => name !== '未分类')];
   const filteredFiles = files.filter((file) => {
     const matchesFolder = folderFilter === '全部文件' || file.folder === folderFilter;
-    const text = `${file.name}${file.category}${file.folder}${file.note}`.toLowerCase();
-    return matchesFolder && text.includes(search.toLowerCase());
+    return matchesFolder && matchesDashboardSearch(searchQuery, file.name, file.category, file.folder, file.note);
   });
   const totalSize = files.reduce((sum, file) => sum + file.size, 0);
   const driveCapacity = 1024 ** 3;
@@ -2505,7 +2504,7 @@ function CloudDriveView({ session }: { session: Session | null }) {
       </section>
       <section className="mb-5 rounded-2xl border border-[#d7e3ef] bg-white p-4 sm:p-5">
         <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
-          <label className="relative block"><Search className="absolute left-3 top-3 size-4 text-[#7c91a5]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜索文件名、分类、文件夹或备注" className="h-10 w-full rounded-xl border border-[#d7e3ef] pl-10 pr-3 outline-none focus:border-[#174578]" /></label>
+          <label className="relative block"><Search className="absolute left-3 top-3 size-4 text-[#7c91a5]" /><input value={searchQuery} onChange={(event) => onSearchChange(event.target.value)} placeholder="搜索文件名、分类、文件夹或备注" className="h-10 w-full rounded-xl border border-[#d7e3ef] pl-10 pr-3 outline-none focus:border-[#174578]" /></label>
           <form onSubmit={createFolder} className="flex gap-2"><input value={newFolder} onChange={(event) => setNewFolder(event.target.value)} placeholder="新文件夹名称" className="h-10 min-w-0 flex-1 rounded-xl border border-[#d7e3ef] px-3 outline-none focus:border-[#174578]" /><button className="flex h-10 items-center gap-2 rounded-xl bg-[#174578] px-4 text-sm font-medium text-white"><FolderPlus className="size-4" />新建文件夹</button></form>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -2527,7 +2526,7 @@ function CloudDriveView({ session }: { session: Session | null }) {
             </article>
           ))}
         </section>
-      ) : <div className="rounded-2xl border border-dashed border-[#bfcfdd] bg-white py-16 text-center"><FolderOpen className="mx-auto size-10 text-[#7c9ab5]" /><h2 className="mt-3 font-semibold">这里还没有文件</h2><p className="mt-1 text-sm text-[#71869b]">上传后即可在电脑和手机间查看、下载。</p></div>}
+      ) : <div className="rounded-2xl border border-dashed border-[#bfcfdd] bg-white py-16 text-center"><FolderOpen className="mx-auto size-10 text-[#7c9ab5]" /><h2 className="mt-3 font-semibold">{searchQuery.trim() ? '没有匹配的文件' : '这里还没有文件'}</h2><p className="mt-1 text-sm text-[#71869b]">{searchQuery.trim() ? '换个关键词或调整文件夹筛选试试。' : '上传后即可在电脑和手机间查看、下载。'}</p></div>}
       {showUpload && (
         <div role="presentation" className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4" onMouseDown={(event) => event.target === event.currentTarget && setShowUpload(false)}>
           <form onSubmit={uploadFile} className="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
@@ -2559,14 +2558,17 @@ function CloudDriveView({ session }: { session: Session | null }) {
 function WeeklyReflectionPanel({
   area,
   records,
+  searchQuery,
   onSave,
 }: {
   area: Area;
   records: WeeklyReflection[];
+  searchQuery: string;
   onSave: (area: Area, weekStart: string, review: string, insight: string) => Promise<string>;
 }) {
   const [weekStart, setWeekStart] = useState(currentWeekStart());
   const current = records.find((item) => item.weekStart === weekStart);
+  const visibleRecords = records.filter((item) => matchesDashboardSearch(searchQuery, item.weekStart, item.review, item.insight, '每周复盘'));
   const [review, setReview] = useState('');
   const [insight, setInsight] = useState('');
   const [message, setMessage] = useState('');
@@ -2603,11 +2605,11 @@ function WeeklyReflectionPanel({
         <span className="text-xs text-[#607184]">{message}</span>
         <button onClick={async () => setMessage(await onSave(area, weekStart, review, insight))} className="rounded-xl bg-[#174578] px-4 py-2 text-sm font-medium text-white">保存本周记录</button>
       </div>
-      {records.length > 0 && (
+      {visibleRecords.length > 0 && (
         <details className="mt-5 border-t border-[#e6edf4] pt-4">
-          <summary className="cursor-pointer text-sm font-medium">查看历史复盘（{records.length}）</summary>
+          <summary className="cursor-pointer text-sm font-medium">查看历史复盘（{visibleRecords.length}）</summary>
           <div className="mt-3 space-y-3">
-            {records.map((item) => (
+            {visibleRecords.map((item) => (
               <article key={item.id} className="rounded-xl bg-[#f4f8fc] p-4 text-sm">
                 <b>{item.weekStart}</b><span className="ml-2 text-xs font-normal text-[#718078]">记录于 {beijingDateTimeString(item.createdAt)}</span>
                 <p className="mt-2 whitespace-pre-wrap text-[#536477]">复盘：{item.review || '—'}</p>

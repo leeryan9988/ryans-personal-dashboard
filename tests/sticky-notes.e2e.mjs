@@ -72,6 +72,13 @@ try {
   await done();
   // A reload must rehydrate from the server, not just a local draft.
   await page.reload(); await page.getByRole('button',{name:'全部',exact:true}).click(); await page.getByRole('button',{name:'E2E 文字便签',exact:true}).waitFor();
+  await page.getByLabel('顶部搜索待办').fill('找不到的内容');
+  await page.getByText('没有找到匹配的便签').waitFor();
+  assert.equal(await page.getByLabel('搜索便签').inputValue(),'找不到的内容','top and local searches share the same query');
+  await page.getByLabel('搜索便签').fill('E2E 文字');
+  await page.getByRole('button',{name:'E2E 文字便签',exact:true}).waitFor();
+  assert.equal(await page.getByLabel('顶部搜索待办').inputValue(),'E2E 文字','local search updates the top query');
+  await page.getByLabel('顶部搜索待办').fill('');
   await page.getByRole('button',{name:'待办清单',exact:true}).first().click();
   await dialog().getByLabel('标题',{exact:true}).fill('E2E 清单');
   await dialog().getByLabel('新增待办').fill('第一项\n第二项\n第三项');
