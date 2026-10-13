@@ -1,5 +1,6 @@
 import { ArrowUpRight, ChevronDown, Sparkles, Star, TrendingUp } from 'lucide-react';
 import { githubUsageEditions, type GithubPick, type GithubUsageEdition } from '@/lib/github-usage-data';
+import { matchesDashboardSearch } from '@/lib/dashboard-search';
 
 const number = new Intl.NumberFormat('zh-CN');
 
@@ -44,8 +45,16 @@ function EditionContent({ edition }: { edition: GithubUsageEdition }) {
   );
 }
 
-export function GithubUsageView() {
-  const editions = [...githubUsageEditions].sort((a, b) => b.publishedAtIso.localeCompare(a.publishedAtIso));
+export function GithubUsageView({ searchQuery = '' }: { searchQuery?: string }) {
+  const editions = [...githubUsageEditions]
+    .sort((a, b) => b.publishedAtIso.localeCompare(a.publishedAtIso))
+    .map((edition) => ({
+      ...edition,
+      rising: edition.rising.filter((pick) => matchesDashboardSearch(searchQuery, pick.name, pick.audience, pick.functionZh, pick.reasonZh)),
+      established: edition.established.filter((pick) => matchesDashboardSearch(searchQuery, pick.name, pick.audience, pick.functionZh, pick.reasonZh)),
+    }))
+    .filter((edition) => edition.rising.length + edition.established.length > 0);
+  const matchCount = editions.reduce((total, edition) => total + edition.rising.length + edition.established.length, 0);
   return (
     <div className="overflow-hidden rounded-[24px] border border-[#284d9a] bg-[#061432] text-white shadow-[0_20px_60px_rgba(15,31,72,.22)]">
       <header className="bg-[radial-gradient(circle_at_85%_0%,#2556ae_0%,transparent_42%),radial-gradient(circle_at_10%_10%,#143a7d_0%,transparent_42%)] px-5 py-5 sm:px-8 sm:py-6">
@@ -54,6 +63,8 @@ export function GithubUsageView() {
         <p className="mt-2 text-xs leading-5 text-slate-200 sm:text-sm">每周三、周五更新；每期 4 个近期飙升项目和 3 个高星实用项目。按时间从新到旧排列。</p>
       </header>
       <div className="space-y-2.5 p-3 sm:p-5">
+        {searchQuery.trim() && <p className="text-sm text-sky-100">GitHub 精选：找到 {matchCount} 个匹配项目</p>}
+        {searchQuery.trim() && matchCount === 0 && <div className="rounded-xl border border-sky-300/20 bg-[#0a1c42] p-5 text-sm text-sky-100">当前精选中没有匹配项目。<a href={`https://github.com/search?q=${encodeURIComponent(searchQuery.trim())}&type=repositories`} target="_blank" rel="noopener noreferrer" className="ml-2 text-cyan-200 underline">去 GitHub 搜索 ↗</a></div>}
         {editions.map((edition, index) => (
           <details key={edition.publishedAtIso} open={index === 0} className="group overflow-hidden rounded-xl border border-sky-300/20 bg-[#0a1c42]">
             <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 px-3 py-2.5 text-sm font-semibold marker:hidden sm:px-5 [&::-webkit-details-marker]:hidden">

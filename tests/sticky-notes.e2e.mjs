@@ -51,6 +51,14 @@ const dialog=()=>page.getByRole('dialog');
 const done=async()=>{await dialog().getByRole('button',{name:'完成',exact:true}).click();};
 try {
   await page.goto('http://127.0.0.1:5180/tests/sticky-test.html');
+  const searchChecks=await page.evaluate(async()=>{
+    const {searchDashboardData,matchesDashboardSearch}=await import('/lib/dashboard-search.ts');
+    const empty={products:[],goals:[],profits:[],health:[],finance:[],books:[],reflections:[],planNotes:[],countdowns:[]};
+    const plan=searchDashboardData('github',{...empty,planNotes:[{id:'plan-1',title:'周计划',content:'学习 GitHub 项目',category:'工作',noteDate:'2026-10-13',createdAt:'',imagePaths:[]}]});
+    const picks=searchDashboardData('storytold/artcraft',empty);
+    return {plan:plan.some(item=>item.id==='plan-1'&&item.area==='计划和感悟'),picks:picks.some(item=>item.title==='storytold/artcraft'&&item.area==='github使用'),jellyfin:searchDashboardData('jellyfin/jellyfin',empty).some(item=>item.title==='jellyfin/jellyfin'),caseInsensitive:matchesDashboardSearch('GITHUB','学习 GitHub 项目')};
+  });
+  assert.deepEqual(searchChecks,{plan:true,picks:true,jellyfin:true,caseInsensitive:true});
   assert.equal(await page.getByRole('button',{name:'待办清单',exact:true}).last().getAttribute('aria-pressed'),'true');
   await page.getByRole('button',{name:'全部',exact:true}).click();
   await page.getByRole('button',{name:'文字便签',exact:true}).first().click();

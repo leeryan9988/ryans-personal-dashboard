@@ -73,6 +73,7 @@ import {
 import { getSupabase, isCloudConfigured } from '@/lib/supabase';
 import { StickyNotesBoard } from './sticky-notes-board';
 import { GithubUsageView } from './github-usage';
+import { matchesDashboardSearch, searchDashboardData, type DashboardSearchResult } from '@/lib/dashboard-search';
 
 type Area =
   | '总目标'
@@ -879,6 +880,9 @@ export default function DashboardApp() {
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
+  const searchResults = searchDashboardData(query, {
+    products, goals, profits, health, finance, books, reflections, planNotes, countdowns,
+  }).sort((a, b) => Number(b.area === active) - Number(a.area === active));
 
   return (
     <main className="min-h-screen bg-[#eef7ff] text-[#18221d]">
@@ -897,6 +901,9 @@ export default function DashboardApp() {
         <Header
           query={query}
           setQuery={setQuery}
+          active={active}
+          results={searchResults}
+          onSelectResult={(result) => setActive(result.area as Area)}
           session={session}
           onAdd={() => setRecordKind('工作产品')}
           onNotionSync={syncNotion}
@@ -957,13 +964,14 @@ export default function DashboardApp() {
           {active === '计划和感悟' && (
             <PlanAndReflectionView
               notes={planNotes}
+              searchQuery={query}
               imageUrls={imageUrls}
               session={session}
               onSaved={loadCloudData}
             />
           )}
           {active === '个人网盘' && <CloudDriveView session={session} />}
-          {active === 'github使用' && <GithubUsageView />}
+          {active === 'github使用' && <GithubUsageView searchQuery={query} />}
           {session && <StickyNotesBoard key={session.user.id} userId={session.user.id} active={active === '待办清单'} />}
           {active !== '个人网盘' && active !== '待办清单' && active !== 'github使用' && (
             <WeeklyReflectionPanel
@@ -1011,6 +1019,9 @@ export default function DashboardApp() {
 function Header({
   query,
   setQuery,
+  active,
+  results,
+  onSelectResult,
   session,
   onAdd,
   onNotionSync,
@@ -1018,27 +1029,57 @@ function Header({
 }: {
   query: string;
   setQuery: (v: string) => void;
+  active: Area;
+  results: DashboardSearchResult[];
+  onSelectResult: (result: DashboardSearchResult) => void;
   session: Session | null;
   onAdd: () => void;
   onNotionSync: () => void;
   syncMessage: string;
 }) {
+  const [searchOpen, setSearchOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[#d9e9f7] bg-[#eef7ff]/90 px-4 backdrop-blur-xl sm:px-8">
+    <header className="sticky top-0 z-20 flex min-h-16 flex-wrap items-center justify-between gap-y-2 border-b border-[#d9e9f7] bg-[#eef7ff]/90 px-4 py-2 backdrop-blur-xl sm:px-8 lg:flex-nowrap lg:py-0">
       <div className="flex items-center gap-2 lg:hidden">
         <div className="grid size-9 place-items-center rounded-xl bg-[#174578] text-[#d9e9f7]">
           <Target className="size-4" />
         </div>
         <span className="font-semibold">Ryan's 个人看板</span>
       </div>
-      <div className="relative hidden max-w-sm flex-1 lg:block">
+      <div className="relative order-3 w-full lg:order-none lg:max-w-sm lg:flex-1" onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setSearchOpen(false);
+      }}>
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#87928b]" />
         <input
+          aria-label="搜索看板内容"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="h-9 w-full rounded-xl border border-[#d7e3ef] bg-white pl-9 pr-3 text-sm outline-none focus:border-[#89a9c9]"
-          placeholder="搜索产品、目标或记录"
+          onChange={(event) => { setQuery(event.target.value); setSearchOpen(true); }}
+          onFocus={() => setSearchOpen(true)}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setSearchOpen(false);
+            if (event.key === 'Enter' && results.length) {
+              onSelectResult(results[0]);
+              setSearchOpen(false);
+            }
+          }}
+          className="h-9 w-full rounded-xl border border-[#d7e3ef] bg-white pl-9 pr-9 text-sm outline-none focus:border-[#89a9c9]"
+          placeholder="搜索产品、目标、记录或 GitHub 项目"
         />
+        {query && <button type="button" aria-label="清空搜索" onClick={() => { setQuery(''); setSearchOpen(false); }} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[#71879c] hover:bg-[#edf3f9]"><X className="size-4" /></button>}
+        {searchOpen && query.trim() && (
+          <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-80 overflow-y-auto rounded-xl border border-[#cbdff2] bg-white p-2 shadow-xl">
+            <p className="px-2 py-1 text-xs text-[#607184]" role="status" aria-live="polite">找到 {results.length} 条匹配结果</p>
+            {results.slice(0, 15).map((result) => (
+              <button key={`${result.area}:${result.id}`} type="button" onClick={() => { onSelectResult(result); setSearchOpen(false); }} className="flex w-full items-start gap-2 rounded-lg px-2 py-2 text-left hover:bg-[#edf5fc] focus:bg-[#edf5fc]">
+                <span className="mt-0.5 shrink-0 rounded bg-[#e9f2fb] px-1.5 py-0.5 text-[11px] text-[#174578]">{result.area}</span>
+                <span className="min-w-0"><span className="block truncate text-sm font-medium text-[#17324d]">{result.title}</span><span className="block truncate text-xs text-[#71879c]">{result.detail}</span></span>
+              </button>
+            ))}
+            {results.length > 15 && <p className="px-2 py-1 text-xs text-[#71879c]">仅显示前 15 条，请输入更具体的关键词。</p>}
+            {results.length === 0 && <p className="px-2 py-3 text-sm text-[#607184]">看板内没有匹配内容。</p>}
+            {active === 'github使用' && <a href={`https://github.com/search?q=${encodeURIComponent(query.trim())}&type=repositories`} target="_blank" rel="noopener noreferrer" className="mt-1 block rounded-lg border-t border-[#e5edf5] px-2 py-2 text-sm text-[#174578] hover:bg-[#edf5fc]">去 GitHub 搜索“{query.trim()}” ↗</a>}
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-2">
         <span className="hidden items-center gap-2 rounded-full border border-[#dfe5df] bg-white px-3 py-1.5 text-xs text-[#647168] sm:flex">
@@ -2583,11 +2624,13 @@ function WeeklyReflectionPanel({
 
 function PlanAndReflectionView({
   notes,
+  searchQuery,
   imageUrls,
   session,
   onSaved,
 }: {
   notes: PlanNote[];
+  searchQuery: string;
   imageUrls: Record<string, string>;
   session: Session | null;
   onSaved: () => Promise<void>;
@@ -2602,6 +2645,7 @@ function PlanAndReflectionView({
   const [isSaving, setIsSaving] = useState(false);
   const [managingNote, setManagingNote] = useState<PlanNote | null>(null);
   const saveLockRef = useRef(false);
+  const filteredNotes = notes.filter((note) => matchesDashboardSearch(searchQuery, note.title, note.content, note.category, note.noteDate));
   const previewUrls = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
 
   useEffect(() => () => previewUrls.forEach((url) => URL.revokeObjectURL(url)), [previewUrls]);
@@ -2736,11 +2780,12 @@ function PlanAndReflectionView({
           <button disabled={isSaving} className="rounded-xl bg-[#174578] px-5 py-2 text-sm font-medium text-white disabled:cursor-wait disabled:opacity-60">{isSaving ? '正在保存…' : '保存记录'}</button>
         </div>
       </form>
+      {searchQuery.trim() && <p className="mb-3 text-sm text-[#607184]">计划和感悟：找到 {filteredNotes.length} 条记录</p>}
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {notes.map((note) => (
+        {filteredNotes.map((note) => (
           <PlanNoteCard key={note.id} note={note} imageUrls={imageUrls} onManage={() => setManagingNote(note)} />
         ))}
-        {notes.length === 0 && <div className="col-span-full rounded-2xl border border-dashed border-[#b9cbe0] bg-white/60 p-10 text-center text-sm text-[#718078]">还没有计划和感悟记录</div>}
+        {filteredNotes.length === 0 && <div className="col-span-full rounded-2xl border border-dashed border-[#b9cbe0] bg-white/60 p-10 text-center text-sm text-[#718078]">{searchQuery.trim() ? '没有找到匹配的计划和感悟记录' : '还没有计划和感悟记录'}</div>}
       </section>
       {managingNote && <PlanNoteManagerDialog note={managingNote} session={session} close={() => setManagingNote(null)} onSaved={onSaved} />}
     </>
