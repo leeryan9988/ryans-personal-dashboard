@@ -21,6 +21,80 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-10-14 12:16 北京时间",
+  "publishedAtIso": "2026-10-14T04:16:00Z",
+  "growthWindow": "2026.10.06—2026.10.11",
+  "risingSource": "https://github.com/OpenGithubs/github-weekly-rank",
+  "rising": [
+    {
+      "name": "boykopovar/AnyPS5",
+      "url": "https://github.com/boykopovar/AnyPS5",
+      "stars": 35608,
+      "weeklyGain": 22512,
+      "functionZh": "研究将 PS5 可执行文件转换为可在 Windows 或 Linux 运行的程序，并实现所需的系统库；项目提供兼容性记录和使用说明。",
+      "reasonZh": "它探索了游戏跨平台运行的另一条技术路径，但兼容性仍在完善，适合关注底层技术的人跟进进展。",
+      "audience": "游戏技术与兼容性研究"
+    },
+    {
+      "name": "rehan-remade/universal-modder",
+      "url": "https://github.com/rehan-remade/universal-modder",
+      "stars": 7436,
+      "weeklyGain": 3777,
+      "functionZh": "为 Codex 等编程智能体提供游戏模组制作流程，协助分析游戏文件、修改资源、生成素材并测试结果。",
+      "reasonZh": "把零散的逆向分析和素材修改步骤组织成可复用流程，适合有技术基础的模组作者试用。",
+      "audience": "游戏模组开发"
+    },
+    {
+      "name": "CopilotKit/OpenDots",
+      "url": "https://github.com/CopilotKit/OpenDots",
+      "stars": 5223,
+      "weeklyGain": 2346,
+      "functionZh": "可自行搭建的智能体工作空间模板，支持持续任务、工具调用、隔离运行环境，以及页面和外部消息入口。",
+      "reasonZh": "适合参考完整智能体产品如何串起任务、界面和工具；项目仍处早期，部署前需看清所依赖的服务配置。",
+      "audience": "智能体应用开发"
+    },
+    {
+      "name": "NandhaKishorM/laya",
+      "url": "https://github.com/NandhaKishorM/laya",
+      "stars": 32789,
+      "weeklyGain": 1704,
+      "functionZh": "多语言文本判断与分类工具，可按预设选项返回类别、评分或是非答案，并提供 Python、HTTP 和 MCP 接口。",
+      "reasonZh": "输出结构明确，容易接入自动化流程；适合需要批量分流、审核或标签判断的人先用自己的数据评估。",
+      "audience": "文本处理与自动化"
+    }
+  ],
+  "established": [
+    {
+      "name": "ventoy/Ventoy",
+      "url": "https://github.com/ventoy/Ventoy",
+      "stars": 80014,
+      "weeklyGain": null,
+      "functionZh": "把多个 ISO、WIM 等系统镜像直接放进 U 盘，开机时从菜单选择要启动的镜像，无须每换一个镜像就重做启动盘。",
+      "reasonZh": "装机、系统维护和故障排查时非常省事，尤其适合经常携带多个安装或救援镜像的人。",
+      "audience": "Windows 装机与系统维护"
+    },
+    {
+      "name": "syncthing/syncthing",
+      "url": "https://github.com/syncthing/syncthing",
+      "stars": 89373,
+      "weeklyGain": null,
+      "functionZh": "在多台设备之间持续同步指定文件夹，设备彼此连接，并可由自己控制数据存放位置。",
+      "reasonZh": "适合希望跨电脑同步资料、又想掌握文件副本和同步范围的人；可先用非关键文件夹试用。",
+      "audience": "多设备文件同步"
+    },
+    {
+      "name": "godotengine/godot",
+      "url": "https://github.com/godotengine/godot",
+      "stars": 118476,
+      "weeklyGain": null,
+      "functionZh": "开源的二维与三维游戏开发引擎，提供场景编辑器、脚本和跨平台导出能力。",
+      "reasonZh": "文档、社区和项目生态成熟，适合用小型游戏或交互原型验证创意，也便于查看引擎源码。",
+      "audience": "游戏与交互开发"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-10-12 22:49 北京时间",
   "publishedAtIso": "2026-10-12T14:49:00Z",
   "growthWindow": "2026.10.06—2026.10.11",
