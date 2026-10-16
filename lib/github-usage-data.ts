@@ -21,6 +21,80 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-10-16 10:53 北京时间",
+  "publishedAtIso": "2026-10-16T02:53:00Z",
+  "growthWindow": "2026.10.06—2026.10.11",
+  "risingSource": "https://github.com/OpenGithubs/github-weekly-rank",
+  "rising": [
+    {
+      "name": "morluto/rea",
+      "url": "https://github.com/morluto/rea",
+      "stars": 273146,
+      "weeklyGain": null,
+      "functionZh": "让编程智能体分析应用行为、网页、JavaScript 程序和原生二进制文件，结合本地工具给出逆向分析结论及证据。",
+      "reasonZh": "把行为观察和代码层面的分析串成一套可追溯流程；适合研究自己有权分析的软件，结论仍需人工复核。",
+      "audience": "软件分析与开发"
+    },
+    {
+      "name": "cathrynlavery/diagram-design",
+      "url": "https://github.com/cathrynlavery/diagram-design",
+      "stars": 55979,
+      "weeklyGain": null,
+      "functionZh": "为 Codex 等智能体提供画图技能，可按文字需求生成架构图、流程图等多种图表，输出可直接打开的 HTML 与 SVG。",
+      "reasonZh": "图表可以按品牌配色制作，并作为独立文件继续修改，适合写产品文档、方案和技术说明。",
+      "audience": "文档与可视化"
+    },
+    {
+      "name": "heygen-com/hyperframes",
+      "url": "https://github.com/heygen-com/hyperframes",
+      "stars": 64635,
+      "weeklyGain": null,
+      "functionZh": "用 HTML、CSS、媒体素材和可控制时间的动画制作视频，再在本地渲染为 MP4；提供命令行与智能体技能。",
+      "reasonZh": "把视频制作变成可编辑、可重复渲染的代码流程，适合批量制作演示、教程或数据动画。",
+      "audience": "视频制作与自动化"
+    },
+    {
+      "name": "tashfeenahmed/freellmapi",
+      "url": "https://github.com/tashfeenahmed/freellmapi",
+      "stars": 35811,
+      "weeklyGain": 2502,
+      "functionZh": "把多个模型服务商的免费额度和自定义兼容接口汇集到一个 API，提供模型路由、故障切换与密钥加密存储。",
+      "reasonZh": "适合试验不同模型并减少接口切换；实际免费额度取决于各服务商，实时模型目录属于付费功能。",
+      "audience": "AI 模型试验"
+    }
+  ],
+  "established": [
+    {
+      "name": "home-assistant/core",
+      "url": "https://github.com/home-assistant/core",
+      "stars": 91541,
+      "weeklyGain": null,
+      "functionZh": "可在家中服务器或树莓派上运行的智能家居平台，把不同品牌设备接入统一界面并设置自动化。",
+      "reasonZh": "强调本地控制和隐私，适合已经有多种智能设备、想统一管理并减少对厂商云端依赖的人。",
+      "audience": "智能家居"
+    },
+    {
+      "name": "microsoft/winget-cli",
+      "url": "https://github.com/microsoft/winget-cli",
+      "stars": 26506,
+      "weeklyGain": null,
+      "functionZh": "微软的 Windows 软件包管理器命令行，可搜索、安装、升级和卸载应用，也能用于批量配置电脑。",
+      "reasonZh": "Windows 用户可直接用它更新常用软件；仓库有官方安装说明和持续维护的客户端。",
+      "audience": "Windows 软件管理"
+    },
+    {
+      "name": "keepassxreboot/keepassxc",
+      "url": "https://github.com/keepassxreboot/keepassxc",
+      "stars": 29251,
+      "weeklyGain": null,
+      "functionZh": "跨平台密码管理器，把密码、网址、附件和笔记保存在本地加密数据库中，并提供密码生成与搜索。",
+      "reasonZh": "适合希望自行掌握密码库文件位置和备份方式的人，Windows 上有现成安装包与入门文档。",
+      "audience": "密码与隐私"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-10-14 12:16 北京时间",
   "publishedAtIso": "2026-10-14T04:16:00Z",
   "growthWindow": "2026.10.06—2026.10.11",
