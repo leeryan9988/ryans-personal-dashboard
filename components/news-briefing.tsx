@@ -214,7 +214,7 @@ export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string })
       <h1 className="text-2xl font-black tracking-tight sm:text-4xl">全球主流媒体 <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-violet-300 bg-clip-text text-transparent">中文早报</span></h1>
       <p className="mt-2 text-xs leading-5 text-slate-200 sm:text-sm">北京时间每日 08:00 期，重点关注 AI、跨境贸易、经济和全球重大事件；从指定 30 家媒体及其他可信来源选题，每期至少 50 条并逐条简析。</p>
     </header>
-    <div className="space-y-2.5 p-3 sm:p-5">
+    <div className="flex flex-col gap-2.5 p-3 sm:p-5">
       {loading && <p className="rounded-xl bg-[#0a1c42] p-5 text-sm text-sky-100">正在加载早报…</p>}
       {error && <p role="alert" className="rounded-xl bg-[#0a1c42] p-5 text-sm text-rose-200">{error}</p>}
       {!loading && !error && editions.length === 0 && <p className="rounded-xl bg-[#0a1c42] p-5 text-sm text-sky-100">尚无已归档的早报。</p>}
@@ -223,7 +223,7 @@ export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string })
       {released.length < editions.length && <p className="rounded-xl bg-[#0a1c42] px-4 py-3 text-sm text-cyan-100">新一期已安排在北京时间 08:00 显示。</p>}
       {experimentError && <p role="alert" className="rounded-xl bg-[#0a1c42] px-4 py-3 text-sm text-rose-200">{experimentError}</p>}
       {rebuiltError && <p role="alert" className="rounded-xl bg-[#0a1c42] px-4 py-3 text-sm text-rose-200">{rebuiltError}</p>}
-      {rebuilt && rebuiltMatches && <details key="2026-10-21-rebuilt-08" open={rebuiltIsLatest} className="group overflow-hidden rounded-xl border border-cyan-300/40 bg-[#0a1c42]">
+      {rebuilt && rebuiltMatches && <details key="2026-10-21-rebuilt-08" open={rebuiltIsLatest} className={`group overflow-hidden rounded-xl border border-cyan-300/40 bg-[#0a1c42] ${rebuiltIsLatest ? 'order-0' : 'order-1'}`}>
         <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 px-3 py-3 text-sm font-semibold marker:hidden sm:px-5 [&::-webkit-details-marker]:hidden">
           <span className="rounded-full bg-cyan-300/15 px-2 py-0.5 text-xs text-cyan-100">08:00 期 · 重编实验版</span>
           <span>2026 年 10 月 21 日 · 补发</span>
@@ -232,7 +232,7 @@ export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string })
         </summary>
         <div className="border-t border-sky-300/15 px-4 py-4 sm:px-7"><MarkdownBody content={rebuilt.content} /></div>
       </details>}
-      {experiment && experimentMatches && <details key="2026-10-21-experiment" open={experimentIsLatest} className="group overflow-hidden rounded-xl border border-cyan-300/40 bg-[#0a1c42]">
+      {experiment && experimentMatches && <details key="2026-10-21-experiment" open={experimentIsLatest} className={`group overflow-hidden rounded-xl border border-cyan-300/40 bg-[#0a1c42] ${experimentIsLatest ? 'order-0' : 'order-2'}`}>
         <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 px-3 py-3 text-sm font-semibold marker:hidden sm:px-5 [&::-webkit-details-marker]:hidden">
           <span className="rounded-full bg-cyan-300/15 px-2 py-0.5 text-xs text-cyan-100">30 家媒体选题池 · 实验版</span>
           <span>2026 年 10 月 21 日 · 补发试版</span>
@@ -243,7 +243,7 @@ export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string })
       </details>}
       {visible.map((edition) => {
         const latest = edition.date === released[0]?.date && !experimentIsLatest && !rebuiltIsLatest;
-        return <details key={edition.date} open={latest} onToggle={(event) => { if (event.currentTarget.open) void loadReport(edition); }} className="group overflow-hidden rounded-xl border border-sky-300/20 bg-[#0a1c42]">
+        return <details key={edition.date} open={latest} onToggle={(event) => { if (event.currentTarget.open) void loadReport(edition); }} className={`group overflow-hidden rounded-xl border border-sky-300/20 bg-[#0a1c42] ${latest ? 'order-0' : 'order-3'}`}>
           <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 px-3 py-3 text-sm font-semibold marker:hidden sm:px-5 [&::-webkit-details-marker]:hidden">
             <span className={latest ? 'rounded-full bg-cyan-300/15 px-2 py-0.5 text-xs text-cyan-200' : 'rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-300'}>{latest ? (edition.date === today ? '今天' : '最新一期') : '往期'}</span>
             {edition.date < newSourcePolicyStarts && <span className="rounded-full bg-amber-300/15 px-2 py-0.5 text-xs text-amber-100">旧版十二国归档</span>}
