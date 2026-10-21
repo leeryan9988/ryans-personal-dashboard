@@ -26,6 +26,7 @@ import {
   LineChart,
   LogOut,
   NotebookPen,
+  Newspaper,
   Plus,
   RefreshCw,
   Search,
@@ -73,6 +74,7 @@ import {
 import { getSupabase, isCloudConfigured } from '@/lib/supabase';
 import { StickyNotesBoard } from './sticky-notes-board';
 import { GithubUsageView } from './github-usage';
+import { NewsBriefingView } from './news-briefing';
 import { matchesDashboardSearch, searchDashboardData, type DashboardSearchResult } from '@/lib/dashboard-search';
 
 type Area =
@@ -85,7 +87,8 @@ type Area =
   | '个人网盘'
   | '待办清单'
   | '计划和感悟'
-  | 'github使用';
+  | 'github使用'
+  | '全球早报';
 type RecordKind =
   | '工作产品'
   | '副业利润'
@@ -246,6 +249,7 @@ const navigation: { label: Area; icon: typeof LayoutDashboard }[] = [
   { label: '计划和感悟', icon: NotebookPen },
   { label: '待办清单', icon: CheckCircle2 },
   { label: 'github使用', icon: FolderOpen },
+  { label: '全球早报', icon: Newspaper },
 ];
 
 const defaultNavigationOrder = navigation.map((item) => item.label);
@@ -972,8 +976,9 @@ export default function DashboardApp() {
           )}
           {active === '个人网盘' && <CloudDriveView session={session} searchQuery={query} onSearchChange={setQuery} />}
           {active === 'github使用' && <GithubUsageView searchQuery={query} />}
+          {active === '全球早报' && <NewsBriefingView searchQuery={query} />}
           {session && <StickyNotesBoard key={session.user.id} userId={session.user.id} active={active === '待办清单'} searchQuery={queries['待办清单'] ?? ''} onSearchChange={(value) => setQueries((current) => ({ ...current, 待办清单: value }))} />}
-          {active !== '个人网盘' && active !== '待办清单' && active !== 'github使用' && (
+          {active !== '个人网盘' && active !== '待办清单' && active !== 'github使用' && active !== '全球早报' && (
             <WeeklyReflectionPanel
               area={active}
               records={reflections.filter((item) => item.area === active)}
@@ -4030,4 +4035,5 @@ function CenteredMessage({ title, detail }: { title: string; detail: string }) {
     </main>
   );
 }
+
 
