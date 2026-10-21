@@ -239,11 +239,9 @@ async function decryptSession(value: string, encodedKey: string) {
 }
 
 const navigation: { label: Area; icon: typeof LayoutDashboard }[] = [
-  { label: '总目标', icon: Target },
   { label: '工作', icon: BriefcaseBusiness },
   { label: '副业', icon: TrendingUp },
   { label: '身体', icon: Dumbbell },
-  { label: '个人财务', icon: WalletCards },
   { label: '读书清单', icon: BookOpen },
   { label: '个人网盘', icon: HardDrive },
   { label: '计划和感悟', icon: NotebookPen },
@@ -387,7 +385,7 @@ function incomePeriodKey(dateValue: string, granularity: '日' | '周' | '月' |
 }
 
 export default function DashboardApp() {
-  const [active, setActive] = useState<Area>('总目标');
+  const [active, setActive] = useState<Area>('工作');
   const [queries, setQueries] = useState<Partial<Record<Area, string>>>({});
   const query = queries[active] ?? '';
   const setQuery = (value: string) => setQueries((current) => ({ ...current, [active]: value }));
@@ -915,9 +913,6 @@ export default function DashboardApp() {
         />
         <div className="mx-auto max-w-[1500px] px-4 py-6 pb-24 sm:px-8 sm:py-8 lg:pb-8">
           {!isCloudConfigured && <CloudSetupBanner />}
-          {active === '总目标' && (
-            <TotalGoalsView products={products} profits={profits} health={health} finance={finance} books={books} goals={matchingRecords(goals)} openRecord={setRecordKind} onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }} setActive={setActive} />
-          )}
           {active === '工作' && (
             <WorkView
               products={matchingRecords(products)}
@@ -943,15 +938,6 @@ export default function DashboardApp() {
               health={matchingRecords(health)}
               goals={matchingRecords(currentGoals.filter((item) => item.area === '身体'))}
               history={matchingRecords(archivedGoals.filter((goal) => goal.area === '身体'))}
-              openRecord={setRecordKind}
-              onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }}
-            />
-          )}
-          {active === '个人财务' && (
-            <FinanceView
-              logs={matchingRecords(finance)}
-              goals={matchingRecords(currentGoals.filter((goal) => goal.area === '个人财务'))}
-              history={matchingRecords(archivedGoals.filter((goal) => goal.area === '个人财务'))}
               openRecord={setRecordKind}
               onEditGoal={(goal) => { setEditingGoal(goal); setRecordKind('更新目标'); }}
             />

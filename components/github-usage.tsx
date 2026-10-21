@@ -60,7 +60,7 @@ export function GithubUsageView({ searchQuery = '' }: { searchQuery?: string }) 
       <header className="bg-[radial-gradient(circle_at_85%_0%,#2556ae_0%,transparent_42%),radial-gradient(circle_at_10%_10%,#143a7d_0%,transparent_42%)] px-5 py-5 sm:px-8 sm:py-6">
         <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold tracking-[.16em] text-cyan-200"><Star className="size-3.5" />RYAN'S GITHUB PICKS</div>
         <h1 className="text-2xl font-black tracking-tight sm:text-4xl">GitHub <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-violet-300 bg-clip-text text-transparent">使用精选</span></h1>
-        <p className="mt-2 text-xs leading-5 text-slate-200 sm:text-sm">每周三、周五更新；每期 4 个近期飙升项目和 3 个高星实用项目。按时间从新到旧排列。</p>
+        <p className="mt-2 text-xs leading-5 text-slate-200 sm:text-sm">每周三、周五更新；以后每期固定 5 个近期飙升项目和 5 个高星实用项目。按时间从新到旧排列。</p>
       </header>
       <div className="space-y-2.5 p-3 sm:p-5">
         {searchQuery.trim() && <p className="text-sm text-sky-100">GitHub 精选：找到 {matchCount} 个匹配项目</p>}

@@ -21,24 +21,33 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
-  "publishedAt": "2026-10-21 11:08 北京时间",
-  "publishedAtIso": "2026-10-21T03:08:00Z",
+  "publishedAt": "2026-10-21 13:20 北京时间",
+  "publishedAtIso": "2026-10-21T05:20:00Z",
   "growthWindow": "2026.10.13—2026.10.18",
   "risingSource": "https://github.com/OpenGithubs/github-weekly-rank",
   "rising": [
     {
       "name": "wheresryan22/anatomy",
       "url": "https://github.com/wheresryan22/anatomy",
-      "stars": 17682,
+      "stars": 17769,
       "weeklyGain": 11839,
       "functionZh": "供 Codex 等编程智能体使用的绘图技能，可根据技术概念制作可交互的等距插画，输出 SVG、独立网页，并可加入 WebGL 动效。",
       "reasonZh": "适合把抽象机制变成可操作的教学图；仓库附有可直接打开的示例，便于先判断效果再安装。",
       "audience": "技术讲解、教育和产品展示"
     },
     {
+      "name": "storytold/wordcraft",
+      "url": "https://github.com/storytold/wordcraft",
+      "stars": 15122,
+      "weeklyGain": 10884,
+      "functionZh": "用 Rust 从零实现的开源文字处理项目，目标是提供类似 Word 的文档编辑体验。",
+      "reasonZh": "在本周 GitHub 增长榜位居前列，适合关注开源文档工具的人；项目仍较新，复杂文档兼容性需自行验证。",
+      "audience": "文档编辑与开源办公"
+    },
+    {
       "name": "mksglu/context-mode",
       "url": "https://github.com/mksglu/context-mode",
-      "stars": 31395,
+      "stars": 31420,
       "weeklyGain": 4273,
       "functionZh": "通过 MCP 与钩子把大量工具输出先在沙箱处理，提炼必要信息再交给编程智能体，并保存会话记忆。",
       "reasonZh": "长时间处理日志、网页和仓库资料时，可能减少无关内容占用上下文；节省比例是项目方报告，实际效果应自行验证。",
@@ -47,7 +56,7 @@ export const githubUsageEditions: GithubUsageEdition[] = [
     {
       "name": "ARahim3/DigUp",
       "url": "https://github.com/ARahim3/DigUp",
-      "stars": 5250,
+      "stars": 5260,
       "weeklyGain": 2214,
       "functionZh": "在本机索引照片、PDF、文档、录音、视频和代码后，可用自然语言搜索内容，并跳到相关文件或片段；提供 Windows 测试版。",
       "reasonZh": "适合找忘了文件名的资料，索引在本地进行；Windows 版仍是测试版，建议先用非重要文件夹体验。",
@@ -56,7 +65,7 @@ export const githubUsageEditions: GithubUsageEdition[] = [
     {
       "name": "vercel-labs/skills",
       "url": "https://github.com/vercel-labs/skills",
-      "stars": 35861,
+      "stars": 35874,
       "weeklyGain": 1703,
       "functionZh": "提供搜索、安装、使用和更新智能体技能的命令行工具，支持 Codex、Claude Code、OpenCode 等多种开发工具。",
       "reasonZh": "能集中发现和管理可复用技能，适合先查看技能内容，再按项目需要安装；安装操作会将第三方指令带入智能体工作流。",
@@ -67,7 +76,7 @@ export const githubUsageEditions: GithubUsageEdition[] = [
     {
       "name": "EbookFoundation/free-programming-books",
       "url": "https://github.com/EbookFoundation/free-programming-books",
-      "stars": 399690,
+      "stars": 399706,
       "weeklyGain": null,
       "functionZh": "按语言和主题整理免费编程书籍、课程及其他学习资源，包含中文资源目录。",
       "reasonZh": "适合按主题建立学习路径，直接访问原始资源；这是资源索引，具体内容质量仍需按个人目标挑选。",
@@ -76,7 +85,7 @@ export const githubUsageEditions: GithubUsageEdition[] = [
     {
       "name": "Stirling-Tools/Stirling-PDF",
       "url": "https://github.com/Stirling-Tools/Stirling-PDF",
-      "stars": 94639,
+      "stars": 94644,
       "weeklyGain": null,
       "functionZh": "可作为桌面应用或自建网页服务使用的 PDF 工具，支持合并、拆分、转换、OCR、签名和自动化处理。",
       "reasonZh": "处理 PDF 的常见功能集中在一个项目里；本地或自建部署有利于避免把文件上传到陌生在线网站。",
@@ -85,11 +94,29 @@ export const githubUsageEditions: GithubUsageEdition[] = [
     {
       "name": "ollama/ollama",
       "url": "https://github.com/ollama/ollama",
-      "stars": 184085,
+      "stars": 184097,
       "weeklyGain": null,
       "functionZh": "在 Windows 等系统上下载并运行开放模型，提供命令行、编程接口和与 Codex 等工具的集成。",
       "reasonZh": "适合在自己的电脑上试用和接入模型；运行速度、可用模型大小仍取决于电脑硬件。",
       "audience": "想体验本地 AI 模型的用户与开发者"
+    },
+    {
+      "name": "rustdesk/rustdesk",
+      "url": "https://github.com/rustdesk/rustdesk",
+      "stars": 126474,
+      "weeklyGain": null,
+      "functionZh": "开源远程桌面应用，支持 Windows、macOS、Linux 和移动设备，并可自行部署中继服务器。",
+      "reasonZh": "适合需要跨设备远程协助或控制自己电脑的人；若自建服务器，需要注意访问权限与网络安全配置。",
+      "audience": "远程桌面与设备管理"
+    },
+    {
+      "name": "ggml-org/llama.cpp",
+      "url": "https://github.com/ggml-org/llama.cpp",
+      "stars": 131870,
+      "weeklyGain": null,
+      "functionZh": "在本地运行大语言模型的 C/C++ 推理项目，支持多种模型格式与硬件加速方式。",
+      "reasonZh": "是了解本地模型运行机制和构建自有推理服务的成熟基础项目；实际速度取决于设备与模型大小。",
+      "audience": "本地 AI 与模型部署"
     }
   ]
 },
