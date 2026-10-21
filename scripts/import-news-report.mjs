@@ -21,13 +21,21 @@ const content = source
   .replace(/\n{3,}/g, '\n\n')
   .trim();
 const articleCount = (content.match(/^### \d+\. /gm) ?? []).length;
-if (!articleCount || !content.includes('核验') || !/https?:\/\//.test(content)) {
-  throw new Error('早报缺少新闻、核验说明或原文链接；未修改归档。');
+if (articleCount < 50 || !content.includes('核验') || !/https?:\/\//.test(content)) {
+  throw new Error(`早报需至少 50 条不同新闻，目前 ${articleCount} 条；未修改归档。`);
 }
 const articles = content.split(/^### \d+\. /m).slice(1);
 if (articles.some((article) => !/核验/.test(article)
+    || !/\*\*简析：\*\*\s*\S+/.test(article)
     || !/\[[^\]]*(?:原文|报道|文件|链接)[^\]]*\]\(https?:\/\//.test(article))) {
-  throw new Error('有新闻缺少原文链接或核验标记；未修改归档。');
+  throw new Error('有新闻缺少逐条简析、原文链接或核验标记；未修改归档。');
+}
+const originalLinks = articles.map((article) => {
+  const links = [...article.matchAll(/\[[^\]]*(?:原文|报道|文件|链接)[^\]]*\]\((https?:\/\/[^)]+)\)/g)];
+  return links.at(-1)?.[1].replace(/\?.*$/, '').replace(/\/$/, '') ?? '';
+});
+if (new Set(originalLinks).size !== originalLinks.length) {
+  throw new Error('存在重复原文链接，需合并同一报道；未修改归档。');
 }
 
 const directory = join(process.cwd(), 'public', 'news');
