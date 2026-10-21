@@ -25,10 +25,10 @@ if (articleCount < 50 || !content.includes('核验') || !/https?:\/\//.test(cont
   throw new Error(`早报需至少 50 条不同新闻，目前 ${articleCount} 条；未修改归档。`);
 }
 const articles = content.split(/^### \d+\. /m).slice(1);
-if (articles.some((article) => !/核验/.test(article)
-    || !/\*\*简析：\*\*\s*\S+/.test(article)
+if (articles.some((article) => !/\*\*(?:核验|来源标记)[:：]/.test(article)
+    || !/\*\*简析：\*\*[^\n]*机制：[^\n]*受影响的是[^\n]*目前不能/.test(article)
     || !/\[[^\]]*(?:原文|报道|文件|链接)[^\]]*\]\(https?:\/\//.test(article))) {
-  throw new Error('有新闻缺少逐条简析、原文链接或核验标记；未修改归档。');
+  throw new Error('有新闻缺少影响机制、受影响对象、结论边界、原文链接或核验标记；未修改归档。');
 }
 const originalLinks = articles.map((article) => {
   const links = [...article.matchAll(/\[[^\]]*(?:原文|报道|文件|链接)[^\]]*\]\((https?:\/\/[^)]+)\)/g)];
