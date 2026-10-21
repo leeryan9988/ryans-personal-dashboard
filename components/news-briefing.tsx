@@ -16,6 +16,7 @@ type NewsReport = Omit<NewsEdition, 'file'> & {
 };
 
 const newsBase = `${import.meta.env.BASE_URL}news/`;
+const newSourcePolicyStarts = '2026-10-22';
 
 function beijingDate() {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -96,12 +97,29 @@ function MarkdownBody({ content }: { content: string }) {
 export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string }) {
   const [editions, setEditions] = useState<NewsEdition[]>([]);
   const [reports, setReports] = useState<Record<string, NewsReport>>({});
+  const [experiment, setExperiment] = useState<NewsReport | null>(null);
+  const [experimentError, setExperimentError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reportErrors, setReportErrors] = useState<Record<string, string>>({});
   const [now, setNow] = useState(() => Date.now());
   const fetched = useRef(new Set<string>());
   const clockOffset = useRef(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch(`${newsBase}2026-10-21-experiment.json`, { cache: 'no-store' })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json() as Promise<NewsReport>;
+      })
+      .then((report) => {
+        if (report.date !== '2026-10-21' || typeof report.content !== 'string') throw new Error('实验版格式不正确');
+        if (!cancelled) setExperiment(report);
+      })
+      .catch(() => { if (!cancelled) setExperimentError('实验版暂时无法加载，请刷新后重试。'); });
+    return () => { cancelled = true; };
+  }, []);
 
   const loadReport = useCallback(async (edition: NewsEdition) => {
     if (fetched.current.has(edition.date)) return;
@@ -165,6 +183,8 @@ export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string })
   const released = editions.filter((edition) => Date.parse(edition.publishedAt) <= now);
 
   const today = beijingDate();
+  const experimentIsLatest = Boolean(experiment && today === '2026-10-21');
+  const experimentMatches = Boolean(experiment && matchesDashboardSearch(searchQuery, experiment.date, experiment.title, experiment.content));
   const visible = released.filter((edition) =>
     matchesDashboardSearch(searchQuery, edition.date, dateLabel(edition.date), reports[edition.date]?.content ?? ''),
   );
@@ -173,19 +193,31 @@ export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string })
     <header className="bg-[radial-gradient(circle_at_85%_0%,#2556ae_0%,transparent_42%),radial-gradient(circle_at_10%_10%,#143a7d_0%,transparent_42%)] px-5 py-5 sm:px-8 sm:py-6">
       <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold tracking-[.16em] text-cyan-200"><Newspaper className="size-4" /> GLOBAL NEWS BRIEFING</div>
       <h1 className="text-2xl font-black tracking-tight sm:text-4xl">全球主流媒体 <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-violet-300 bg-clip-text text-transparent">中文早报</span></h1>
-      <p className="mt-2 text-xs leading-5 text-slate-200 sm:text-sm">关注 AI、跨境贸易、经济和全球重大事件，不限国家。每日北京时间 08:00 显示已预先发布的新一期；往期可查看原文、来源与核验说明。</p>
+      <p className="mt-2 text-xs leading-5 text-slate-200 sm:text-sm">10 月 21 日补发一份按你指定的 30 家媒体选题池制作的实验版；正式每日版从 10 月 22 日起采用此规则，关注 AI、跨境贸易、经济和全球重大事件，不限国家。</p>
     </header>
     <div className="space-y-2.5 p-3 sm:p-5">
       {loading && <p className="rounded-xl bg-[#0a1c42] p-5 text-sm text-sky-100">正在加载早报…</p>}
       {error && <p role="alert" className="rounded-xl bg-[#0a1c42] p-5 text-sm text-rose-200">{error}</p>}
       {!loading && !error && editions.length === 0 && <p className="rounded-xl bg-[#0a1c42] p-5 text-sm text-sky-100">尚无已归档的早报。</p>}
-      {searchQuery.trim() && !loading && <p className="text-sm text-sky-100">找到 {visible.length} 期匹配早报；正文搜索覆盖已打开的期数。</p>}
+      {released.some((edition) => edition.date < newSourcePolicyStarts) && <p className="rounded-xl border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm leading-6 text-amber-100">下方 10 月 20、21 日的“旧版十二国归档”保留原文，未按新规则重新采编。10 月 21 日实验版单独展示，正式每日版从 10 月 22 日起采用 30 家媒体选题池。</p>}
+      {searchQuery.trim() && !loading && <p className="text-sm text-sky-100">找到 {visible.length + Number(experimentMatches)} 期匹配早报；正文搜索覆盖已加载的期数。</p>}
       {released.length < editions.length && <p className="rounded-xl bg-[#0a1c42] px-4 py-3 text-sm text-cyan-100">新一期已安排在北京时间 08:00 显示。</p>}
+      {experimentError && <p role="alert" className="rounded-xl bg-[#0a1c42] px-4 py-3 text-sm text-rose-200">{experimentError}</p>}
+      {experiment && experimentMatches && <details key="2026-10-21-experiment" open={experimentIsLatest} className="group overflow-hidden rounded-xl border border-cyan-300/40 bg-[#0a1c42]">
+        <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 px-3 py-3 text-sm font-semibold marker:hidden sm:px-5 [&::-webkit-details-marker]:hidden">
+          <span className="rounded-full bg-cyan-300/15 px-2 py-0.5 text-xs text-cyan-100">30 家媒体选题池 · 实验版</span>
+          <span>2026 年 10 月 21 日 · 补发试版</span>
+          <span className="text-xs font-normal text-slate-400">{experiment.articleCount} 条新闻 · 3 条时间待核</span>
+          <ChevronDown className="ml-auto size-4 shrink-0 text-sky-200 transition group-open:rotate-180" />
+        </summary>
+        <div className="border-t border-sky-300/15 px-4 py-4 sm:px-7"><MarkdownBody content={experiment.content} /></div>
+      </details>}
       {visible.map((edition) => {
-        const latest = edition.date === released[0]?.date;
+        const latest = edition.date === released[0]?.date && !experimentIsLatest;
         return <details key={edition.date} open={latest} onToggle={(event) => { if (event.currentTarget.open) void loadReport(edition); }} className="group overflow-hidden rounded-xl border border-sky-300/20 bg-[#0a1c42]">
           <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 px-3 py-3 text-sm font-semibold marker:hidden sm:px-5 [&::-webkit-details-marker]:hidden">
             <span className={latest ? 'rounded-full bg-cyan-300/15 px-2 py-0.5 text-xs text-cyan-200' : 'rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-300'}>{latest ? (edition.date === today ? '今天' : '最新一期') : '往期'}</span>
+            {edition.date < newSourcePolicyStarts && <span className="rounded-full bg-amber-300/15 px-2 py-0.5 text-xs text-amber-100">旧版十二国归档</span>}
             <span>{dateLabel(edition.date)}</span>
             <span className="text-xs font-normal text-slate-400">{edition.articleCount} 条新闻</span>
             <ChevronDown className="ml-auto size-4 shrink-0 text-sky-200 transition group-open:rotate-180" />
