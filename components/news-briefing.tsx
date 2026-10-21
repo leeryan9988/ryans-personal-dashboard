@@ -101,17 +101,18 @@ export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string })
   const [reportErrors, setReportErrors] = useState<Record<string, string>>({});
   const [now, setNow] = useState(() => Date.now());
   const fetched = useRef(new Set<string>());
+  const clockOffset = useRef(0);
 
   const loadReport = useCallback(async (edition: NewsEdition) => {
     if (fetched.current.has(edition.date)) return;
     fetched.current.add(edition.date);
-    setReportErrors((current) => ({ ...current, [edition.date]: '' }));
     try {
       const response = await fetch(`${newsBase}${edition.file}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const report = await response.json() as NewsReport;
       if (report.date !== edition.date || typeof report.content !== 'string') throw new Error('早报文件格式不正确');
       setReports((current) => ({ ...current, [edition.date]: report }));
+      setReportErrors((current) => ({ ...current, [edition.date]: '' }));
     } catch {
       fetched.current.delete(edition.date);
       setReportErrors((current) => ({ ...current, [edition.date]: '本期内容暂时无法加载，请刷新后重试。' }));
@@ -120,9 +121,14 @@ export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string })
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${newsBase}index.json`)
+    const loadIndex = () => fetch(`${newsBase}index.json`, { cache: 'no-store' })
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const serverTime = Date.parse(response.headers.get('date') ?? '');
+        if (Number.isFinite(serverTime)) {
+          clockOffset.current = serverTime - Date.now();
+          if (!cancelled) setNow(serverTime);
+        }
         return response.json() as Promise<NewsEdition[]>;
       })
       .then((rows) => {
@@ -131,10 +137,15 @@ export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string })
         const sorted = rows.filter((row) => /^\d{4}-\d{2}-\d{2}$/.test(row.date) && /^\d{4}-\d{2}-\d{2}\.json$/.test(row.file))
           .sort((a, b) => b.date.localeCompare(a.date));
         setEditions(sorted);
+        const latest = sorted.find((row) => Date.parse(row.publishedAt) <= Date.now() + clockOffset.current);
+        if (latest) void loadReport(latest);
+        setError('');
       })
       .catch(() => { if (!cancelled) setError('早报目录暂时无法加载，请刷新后重试。'); })
       .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    void loadIndex();
+    const refresh = window.setInterval(() => { void loadIndex(); }, 60_000);
+    return () => { cancelled = true; window.clearInterval(refresh); };
   }, [loadReport]);
 
   useEffect(() => {
@@ -142,15 +153,16 @@ export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string })
       .filter((time) => Number.isFinite(time) && time > now)
       .sort((a, b) => a - b)[0];
     if (!nextRelease) return;
-    const timer = window.setTimeout(() => setNow(Date.now()), Math.min(nextRelease - now + 50, 2_147_483_647));
+    const timer = window.setTimeout(() => {
+      const currentTime = Date.now() + clockOffset.current;
+      setNow(currentTime);
+      const latest = editions.find((row) => Date.parse(row.publishedAt) <= currentTime);
+      if (latest) void loadReport(latest);
+    }, Math.min(nextRelease - now + 50, 2_147_483_647));
     return () => window.clearTimeout(timer);
-  }, [editions, now]);
+  }, [editions, now, loadReport]);
 
   const released = editions.filter((edition) => Date.parse(edition.publishedAt) <= now);
-  const latestReleased = released[0];
-  useEffect(() => {
-    if (latestReleased) void loadReport(latestReleased);
-  }, [latestReleased, loadReport]);
 
   const today = beijingDate();
   const visible = released.filter((edition) =>
@@ -188,4 +200,3 @@ export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string })
     </div>
   </div>;
 }
-

@@ -24,6 +24,11 @@ const articleCount = (content.match(/^### \d+\. /gm) ?? []).length;
 if (!articleCount || !content.includes('核验') || !/https?:\/\//.test(content)) {
   throw new Error('早报缺少新闻、核验说明或原文链接；未修改归档。');
 }
+const articles = content.split(/^### \d+\. /m).slice(1);
+if (articles.some((article) => !/核验/.test(article)
+    || !/\[[^\]]*(?:原文|报道|文件|链接)[^\]]*\]\(https?:\/\//.test(article))) {
+  throw new Error('有新闻缺少原文链接或核验标记；未修改归档。');
+}
 
 const directory = join(process.cwd(), 'public', 'news');
 const file = `${date}.json`;
@@ -61,11 +66,16 @@ const report = {
   sourceConversationId: '6acd9fca-fe30-83ea-9b39-45854f7124f4',
   content,
 };
-await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, { flag: 'wx' });
+try {
+  const existing = JSON.parse(await readFile(reportPath, 'utf8'));
+  if (existing.content !== content) throw new Error(`${date} 归档文件已存在且内容不同；未覆盖。`);
+} catch (error) {
+  if (error?.code !== 'ENOENT') throw error;
+  await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, { flag: 'wx' });
+}
 const next = [
   ...index,
   { date, publishedAt: report.publishedAt, windowStart: report.windowStart, windowEnd: report.windowEnd, title: report.title, articleCount, file },
 ].sort((a, b) => b.date.localeCompare(a.date));
 await writeFile(indexPath, `${JSON.stringify(next, null, 2)}\n`);
 console.log(`已归档 ${date}，共 ${articleCount} 条。`);
-
