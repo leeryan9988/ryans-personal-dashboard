@@ -21,6 +21,80 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-10-21 11:08 北京时间",
+  "publishedAtIso": "2026-10-21T03:08:00Z",
+  "growthWindow": "2026.10.13—2026.10.18",
+  "risingSource": "https://github.com/OpenGithubs/github-weekly-rank",
+  "rising": [
+    {
+      "name": "wheresryan22/anatomy",
+      "url": "https://github.com/wheresryan22/anatomy",
+      "stars": 17682,
+      "weeklyGain": 11839,
+      "functionZh": "供 Codex 等编程智能体使用的绘图技能，可根据技术概念制作可交互的等距插画，输出 SVG、独立网页，并可加入 WebGL 动效。",
+      "reasonZh": "适合把抽象机制变成可操作的教学图；仓库附有可直接打开的示例，便于先判断效果再安装。",
+      "audience": "技术讲解、教育和产品展示"
+    },
+    {
+      "name": "mksglu/context-mode",
+      "url": "https://github.com/mksglu/context-mode",
+      "stars": 31395,
+      "weeklyGain": 4273,
+      "functionZh": "通过 MCP 与钩子把大量工具输出先在沙箱处理，提炼必要信息再交给编程智能体，并保存会话记忆。",
+      "reasonZh": "长时间处理日志、网页和仓库资料时，可能减少无关内容占用上下文；节省比例是项目方报告，实际效果应自行验证。",
+      "audience": "经常用 AI 智能体处理大项目的开发者"
+    },
+    {
+      "name": "ARahim3/DigUp",
+      "url": "https://github.com/ARahim3/DigUp",
+      "stars": 5250,
+      "weeklyGain": 2214,
+      "functionZh": "在本机索引照片、PDF、文档、录音、视频和代码后，可用自然语言搜索内容，并跳到相关文件或片段；提供 Windows 测试版。",
+      "reasonZh": "适合找忘了文件名的资料，索引在本地进行；Windows 版仍是测试版，建议先用非重要文件夹体验。",
+      "audience": "文件多、需要跨格式检索的 Windows 用户"
+    },
+    {
+      "name": "vercel-labs/skills",
+      "url": "https://github.com/vercel-labs/skills",
+      "stars": 35861,
+      "weeklyGain": 1703,
+      "functionZh": "提供搜索、安装、使用和更新智能体技能的命令行工具，支持 Codex、Claude Code、OpenCode 等多种开发工具。",
+      "reasonZh": "能集中发现和管理可复用技能，适合先查看技能内容，再按项目需要安装；安装操作会将第三方指令带入智能体工作流。",
+      "audience": "使用 Codex 等编程智能体的人"
+    }
+  ],
+  "established": [
+    {
+      "name": "EbookFoundation/free-programming-books",
+      "url": "https://github.com/EbookFoundation/free-programming-books",
+      "stars": 399690,
+      "weeklyGain": null,
+      "functionZh": "按语言和主题整理免费编程书籍、课程及其他学习资源，包含中文资源目录。",
+      "reasonZh": "适合按主题建立学习路径，直接访问原始资源；这是资源索引，具体内容质量仍需按个人目标挑选。",
+      "audience": "自学编程与查找免费教材的人"
+    },
+    {
+      "name": "Stirling-Tools/Stirling-PDF",
+      "url": "https://github.com/Stirling-Tools/Stirling-PDF",
+      "stars": 94639,
+      "weeklyGain": null,
+      "functionZh": "可作为桌面应用或自建网页服务使用的 PDF 工具，支持合并、拆分、转换、OCR、签名和自动化处理。",
+      "reasonZh": "处理 PDF 的常见功能集中在一个项目里；本地或自建部署有利于避免把文件上传到陌生在线网站。",
+      "audience": "经常处理 PDF 文件的个人和团队"
+    },
+    {
+      "name": "ollama/ollama",
+      "url": "https://github.com/ollama/ollama",
+      "stars": 184085,
+      "weeklyGain": null,
+      "functionZh": "在 Windows 等系统上下载并运行开放模型，提供命令行、编程接口和与 Codex 等工具的集成。",
+      "reasonZh": "适合在自己的电脑上试用和接入模型；运行速度、可用模型大小仍取决于电脑硬件。",
+      "audience": "想体验本地 AI 模型的用户与开发者"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-10-16 10:53 北京时间",
   "publishedAtIso": "2026-10-16T02:53:00Z",
   "growthWindow": "2026.10.06—2026.10.11",
