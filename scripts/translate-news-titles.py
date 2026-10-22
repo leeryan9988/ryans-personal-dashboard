@@ -10,7 +10,11 @@ import argostranslate.translate
 
 HEADING = re.compile(r"(?m)^### (\d+)\. (.+)$")
 CHINESE = re.compile(r"[\u3400-\u9fff]")
-MODEL_URL = "https://argos-net.com/v1/translate-en_zh-1_9.argosmodel"
+MODEL_URLS = [
+    "https://argos-net.com/v1/translate-en_zh-1_9.argosmodel",
+    "https://argosopentech.nyc3.digitaloceanspaces.com/argospm/translate-en_zh-1_1.argosmodel",
+    "https://cdn.argosopentech.io/translate-en_zh-1_1.argosmodel",
+]
 
 def main() -> None:
     path = Path(sys.argv[1])
@@ -26,8 +30,15 @@ def main() -> None:
     import urllib.request
     with tempfile.TemporaryDirectory() as directory:
         model = Path(directory) / "translate-en_zh-1_9.argosmodel"
-        urllib.request.urlretrieve(MODEL_URL, model)
-        argostranslate.package.install_from_path(str(model))
+        for url in MODEL_URLS:
+            try:
+                urllib.request.urlretrieve(url, model)
+                argostranslate.package.install_from_path(str(model))
+                break
+            except Exception as error:
+                print(f"Translation model download failed from {url}: {error}", file=sys.stderr)
+        else:
+            raise RuntimeError("Unable to install English-Chinese translation model")
     translations = {}
     for match in headings:
         original = match.group(2).strip()
