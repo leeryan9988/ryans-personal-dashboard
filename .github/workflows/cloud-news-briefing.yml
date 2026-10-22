@@ -37,8 +37,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Prepare news from original source pages
-        run: node scripts/cloud-news-briefing.mjs "$MODE"
+      - name: Prepare news from official publisher feeds
+        run: node scripts/cloud-news-rss.mjs "$MODE"
       - name: Commit only new briefing data
         id: commit
         shell: bash
