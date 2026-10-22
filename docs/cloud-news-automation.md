@@ -4,7 +4,7 @@
 
 ## 运行方式
 
-- GitHub 在北京时间每天 07:50（UTC 前一天 23:50）启动 `.github/workflows/cloud-news-briefing.yml`。
+- GitHub 在北京时间每天 07:50（UTC 前一天 23:50）启动 `.github/workflows/cloud-news-briefing.yml`；07:55 和 08:10 再补跑，以降低定时任务延迟或遗漏导致缺期的风险。同一天已经发布时会直接跳过，不重复写入。
 - `scripts/cloud-news-feed-only.mjs` 读取媒体官方 RSS，使用来源给出的发布时间，只收录从上一期 `windowEnd` 到本期 07:50 的报道。按原文链接和标题相似度去重，过滤明显的体育、娱乐及生活类标题，优先排列 AI、跨境贸易、经济和重大事件。
 - 当期有多少条合格新闻就发布多少条，没有 50 条门槛或 60 条上限；若一条都没有，流程失败且不发布空白期。标题保留媒体原文语言。每条列媒体、北京时间、官方 RSS 来源标记和可点击原文；不生成中文摘要或简析，也不调用 OpenAI API。
 - 新日期文件写入 `main` 后，流程显式启动现有 `deploy-pages.yml`。这是必要步骤，因为 GitHub Actions 自带令牌推送的提交不会自动触发另一个 `push` 工作流。
