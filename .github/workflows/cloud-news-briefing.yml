@@ -10,12 +10,17 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Check feed coverage without publishing, or publish a new date
+        description: Check feeds, publish a new date, or enrich an existing date
         required: true
         type: choice
         options:
           - check
           - publish
+          - enrich
+      date:
+        description: Existing briefing date for manual enrichment (YYYY-MM-DD)
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -28,9 +33,10 @@ concurrency:
 jobs:
   briefing:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     env:
       MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || github.event.schedule == '0 23 * * *' && 'check' || 'publish' }}
+      TARGET_DATE: ${{ inputs.date }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,6 +45,7 @@ jobs:
         with:
           node-version: '22'
       - name: Collect distinct reports from official publisher feeds
+        if: env.MODE != 'enrich'
         run: node scripts/cloud-news-feed-only.mjs "$MODE"
       - name: Translate new headlines into Chinese
         if: env.MODE == 'publish'
@@ -49,8 +56,24 @@ jobs:
             exit 0
           fi
           python scripts/translate-news-titles.py "public/news/$(TZ=Asia/Shanghai date +%F).json"
-      - name: Commit only a new dated briefing
-        if: env.MODE == 'publish'
+      - name: Add source-based Chinese context
+        if: env.MODE == 'publish' || env.MODE == 'enrich'
+        shell: bash
+        run: |
+          if [[ "$MODE" == publish && -z "$(git status --porcelain public/news)" ]]; then
+            echo "No new briefing to enrich"
+            exit 0
+          fi
+          if [[ "$MODE" == enrich ]]; then
+            [[ "$TARGET_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "Provide a valid date"; exit 1; }
+            report="public/news/$TARGET_DATE.json"
+          else
+            report="public/news/$(TZ=Asia/Shanghai date +%F).json"
+          fi
+          test -f "$report"
+          python scripts/enrich-news-context.py "$report"
+      - name: Commit enriched briefing
+        if: env.MODE == 'publish' || env.MODE == 'enrich'
         id: commit
         shell: bash
         run: |
@@ -59,11 +82,11 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'news: publish official-feed briefing'
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'news: publish source-based briefing context'
           git push origin HEAD:main
           echo "changed=true" >> "$GITHUB_OUTPUT"
       - name: Start the existing Pages deployment
-        if: env.MODE == 'publish' && steps.commit.outputs.changed == 'true'
+        if: (env.MODE == 'publish' || env.MODE == 'enrich') && steps.commit.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy-pages.yml --ref main
