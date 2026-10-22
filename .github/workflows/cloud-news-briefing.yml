@@ -1,9 +1,6 @@
 name: Publish global news from official feeds
 
 on:
-  push:
-    paths:
-      - .github/workflows/cloud-news-briefing.yml
   schedule:
     # GitHub cron is UTC; this is 07:50 Beijing time.
     - cron: '50 23 * * *'
@@ -30,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      MODE: ${{ github.event_name == 'push' && 'check' || github.event_name == 'workflow_dispatch' && inputs.mode || 'publish' }}
+      MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'publish' }}
     steps:
       - uses: actions/checkout@v4
         with:
