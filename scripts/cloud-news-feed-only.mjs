@@ -91,11 +91,12 @@ function parseFeed(xml, media, domain) {
     const title = getTag(block, 'title');
     const url = getTag(block, 'link');
     const published = getTag(block, 'pubDate') || getTag(block, 'dc:date');
+    const description = getTag(block, 'description').slice(0, 360);
     if (!title || !url || !published || !Number.isFinite(Date.parse(published))) continue;
     let parsed;
     try { parsed = new URL(url); } catch { continue; }
     if (parsed.protocol !== 'https:' || !domain.test(parsed.hostname)) continue;
-    result.push({ title, url: parsed.href, media, publishedTime: new Date(published).toISOString() });
+    result.push({ title, url: parsed.href, media, description, publishedTime: new Date(published).toISOString() });
   }
   return result;
 }
@@ -131,7 +132,7 @@ function renderReport(items) {
   const header = late ? `**北京时间08:00期；实际生成于${generated}，属于延迟补发。**` : '**北京时间08:00期；计划08:00在看板显示。**';
   return [`# 全球主流媒体新闻速览｜${date}`, header, `**收录窗口：${windowStart}—${windowEnd}（按时间戳换算为北京时间）。**`,
     '聚焦AI、跨境贸易、经济和全球重大事件。以下为媒体官方RSS所列原文标题；未生成中文摘要或简析，也未独立核验报道内容。',
-    ...items.map((item, i) => `### ${i + 1}. ${escape(item.title)}\n\n**来源与时间：** ${escape(item.media)}｜${localTime(new Date(item.publishedTime))} 北京时间\n\n**来源标记：** 官方RSS收录；依据该媒体发布信息，未独立核验。 [阅读原文](${item.url})`)].join('\n\n');
+    ...items.map((item, i) => `### ${i + 1}. ${escape(item.title)}\n\n${item.description && item.description.length >= 45 && item.description !== item.title ? `**媒体导语（原文）：** ${escape(item.description)}\n\n` : ''}**来源与时间：** ${escape(item.media)}｜${localTime(new Date(item.publishedTime))} 北京时间\n\n**来源标记：** 官方RSS收录；依据该媒体发布信息，未独立核验。 [阅读原文](${item.url})`)].join('\n\n');
 }
 function localTime(value) { return new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(value); }
 function escape(value) { return value.replace(/[\r\n]+/g, ' ').replace(/[<>]/g, ''); }
