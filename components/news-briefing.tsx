@@ -49,6 +49,17 @@ function inline(text: string): ReactNode[] {
 function MarkdownBody({ content }: { content: string }) {
   const lines = content.split('\n');
   const blocks: ReactNode[] = [];
+  let storyBlocks: ReactNode[] | null = null;
+  let nextBlockKey = 0;
+  const append = (block: ReactNode) => {
+    if (storyBlocks) storyBlocks.push(block);
+    else blocks.push(block);
+  };
+  const closeStory = () => {
+    if (!storyBlocks) return;
+    blocks.push(<article key={nextBlockKey++} className="my-6 rounded-2xl border border-sky-300/20 bg-white/[0.035] px-5 py-5 sm:px-7 sm:py-6">{storyBlocks}</article>);
+    storyBlocks = null;
+  };
   for (let i = 0; i < lines.length;) {
     const line = lines[i].trim();
     if (!line || line === '---') { i++; continue; }
@@ -59,18 +70,23 @@ function MarkdownBody({ content }: { content: string }) {
           rows.push(lines[i].trim().slice(1, -1).split('|').map((cell) => cell.trim()));
         i++;
       }
-      blocks.push(<div key={blocks.length} className="my-4 overflow-x-auto rounded-xl border border-white/10"><table className="min-w-full text-left text-sm"><thead className="bg-white/10"><tr>{rows[0]?.map((cell, j) => <th key={j} className="whitespace-nowrap px-3 py-2 font-semibold text-cyan-100">{inline(cell)}</th>)}</tr></thead><tbody>{rows.slice(1).map((row, j) => <tr key={j} className="border-t border-white/10">{row.map((cell, k) => <td key={k} className="min-w-36 px-3 py-2 align-top leading-6">{inline(cell)}</td>)}</tr>)}</tbody></table></div>);
+      append(<div key={nextBlockKey++} className="my-4 overflow-x-auto rounded-xl border border-white/10"><table className="min-w-full text-left text-sm"><thead className="bg-white/10"><tr>{rows[0]?.map((cell, j) => <th key={j} className="whitespace-nowrap px-3 py-2 font-semibold text-cyan-100">{inline(cell)}</th>)}</tr></thead><tbody>{rows.slice(1).map((row, j) => <tr key={j} className="border-t border-white/10">{row.map((cell, k) => <td key={k} className="min-w-36 px-3 py-2 align-top leading-6">{inline(cell)}</td>)}</tr>)}</tbody></table></div>);
       continue;
     }
     const heading = /^(#{1,3})\s+(.+)$/.exec(line);
     if (heading) {
       const level = heading[1].length;
+      const numberedStory = level === 3 && /^\d+[.)]\s+/.test(heading[2]);
+      if (storyBlocks) closeStory();
+      if (numberedStory) storyBlocks = [];
       const className = level === 1
         ? 'mt-8 border-b border-cyan-300/20 pb-2 text-xl font-bold text-white'
         : level === 2
           ? 'mt-6 text-lg font-bold text-cyan-100'
-          : 'mt-5 text-base font-semibold text-white';
-      blocks.push(<h2 key={blocks.length} className={className}>{inline(heading[2])}</h2>);
+          : numberedStory
+            ? 'mb-4 text-lg font-bold leading-8 text-cyan-100'
+            : 'mt-5 text-base font-semibold text-white';
+      append(<h2 key={nextBlockKey++} className={className}>{inline(heading[2])}</h2>);
       i++;
       continue;
     }
@@ -80,7 +96,7 @@ function MarkdownBody({ content }: { content: string }) {
         items.push(lines[i].trim().replace(/^[-*]\s+/, ''));
         i++;
       }
-      blocks.push(<ul key={blocks.length} className="my-3 list-disc space-y-1 pl-6 text-sm leading-7 text-slate-200">{items.map((item, j) => <li key={j}>{inline(item)}</li>)}</ul>);
+      append(<ul key={nextBlockKey++} className="my-3 list-disc space-y-1 pl-6 text-sm leading-7 text-slate-200">{items.map((item, j) => <li key={j}>{inline(item)}</li>)}</ul>);
       continue;
     }
     const paragraph: string[] = [];
@@ -88,9 +104,13 @@ function MarkdownBody({ content }: { content: string }) {
       paragraph.push(lines[i].trim());
       i++;
     }
-    if (paragraph.length) blocks.push(<p key={blocks.length} className="my-3 text-sm leading-7 text-slate-200">{inline(paragraph.join(' '))}</p>);
+    if (paragraph.length) {
+      const originalTitle = paragraph[0].startsWith('**原文标题：**');
+      append(<p key={nextBlockKey++} className={originalTitle ? 'my-2 text-xs leading-6 text-slate-400 sm:text-sm' : 'my-3 text-sm leading-7 text-slate-200'}>{inline(paragraph.join(' '))}</p>);
+    }
     else i++;
   }
+  closeStory();
   return <div>{blocks}</div>;
 }
 
