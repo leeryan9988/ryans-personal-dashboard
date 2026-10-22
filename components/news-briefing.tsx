@@ -58,7 +58,7 @@ function displayedNewsContent(report: NewsReport, query: string) {
   return matchingNewsContent(report.content, query);
 }
 
-function MarkdownBody({ content }: { content: string }) {
+function FullMarkdownBody({ content }: { content: string }) {
   const lines = content.split('\n');
   const blocks: ReactNode[] = [];
   let storyBlocks: ReactNode[] | null = null;
@@ -124,6 +124,47 @@ function MarkdownBody({ content }: { content: string }) {
   }
   closeStory();
   return <div>{blocks}</div>;
+}
+
+
+function mobileNewsText(value: string) {
+  return value
+    .replace(/\[([^\]]+)\]\(https?:\/\/[^)]+\)/g, '$1')
+    .replace(/\*\*/g, '')
+    .trim();
+}
+
+function MobileNewsBody({ content }: { content: string }) {
+  const headings = [...content.matchAll(/^###\s+\d+[.)]\s.+$/gm)];
+  const stories = headings.map((heading, index) => content.slice(heading.index ?? 0, headings[index + 1]?.index ?? content.length));
+  if (!stories.length) return <FullMarkdownBody content={content} />;
+
+  return <div className="space-y-4">
+    {stories.map((story, index) => {
+      const lines = story.split('\n').map((line) => line.trim()).filter(Boolean);
+      const title = mobileNewsText(lines[0].replace(/^###\s+/, ''));
+      const labeledSummary = lines.find((line) => /^\*\*(一句话看懂|内容提示)：\*\*/.test(line));
+      const firstParagraph = lines.find((line) =>
+        !line.startsWith('#') && !line.startsWith('**') &&
+        !/^\[[^\]]+\]\(https?:\/\/[^)]+\)\s*$/.test(line) && !line.startsWith('|') && line !== '---' && !/^[-*]\s/.test(line)
+      );
+      const summary = labeledSummary
+        ? mobileNewsText(labeledSummary.replace(/^\*\*(一句话看懂|内容提示)：\*\*\s*/, ''))
+        : mobileNewsText(firstParagraph ?? '').split(/(?<=[。！？])/)[0];
+
+      return <article key={index} className="space-y-1">
+        <h3 className="text-sm font-semibold leading-6 text-cyan-100">{title}</h3>
+        {summary && <p className="text-sm leading-6 text-slate-200">{summary}</p>}
+      </article>;
+    })}
+  </div>;
+}
+
+function MarkdownBody({ content }: { content: string }) {
+  return <>
+    <div className="sm:hidden"><MobileNewsBody content={content} /></div>
+    <div className="hidden sm:block"><FullMarkdownBody content={content} /></div>
+  </>;
 }
 
 export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string }) {
