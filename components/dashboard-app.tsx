@@ -1058,7 +1058,7 @@ function Header({
           placeholder={`搜索${active}内容`}
         />
         {query && <button type="button" aria-label="清空搜索" onClick={() => { setQuery(''); setSearchOpen(false); }} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[#71879c] hover:bg-[#edf3f9]"><X className="size-4" /></button>}
-        {searchOpen && query.trim() && active !== '个人网盘' && active !== '待办清单' && (
+        {searchOpen && query.trim() && active !== '个人网盘' && active !== '待办清单' && active !== '全球早报' && (
           <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-80 overflow-y-auto rounded-xl border border-[#cbdff2] bg-white p-2 shadow-xl">
             <p className="px-2 py-1 text-xs text-[#607184]" role="status" aria-live="polite">找到 {results.length} 条匹配结果</p>
             {results.slice(0, 15).map((result) => (

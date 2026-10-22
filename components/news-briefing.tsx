@@ -46,6 +46,18 @@ function inline(text: string): ReactNode[] {
   });
 }
 
+function matchingNewsContent(content: string, query: string) {
+  if (!query.trim()) return content;
+  const sections = content.split(/(?=^###\s+\d+[.)]\s)/m);
+  if (sections.length < 2) return matchesDashboardSearch(query, content) ? content : '';
+  return sections.slice(1).filter((section) => matchesDashboardSearch(query, section)).join('\n\n');
+}
+
+function displayedNewsContent(report: NewsReport, query: string) {
+  if (!query.trim() || matchesDashboardSearch(query, report.date, report.title)) return report.content;
+  return matchingNewsContent(report.content, query);
+}
+
 function MarkdownBody({ content }: { content: string }) {
   const lines = content.split('\n');
   const blocks: ReactNode[] = [];
@@ -236,16 +248,27 @@ export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string })
 
   const released = editions.filter((edition) => Date.parse(edition.publishedAt) <= now);
 
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    editions.filter((edition) => Date.parse(edition.publishedAt) <= now)
+      .forEach((edition) => { void loadReport(edition); });
+  }, [searchQuery, editions, now, loadReport]);
+
   const today = beijingDate();
   const revisedIsLatest = Boolean(revised && today === '2026-10-21');
   const rebuiltIsLatest = Boolean(rebuilt && today === '2026-10-21' && !revised);
   const experimentIsLatest = Boolean(experiment && today === '2026-10-21' && !rebuilt && !revised);
-  const revisedMatches = Boolean(revised && matchesDashboardSearch(searchQuery, revised.date, revised.title, revised.content));
-  const rebuiltMatches = Boolean(rebuilt && matchesDashboardSearch(searchQuery, rebuilt.date, rebuilt.title, rebuilt.content));
-  const experimentMatches = Boolean(experiment && matchesDashboardSearch(searchQuery, experiment.date, experiment.title, experiment.content));
+  const revisedMatches = Boolean(revised && displayedNewsContent(revised, searchQuery));
+  const rebuiltMatches = Boolean(rebuilt && displayedNewsContent(rebuilt, searchQuery));
+  const experimentMatches = Boolean(experiment && displayedNewsContent(experiment, searchQuery));
   const visible = released.filter((edition) =>
-    matchesDashboardSearch(searchQuery, edition.date, dateLabel(edition.date), reports[edition.date]?.content ?? ''),
+    matchesDashboardSearch(searchQuery, edition.date, dateLabel(edition.date)) ||
+    Boolean(reports[edition.date] && displayedNewsContent(reports[edition.date], searchQuery)),
   );
+  const searchingReports = Boolean(searchQuery.trim() && released.some((edition) =>
+    !reports[edition.date] && !reportErrors[edition.date],
+  ));
+  const incompleteSearch = Boolean(searchQuery.trim() && released.some((edition) => reportErrors[edition.date]));
 
   return <div className="overflow-hidden rounded-[24px] border border-[#284d9a] bg-[#061432] text-white shadow-[0_20px_60px_rgba(15,31,72,.22)]">
     <header className="bg-[radial-gradient(circle_at_85%_0%,#2556ae_0%,transparent_42%),radial-gradient(circle_at_10%_10%,#143a7d_0%,transparent_42%)] px-5 py-5 sm:px-8 sm:py-6">
@@ -257,41 +280,42 @@ export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string })
       {loading && <p className="rounded-xl bg-[#0a1c42] p-5 text-sm text-sky-100">正在加载早报…</p>}
       {error && <p role="alert" className="rounded-xl bg-[#0a1c42] p-5 text-sm text-rose-200">{error}</p>}
       {!loading && !error && editions.length === 0 && <p className="rounded-xl bg-[#0a1c42] p-5 text-sm text-sky-100">尚无已归档的早报。</p>}
-      {searchQuery.trim() && !loading && <p className="text-sm text-sky-100">找到 {visible.length + Number(experimentMatches) + Number(rebuiltMatches) + Number(revisedMatches)} 期匹配早报；正文搜索覆盖已加载的期数。</p>}
+      {searchQuery.trim() && !loading && <p className="text-sm text-sky-100">{searchingReports ? '正在检索已发布早报全文… ' : ''}找到 {visible.length + Number(experimentMatches) + Number(rebuiltMatches) + Number(revisedMatches)} 期匹配早报；展开后仅显示命中的新闻。</p>}
+      {incompleteSearch && <p role="alert" className="text-sm text-amber-200">部分往期早报未能加载，搜索结果可能不完整。请刷新后重试。</p>}
       {released.length < editions.length && <p className="rounded-xl bg-[#0a1c42] px-4 py-3 text-sm text-cyan-100">新一期已安排在北京时间 08:00 显示。</p>}
       {experimentError && <p role="alert" className="rounded-xl bg-[#0a1c42] px-4 py-3 text-sm text-rose-200">{experimentError}</p>}
       {rebuiltError && <p role="alert" className="rounded-xl bg-[#0a1c42] px-4 py-3 text-sm text-rose-200">{rebuiltError}</p>}
       {revisedError && <p role="alert" className="rounded-xl bg-[#0a1c42] px-4 py-3 text-sm text-rose-200">{revisedError}</p>}
-      {revised && revisedMatches && <details key="2026-10-21-analysis-v2" open={revisedIsLatest} className={`group overflow-hidden rounded-xl border border-cyan-300/40 bg-[#0a1c42] ${revisedIsLatest ? 'order-0' : 'order-1'}`}>
+      {revised && revisedMatches && <details key="2026-10-21-analysis-v2" open={revisedIsLatest || Boolean(searchQuery.trim())} className={`group overflow-hidden rounded-xl border border-cyan-300/40 bg-[#0a1c42] ${revisedIsLatest ? 'order-0' : 'order-1'}`}>
         <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 px-3 py-3 text-sm font-semibold marker:hidden sm:px-5 [&::-webkit-details-marker]:hidden">
           <span className="rounded-full bg-cyan-300/15 px-2 py-0.5 text-xs text-cyan-100">08:00 期 · 分析修订版</span>
           <span>2026 年 10 月 21 日 · 补发</span>
           <span className="text-xs font-normal text-slate-400">{revised.articleCount} 条新闻 · 机制、对象、结论边界</span>
           <ChevronDown className="ml-auto size-4 shrink-0 text-sky-200 transition group-open:rotate-180" />
         </summary>
-        <div className="border-t border-sky-300/15 px-4 py-4 sm:px-7"><MarkdownBody content={revised.content} /></div>
+        <div className="border-t border-sky-300/15 px-4 py-4 sm:px-7"><MarkdownBody content={displayedNewsContent(revised, searchQuery)} /></div>
       </details>}
-      {rebuilt && rebuiltMatches && <details key="2026-10-21-rebuilt-08" open={rebuiltIsLatest} className={`group overflow-hidden rounded-xl border border-cyan-300/40 bg-[#0a1c42] ${rebuiltIsLatest ? 'order-0' : 'order-2'}`}>
+      {rebuilt && rebuiltMatches && <details key="2026-10-21-rebuilt-08" open={rebuiltIsLatest || Boolean(searchQuery.trim())} className={`group overflow-hidden rounded-xl border border-cyan-300/40 bg-[#0a1c42] ${rebuiltIsLatest ? 'order-0' : 'order-2'}`}>
         <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 px-3 py-3 text-sm font-semibold marker:hidden sm:px-5 [&::-webkit-details-marker]:hidden">
           <span className="rounded-full bg-cyan-300/15 px-2 py-0.5 text-xs text-cyan-100">08:00 期 · 先前重编版</span>
           <span>2026 年 10 月 21 日 · 补发</span>
           <span className="text-xs font-normal text-slate-400">{rebuilt.articleCount} 条新闻 · 逐条简析</span>
           <ChevronDown className="ml-auto size-4 shrink-0 text-sky-200 transition group-open:rotate-180" />
         </summary>
-        <div className="border-t border-sky-300/15 px-4 py-4 sm:px-7"><MarkdownBody content={rebuilt.content} /></div>
+        <div className="border-t border-sky-300/15 px-4 py-4 sm:px-7"><MarkdownBody content={displayedNewsContent(rebuilt, searchQuery)} /></div>
       </details>}
-      {experiment && experimentMatches && <details key="2026-10-21-experiment" open={experimentIsLatest} className={`group overflow-hidden rounded-xl border border-cyan-300/40 bg-[#0a1c42] ${experimentIsLatest ? 'order-0' : 'order-3'}`}>
+      {experiment && experimentMatches && <details key="2026-10-21-experiment" open={experimentIsLatest || Boolean(searchQuery.trim())} className={`group overflow-hidden rounded-xl border border-cyan-300/40 bg-[#0a1c42] ${experimentIsLatest ? 'order-0' : 'order-3'}`}>
         <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 px-3 py-3 text-sm font-semibold marker:hidden sm:px-5 [&::-webkit-details-marker]:hidden">
           <span className="rounded-full bg-cyan-300/15 px-2 py-0.5 text-xs text-cyan-100">30 家媒体选题池 · 实验版</span>
           <span>2026 年 10 月 21 日 · 补发试版</span>
           <span className="text-xs font-normal text-slate-400">{experiment.articleCount} 条新闻 · 3 条时间待核</span>
           <ChevronDown className="ml-auto size-4 shrink-0 text-sky-200 transition group-open:rotate-180" />
         </summary>
-        <div className="border-t border-sky-300/15 px-4 py-4 sm:px-7"><MarkdownBody content={experiment.content} /></div>
+        <div className="border-t border-sky-300/15 px-4 py-4 sm:px-7"><MarkdownBody content={displayedNewsContent(experiment, searchQuery)} /></div>
       </details>}
       {visible.map((edition) => {
         const latest = edition.date === released[0]?.date && !experimentIsLatest && !rebuiltIsLatest && !revisedIsLatest;
-        return <details key={edition.date} open={latest} onToggle={(event) => { if (event.currentTarget.open) void loadReport(edition); }} className={`group overflow-hidden rounded-xl border border-sky-300/20 bg-[#0a1c42] ${latest ? 'order-0' : 'order-4'}`}>
+        return <details key={edition.date} open={latest || Boolean(searchQuery.trim())} onToggle={(event) => { if (event.currentTarget.open) void loadReport(edition); }} className={`group overflow-hidden rounded-xl border border-sky-300/20 bg-[#0a1c42] ${latest ? 'order-0' : 'order-4'}`}>
           <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 px-3 py-3 text-sm font-semibold marker:hidden sm:px-5 [&::-webkit-details-marker]:hidden">
             <span className={latest ? 'rounded-full bg-cyan-300/15 px-2 py-0.5 text-xs text-cyan-200' : 'rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-300'}>{latest ? (edition.date === today ? '今天' : '最新一期') : '往期'}</span>
             {edition.date < newSourcePolicyStarts && <span className="rounded-full bg-amber-300/15 px-2 py-0.5 text-xs text-amber-100">旧版十二国归档</span>}
@@ -302,7 +326,7 @@ export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string })
           <div className="border-t border-sky-300/15 px-4 py-4 sm:px-7">
             {reportErrors[edition.date] && <p role="alert" className="text-sm text-rose-200">{reportErrors[edition.date]}</p>}
             {!reports[edition.date] && !reportErrors[edition.date] && <p className="text-sm text-sky-100">正在加载本期内容…</p>}
-            {reports[edition.date] && <MarkdownBody content={reports[edition.date].content} />}
+            {reports[edition.date] && <MarkdownBody content={displayedNewsContent(reports[edition.date], searchQuery)} />}
           </div>
         </details>;
       })}
