@@ -1,4 +1,4 @@
-name: Test free headline translation
+name: Test Chinese news headlines
 on:
   push:
     branches:
@@ -9,17 +9,11 @@ permissions:
 jobs:
   briefing:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
-      - name: Check public translation endpoint on three sample headlines
+      - uses: actions/checkout@v4
+      - name: Translate today's existing headlines
+        run: python scripts/translate-news-titles.py public/news/2026-10-22.json
+      - name: Export translated report for review without publishing
         run: |
-          python - <<'PY'
-          import json, urllib.parse, urllib.request
-          titles = ["The 'trillion pound' oil fund the government believes Britain could have built", "Nigeria’s first Ebola case matches DR Congo strain, health officials say", "Walmart unveils tools allowing AI agents to shop for customers"]
-          for title in titles:
-              query = urllib.parse.urlencode({"client":"gtx","sl":"en","tl":"zh-CN","dt":"t","q":title})
-              request = urllib.request.Request("https://translate.googleapis.com/translate_a/single?"+query, headers={"User-Agent":"Mozilla/5.0"})
-              with urllib.request.urlopen(request, timeout=20) as response:
-                  data=json.load(response)
-              print(title, "=>", "".join(part[0] for part in data[0]))
-          PY
+          printf 'REPORT_BASE64='; base64 -w 0 public/news/2026-10-22.json; printf '\n'
