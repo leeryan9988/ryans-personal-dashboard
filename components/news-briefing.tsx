@@ -148,13 +148,20 @@ function MobileNewsBody({ content }: { content: string }) {
         !line.startsWith('#') && !line.startsWith('**') &&
         !/^\[[^\]]+\]\(https?:\/\/[^)]+\)\s*$/.test(line) && !line.startsWith('|') && line !== '---' && !/^[-*]\s/.test(line)
       );
-      const summary = labeledSummary
+      const rawSummary = labeledSummary
         ? mobileNewsText(labeledSummary.replace(/^\*\*(一句话看懂|内容提示)：\*\*\s*/, ''))
         : mobileNewsText(firstParagraph ?? '').split(/(?<=[。！？])/)[0];
+      const summary = rawSummary.replace(/（依据[^（）]*(?:整理|翻译)）\s*$/, '').trim();
+      const sourceLine = lines.find((line) => line.startsWith('**来源与时间：**'));
+      const legacySourceLine = lines.find((line) => /^\*\*[^*]*｜[^*]*｜[^*]*\*\*$/.test(line));
+      const source = sourceLine
+        ? sourceLine.replace(/^\*\*来源与时间：\*\*\s*/, '').split('｜')[0].trim()
+        : legacySourceLine?.replace(/^\*\*|\*\*$/g, '').split('｜')[1]?.trim() ?? '';
+      const mediaName = source.replace(/[《》]/g, '');
 
       return <article key={index} className="space-y-1">
         <h3 className="text-sm font-semibold leading-6 text-cyan-100">{title}</h3>
-        {summary && <p className="text-sm leading-6 text-slate-200">{summary}</p>}
+        {summary && <p className="text-sm leading-6 text-slate-200">{summary}{mediaName && <span className="ml-1 whitespace-nowrap text-slate-400">（{mediaName}）</span>}</p>}
       </article>;
     })}
   </div>;
