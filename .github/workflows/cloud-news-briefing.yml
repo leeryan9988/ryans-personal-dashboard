@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install offline translation package
-        run: python -m pip install --disable-pip-version-check argostranslate==1.11.0
+        run: python -m pip install --disable-pip-version-check transformers==4.41.2 sentencepiece torch
       - name: Translate today's existing headlines
         run: python scripts/translate-news-titles.py public/news/2026-10-22.json
       - name: Export translated report for review without publishing
