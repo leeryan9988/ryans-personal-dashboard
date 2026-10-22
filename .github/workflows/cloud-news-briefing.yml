@@ -39,6 +39,15 @@ jobs:
           node-version: '22'
       - name: Collect distinct reports from official publisher feeds
         run: node scripts/cloud-news-feed-only.mjs "$MODE"
+      - name: Translate new headlines into Chinese
+        if: env.MODE == 'publish'
+        shell: bash
+        run: |
+          if [[ -z "$(git status --porcelain public/news)" ]]; then
+            echo "No new briefing to translate"
+            exit 0
+          fi
+          python scripts/translate-news-titles.py "public/news/$(TZ=Asia/Shanghai date +%F).json"
       - name: Commit only a new dated briefing
         if: env.MODE == 'publish'
         id: commit
