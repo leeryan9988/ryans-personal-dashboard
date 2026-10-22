@@ -39,22 +39,9 @@ jobs:
           node-version: '22'
       - name: Collect distinct reports from official publisher feeds
         run: node scripts/cloud-news-feed-only.mjs "$MODE"
-      - name: Commit only a new dated briefing
+      - name: Export experimental news without publishing
         if: env.MODE == 'publish'
-        id: commit
         shell: bash
         run: |
-          git add public/news
-          if git diff --cached --quiet; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'news: publish official-feed briefing'
-          git push origin HEAD:main
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-      - name: Start the existing Pages deployment
-        if: env.MODE == 'publish' && steps.commit.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh workflow run deploy-pages.yml --ref main
-
+          printf 'REPORT_BASE64='; base64 -w 0 public/news/2026-10-22.json; printf '\n'
+          printf 'INDEX_BASE64='; base64 -w 0 public/news/index.json; printf '\n'
