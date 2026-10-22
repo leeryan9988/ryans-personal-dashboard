@@ -251,6 +251,7 @@ const navigation: { label: Area; icon: typeof LayoutDashboard }[] = [
 ];
 
 const defaultNavigationOrder = navigation.map((item) => item.label);
+const lastActiveAreaStorageKey = 'ryans-dashboard-last-active-area';
 
 type TargetCountdown = {
   id: string;
@@ -385,7 +386,15 @@ function incomePeriodKey(dateValue: string, granularity: '日' | '周' | '月' |
 }
 
 export default function DashboardApp() {
-  const [active, setActive] = useState<Area>('工作');
+  const [active, setActive] = useState<Area>(() => {
+    if (typeof window === 'undefined') return '工作';
+    try {
+      const savedArea = window.localStorage.getItem(lastActiveAreaStorageKey);
+      return savedArea && defaultNavigationOrder.includes(savedArea as Area) ? savedArea as Area : '工作';
+    } catch {
+      return '工作';
+    }
+  });
   const [queries, setQueries] = useState<Partial<Record<Area, string>>>({});
   const query = queries[active] ?? '';
   const setQuery = (value: string) => setQueries((current) => ({ ...current, [active]: value }));
@@ -409,6 +418,14 @@ export default function DashboardApp() {
   const [handoffPending, setHandoffPending] = useState(false);
   const [authMessage, setAuthMessage] = useState('');
   const [syncMessage, setSyncMessage] = useState('');
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(lastActiveAreaStorageKey, active);
+    } catch {
+      // Keep navigation usable when browser storage is unavailable.
+    }
+  }, [active]);
 
   const loadCloudData = useCallback(async () => {
     const client = getSupabase();
