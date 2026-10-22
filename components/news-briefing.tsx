@@ -237,7 +237,6 @@ export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string })
       {loading && <p className="rounded-xl bg-[#0a1c42] p-5 text-sm text-sky-100">正在加载早报…</p>}
       {error && <p role="alert" className="rounded-xl bg-[#0a1c42] p-5 text-sm text-rose-200">{error}</p>}
       {!loading && !error && editions.length === 0 && <p className="rounded-xl bg-[#0a1c42] p-5 text-sm text-sky-100">尚无已归档的早报。</p>}
-      {released.some((edition) => edition.date < newSourcePolicyStarts) && <p className="rounded-xl border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm leading-6 text-amber-100">10 月 21 日 08:00 期的分析修订版已补发，原重编版、14 条试版和十二国旧版仍保留供对照。修订版是事后补发，不表示当天 08:00 已上线。</p>}
       {searchQuery.trim() && !loading && <p className="text-sm text-sky-100">找到 {visible.length + Number(experimentMatches) + Number(rebuiltMatches) + Number(revisedMatches)} 期匹配早报；正文搜索覆盖已加载的期数。</p>}
       {released.length < editions.length && <p className="rounded-xl bg-[#0a1c42] px-4 py-3 text-sm text-cyan-100">新一期已安排在北京时间 08:00 显示。</p>}
       {experimentError && <p role="alert" className="rounded-xl bg-[#0a1c42] px-4 py-3 text-sm text-rose-200">{experimentError}</p>}
