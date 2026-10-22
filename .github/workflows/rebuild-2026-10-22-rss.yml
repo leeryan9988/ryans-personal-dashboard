@@ -1,0 +1,54 @@
+name: Rebuild 2026-10-22 briefing from publisher feeds
+
+on:
+  push:
+    paths:
+      - .github/workflows/rebuild-2026-10-22-rss.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cloud-news-briefing
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Stage only the 2026-10-22 edition for replacement in this runner
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+          const path = 'public/news/index.json';
+          const index = JSON.parse(readFileSync(path, 'utf8'));
+          if (index[0]?.date !== '2026-10-22' || index[0]?.file !== '2026-10-22.json' || index[1]?.date !== '2026-10-21') throw new Error('Unexpected edition order.');
+          if (index[0].windowStart !== '2026-10-21T08:00:00+08:00' || index[0].windowEnd !== '2026-10-22T07:50:00+08:00') throw new Error('Unexpected news window.');
+          index.shift();
+          writeFileSync(path, JSON.stringify(index, null, 2) + '\n');
+          unlinkSync('public/news/2026-10-22.json');
+          NODE
+      - name: Build 50 or more sourced and analyzed reports
+        run: node scripts/cloud-news-rss.mjs finalize
+      - name: Commit today's replacement
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const index = JSON.parse(readFileSync('public/news/index.json', 'utf8'));
+          const report = JSON.parse(readFileSync('public/news/2026-10-22.json', 'utf8'));
+          const count = (report.content.match(/^### \d+\. /gm) ?? []).length;
+          if (index[0]?.date !== '2026-10-22' || report.sourceConversationId !== 'github-actions-rss' || report.articleCount < 50 || count !== report.articleCount) throw new Error('Replacement quality gate failed.');
+          if (report.windowStart !== '2026-10-21T08:00:00+08:00' || report.windowEnd !== '2026-10-22T07:50:00+08:00') throw new Error('Replacement news window changed.');
+          NODE
+          git add public/news/index.json public/news/2026-10-22.json
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'news: rebuild 2026-10-22 from official publisher feeds'
+          git push origin HEAD:main
