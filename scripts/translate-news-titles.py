@@ -5,16 +5,11 @@ import re
 import sys
 from pathlib import Path
 
-import argostranslate.package
-import argostranslate.translate
+from transformers import MarianMTModel, MarianTokenizer
 
 HEADING = re.compile(r"(?m)^### (\d+)\. (.+)$")
 CHINESE = re.compile(r"[\u3400-\u9fff]")
-MODEL_URLS = [
-    "https://argos-net.com/v1/translate-en_zh-1_9.argosmodel",
-    "https://argosopentech.nyc3.digitaloceanspaces.com/argospm/translate-en_zh-1_1.argosmodel",
-    "https://cdn.argosopentech.io/translate-en_zh-1_1.argosmodel",
-]
+MODEL_ID = "Helsinki-NLP/opus-mt-en-zh"
 
 def main() -> None:
     path = Path(sys.argv[1])
@@ -26,28 +21,24 @@ def main() -> None:
     headings = list(HEADING.finditer(content))
     if len(headings) != report["articleCount"]:
         raise ValueError(f"Expected {report['articleCount']} headlines, found {len(headings)}")
-    import tempfile
-    import urllib.request
-    with tempfile.TemporaryDirectory() as directory:
-        model = Path(directory) / "translate-en_zh-1_9.argosmodel"
-        for url in MODEL_URLS:
-            try:
-                urllib.request.urlretrieve(url, model)
-                argostranslate.package.install_from_path(str(model))
-                break
-            except Exception as error:
-                print(f"Translation model download failed from {url}: {error}", file=sys.stderr)
-        else:
-            raise RuntimeError("Unable to install English-Chinese translation model")
-    translations = {}
-    for match in headings:
-        original = match.group(2).strip()
-        chinese = original if CHINESE.search(original) else argostranslate.translate.translate(original, "en", "zh").replace("\n", " ").strip()
+    originals = [m.group(2).strip() for m in headings]
+    tokenizer = MarianTokenizer.from_pretrained(MODEL_ID)
+    model = MarianMTModel.from_pretrained(MODEL_ID)
+    translations = []
+    for start in range(0, len(originals), 12):
+        batch = originals[start:start + 12]
+        inputs = tokenizer([">>cmn_Hans<< " + title for title in batch], return_tensors="pt", padding=True, truncation=True, max_length=128)
+        output = model.generate(**inputs, max_new_tokens=96, num_beams=3)
+        translations.extend(tokenizer.batch_decode(output, skip_special_tokens=True))
+        print(f"Translated {len(translations)}/{len(originals)} headlines", flush=True)
+    replacements = {}
+    for match, original, chinese in zip(headings, originals, translations):
+        chinese = chinese.replace("\n", " ").strip()
         if not CHINESE.search(chinese):
             raise ValueError(f"Translation failed for headline {match.group(1)}: {original}")
-        translations[match.group(1)] = (chinese, original)
+        replacements[match.group(1)] = (chinese, original)
     def replace(match):
-        chinese, original = translations[match.group(1)]
+        chinese, original = replacements[match.group(1)]
         return f"### {match.group(1)}. {chinese}\n\n**原文标题：** {original}"
     content = HEADING.sub(replace, content)
     content = content.replace(
