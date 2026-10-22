@@ -1,6 +1,9 @@
 name: Test offline Chinese news headlines
 
 on:
+  push:
+    branches:
+      - news-regenerate-2026-10-22
   workflow_dispatch:
     inputs:
       mode:
