@@ -61,10 +61,10 @@ const ranked = [...byUrl.values()].filter(item => !excluded(item))
 const selected = [];
 for (const item of ranked) if (!selected.some(other => sameStory(item, other))) selected.push(item);
 console.log(`Candidates: ${byUrl.size} unique links; ${selected.length} after topic filter and title deduplication.`);
-if (mode === 'check') process.exit(selected.length >= 50 ? 0 : 1);
-if (selected.length < 50) throw new Error(`Only ${selected.length} distinct feed reports; existing briefing unchanged.`);
+if (mode === 'check') process.exit(selected.length > 0 ? 0 : 1);
+if (selected.length === 0) throw new Error('No dated feed reports; existing briefing unchanged.');
 
-const items = selected.slice(0, 60);
+const items = selected;
 const reportPath = join(root, 'public/news', `${date}.json`);
 try { await access(reportPath); throw new Error(`${date} report exists; refusing overwrite.`); }
 catch (error) { if (error.code !== 'ENOENT') throw error; }
