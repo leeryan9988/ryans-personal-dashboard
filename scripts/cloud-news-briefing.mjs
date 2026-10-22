@@ -119,7 +119,7 @@ async function searchBatch({ theme, discoveryStart, discoveryEnd, known }) {
   const response = await fetchWithTimeout('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: process.env.OPENAI_NEWS_MODEL || 'gpt-4.1', tools: [{ type: 'web_search', search_context_size: 'high' }], tool_choice: 'required', input: prompt, max_output_tokens: 9000 }),
+    body: JSON.stringify({ model: process.env.OPENAI_NEWS_MODEL || 'gpt-4.1', tools: [{ type: 'web_search', search_context_size: 'high' }], tool_choice: 'required', max_tool_calls: 4, input: prompt, max_output_tokens: 9000 }),
   }, 180_000);
   if (!response.ok) throw new Error(`OpenAI search failed with HTTP ${response.status}: ${(await response.text()).slice(0, 350)}`);
   const body = await response.json();
