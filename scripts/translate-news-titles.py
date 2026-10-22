@@ -1,15 +1,38 @@
 #!/usr/bin/env python3
-"""Translate report headlines offline while retaining each original headline."""
+"""Translate news headlines into Chinese while preserving the original titles."""
 import json
 import re
 import sys
+import time
+import urllib.parse
+import urllib.request
 from pathlib import Path
-
-from transformers import MarianMTModel, MarianTokenizer
 
 HEADING = re.compile(r"(?m)^### (\d+)\. (.+)$")
 CHINESE = re.compile(r"[\u3400-\u9fff]")
-MODEL_ID = "Helsinki-NLP/opus-mt-en-zh"
+TRANSLATE_URL = "https://translate.googleapis.com/translate_a/single"
+
+def translate(title: str) -> str:
+    if CHINESE.search(title):
+        return title
+    query = urllib.parse.urlencode({"client": "gtx", "sl": "en", "tl": "zh-CN", "dt": "t", "q": title})
+    request = urllib.request.Request(
+        TRANSLATE_URL + "?" + query,
+        headers={"User-Agent": "Mozilla/5.0 (compatible; RyanNewsBriefing/1.0)"},
+    )
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(request, timeout=20) as response:
+                payload = json.load(response)
+            result = "".join(part[0] or "" for part in payload[0]).replace("\n", " ").strip()
+            if not CHINESE.search(result):
+                raise ValueError(f"Missing Chinese text for: {title}")
+            return result
+        except Exception:
+            if attempt == 3:
+                raise
+            time.sleep(1.5 * (attempt + 1))
+    raise AssertionError("unreachable")
 
 def main() -> None:
     path = Path(sys.argv[1])
@@ -21,29 +44,20 @@ def main() -> None:
     headings = list(HEADING.finditer(content))
     if len(headings) != report["articleCount"]:
         raise ValueError(f"Expected {report['articleCount']} headlines, found {len(headings)}")
-    originals = [m.group(2).strip() for m in headings]
-    tokenizer = MarianTokenizer.from_pretrained(MODEL_ID)
-    model = MarianMTModel.from_pretrained(MODEL_ID)
-    translations = []
-    for start in range(0, len(originals), 12):
-        batch = originals[start:start + 12]
-        inputs = tokenizer([">>cmn_Hans<< " + title for title in batch], return_tensors="pt", padding=True, truncation=True, max_length=128)
-        output = model.generate(**inputs, max_new_tokens=96, num_beams=3)
-        translations.extend(tokenizer.batch_decode(output, skip_special_tokens=True))
-        print(f"Translated {len(translations)}/{len(originals)} headlines", flush=True)
-    replacements = {}
-    for match, original, chinese in zip(headings, originals, translations):
-        chinese = chinese.replace("\n", " ").strip()
-        if not CHINESE.search(chinese):
-            raise ValueError(f"Translation failed for headline {match.group(1)}: {original}")
-        replacements[match.group(1)] = (chinese, original)
+    translations = {}
+    for match in headings:
+        original = match.group(2).strip()
+        translations[match.group(1)] = (translate(original), original)
+        if len(translations) % 20 == 0:
+            print(f"Translated {len(translations)}/{len(headings)} headlines", flush=True)
+        time.sleep(0.1)
     def replace(match):
-        chinese, original = replacements[match.group(1)]
+        chinese, original = translations[match.group(1)]
         return f"### {match.group(1)}. {chinese}\n\n**原文标题：** {original}"
     content = HEADING.sub(replace, content)
     content = content.replace(
         "以下为媒体官方RSS所列原文标题；未生成中文摘要或简析，也未独立核验报道内容。",
-        "中文标题由离线机器翻译生成，并保留原文标题供对照；未生成中文摘要或简析，也未独立核验报道内容。",
+        "中文标题由自动机器翻译生成，并保留原文标题供对照；未生成中文摘要或简析，也未独立核验报道内容。",
     )
     if content.count("**原文标题：**") != report["articleCount"]:
         raise ValueError("Original headline preservation check failed")
