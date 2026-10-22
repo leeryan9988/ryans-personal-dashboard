@@ -1,0 +1,59 @@
+name: Prepare and publish global news briefing
+
+on:
+  schedule:
+    # GitHub cron uses UTC. These are 05:05 and 07:50 in Beijing.
+    - cron: '5 21 * * *'
+    - cron: '50 23 * * *'
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: Draft the upcoming edition or finalize and publish it
+        required: true
+        type: choice
+        options:
+          - draft
+          - finalize
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: cloud-news-briefing
+  cancel-in-progress: false
+
+jobs:
+  briefing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.stage || (github.event.schedule == '5 21 * * *' && 'draft' || 'finalize') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare news from original source pages
+        run: node scripts/cloud-news-briefing.mjs "$MODE"
+      - name: Commit only new briefing data
+        id: commit
+        shell: bash
+        run: |
+          git add .github/news-drafts public/news
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "news: ${MODE} Beijing briefing"
+          git push origin HEAD:main
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Start the existing Pages deployment
+        if: env.MODE == 'finalize' && steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages.yml --ref main
+
