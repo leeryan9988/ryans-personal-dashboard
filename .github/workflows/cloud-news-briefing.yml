@@ -1,19 +1,18 @@
-name: Prepare and publish global news briefing
+name: Publish global news from official feeds
 
 on:
   schedule:
-    # GitHub cron uses UTC. These are 05:05 and 07:50 in Beijing.
-    - cron: '5 21 * * *'
+    # GitHub cron is UTC; this is 07:50 Beijing time.
     - cron: '50 23 * * *'
   workflow_dispatch:
     inputs:
-      stage:
-        description: Draft the upcoming edition or finalize and publish it
+      mode:
+        description: Check feed coverage without publishing, or publish a new date
         required: true
         type: choice
         options:
-          - draft
-          - finalize
+          - check
+          - publish
 
 permissions:
   contents: write
@@ -26,10 +25,9 @@ concurrency:
 jobs:
   briefing:
     runs-on: ubuntu-latest
-    timeout-minutes: 80
+    timeout-minutes: 25
     env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.stage || (github.event.schedule == '5 21 * * *' && 'draft' || 'finalize') }}
+      MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'publish' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,22 +35,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Prepare news from official publisher feeds
-        run: node scripts/cloud-news-rss.mjs "$MODE"
-      - name: Commit only new briefing data
+      - name: Collect distinct reports from official publisher feeds
+        run: node scripts/cloud-news-feed-only.mjs "$MODE"
+      - name: Commit only a new dated briefing
+        if: env.MODE == 'publish'
         id: commit
         shell: bash
         run: |
-          git add .github/news-drafts public/news
+          git add public/news
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "news: ${MODE} Beijing briefing"
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'news: publish official-feed briefing'
           git push origin HEAD:main
           echo "changed=true" >> "$GITHUB_OUTPUT"
       - name: Start the existing Pages deployment
-        if: env.MODE == 'finalize' && steps.commit.outputs.changed == 'true'
+        if: env.MODE == 'publish' && steps.commit.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy-pages.yml --ref main
