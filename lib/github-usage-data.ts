@@ -61,6 +61,15 @@ export const githubUsageEditions: GithubUsageEdition[] = [
       "functionZh": "微软开源的跨平台隔离执行组件，可为应用运行模型生成的代码、插件和工具设置文件、网络等权限，并提供多种沙箱后端。",
       "reasonZh": "适合正在开发 AI 智能体或插件执行环境的人；这是开发组件，需要通过 SDK 集成，不是给普通用户直接安装的桌面应用。",
       "audience": "AI 工具与安全沙箱开发者"
+    },
+    {
+      "name": "storytold/gridcraft",
+      "url": "https://github.com/storytold/gridcraft",
+      "stars": 6258,
+      "weeklyGain": 2719,
+      "functionZh": "用 Rust 开发的开源电子表格应用，提供公式、图表、数据透视表等功能，可在 Windows 等系统运行。",
+      "reasonZh": "适合关注可由智能体控制的表格工具的人；项目较新，复杂 Excel 文件的兼容性仍需自行测试。",
+      "audience": "表格分析与开源办公"
     }
   ],
   "established": [
@@ -90,6 +99,24 @@ export const githubUsageEditions: GithubUsageEdition[] = [
       "functionZh": "可自行部署的轻量笔记应用，按时间线记录想法，支持 Markdown、标签、搜索和自主控制分享范围。",
       "reasonZh": "适合想长期保存零散笔记、自己管理数据的人；需要自行部署和备份，仓库提供体验站点。",
       "audience": "个人笔记与自建服务"
+    },
+    {
+      "name": "n8n-io/n8n",
+      "url": "https://github.com/n8n-io/n8n",
+      "stars": 208350,
+      "weeklyGain": null,
+      "functionZh": "用可视化流程把应用、数据源和 AI 模型连接起来，构建自动通知、数据同步和多步骤智能体工作流；支持自建部署。",
+      "reasonZh": "大量现成集成和模板便于把重复工作自动化；源代码可见，但采用公平代码许可证，商用前应查看许可条件。",
+      "audience": "工作流自动化与 AI 应用"
+    },
+    {
+      "name": "AppFlowy-IO/AppFlowy",
+      "url": "https://github.com/AppFlowy-IO/AppFlowy",
+      "stars": 77664,
+      "weeklyGain": null,
+      "functionZh": "跨平台笔记与协作工作区，提供文档、数据库、任务看板和 AI 功能，可下载 Windows 桌面版或自行部署。",
+      "reasonZh": "适合想集中管理资料和项目、希望掌握数据存放方式的人；自建团队服务仍需要维护。",
+      "audience": "知识管理与团队协作"
     }
   ]
 },
