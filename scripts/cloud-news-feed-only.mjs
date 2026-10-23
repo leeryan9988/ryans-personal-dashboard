@@ -66,9 +66,8 @@ const byUrl = new Map();
 for (const item of results.flat()) if (!byUrl.has(cleanUrl(item.url))) byUrl.set(cleanUrl(item.url), item);
 const ranked = [...byUrl.values()].filter(item => !excluded(item))
   .sort((a, b) => relevance(b) - relevance(a) || b.publishedTime.localeCompare(a.publishedTime));
-const selected = [];
-for (const item of ranked) if (!selected.some(other => sameStory(item, other))) selected.push(item);
-console.log(`Candidates: ${byUrl.size} unique links; ${selected.length} after topic filter and title deduplication.`);
+const selected = dedupeStories(ranked);
+console.log(`Candidates: ${byUrl.size} unique links; ${selected.length} after topic and event deduplication.`);
 if (mode === 'check') process.exit(selected.length > 0 ? 0 : 1);
 if (selected.length === 0) throw new Error('No dated feed reports; existing briefing unchanged.');
 
@@ -119,11 +118,59 @@ function relevance(item) {
   const text = item.title.toLowerCase();
   return (/\b(ai|artificial intelligence|chip|semiconductor|trade|tariff|econom|inflation|interest rate|market|finance|bank|war|election|government|diplomat|climate|energy|health|disaster|earthquake|business|supply chain|shipping|technology|tech)\b/.test(text) ? 10 : 0);
 }
-function sameStory(a, b) {
+// Compare events across publishers, while retaining different developments on a shared topic.
+function dedupeStories(items) {
+  const words = items.map(item => titleWords(item.title));
+  const frequency = new Map();
+  for (const tokens of words) for (const token of tokens) frequency.set(token, (frequency.get(token) ?? 0) + 1);
+  const parent = items.map((_, index) => index);
+  const root = index => { while (parent[index] !== index) index = parent[index]; return index; };
+  for (let i = 0; i < items.length; i++) {
+    for (let j = i + 1; j < items.length; j++) {
+      if (sameStory(items[i], items[j], words[i], words[j], frequency, items.length)) {
+        const left = root(i), right = root(j);
+        parent[Math.max(left, right)] = Math.min(left, right);
+      }
+    }
+  }
+  return items.filter((_, index) => root(index) === index);
+}
+function sameStory(a, b, x, y, frequency, total) {
   if (cleanUrl(a.url) === cleanUrl(b.url)) return true;
-  const x = bigrams(a.title), y = bigrams(b.title);
-  const overlap = [...x].filter(token => y.has(token)).length;
-  return overlap / Math.max(1, Math.min(x.size, y.size)) > 0.76;
+  if (differentDevelopment(a.title, b.title)) return false;
+  const shared = [...x].filter(token => y.has(token));
+  const weight = token => Math.log(1 + total / (frequency.get(token) ?? 1));
+  const common = shared.reduce((sum, token) => sum + weight(token), 0);
+  const xWeight = [...x].reduce((sum, token) => sum + weight(token), 0);
+  const yWeight = [...y].reduce((sum, token) => sum + weight(token), 0);
+  if (shared.length >= 3 && common / Math.max(1, Math.min(xWeight, yWeight)) >= 0.4) return true;
+  const bx = bigrams(a.title), by = bigrams(b.title);
+  const overlap = [...bx].filter(token => by.has(token)).length;
+  return overlap / Math.max(1, Math.min(bx.size, by.size)) > 0.76;
+}
+function titleWords(value) {
+  const stop = new Set('a an the and or of in on for to from with by as at after before amid over under into about across how what why who when where says say said is are was were be been being has have had it its this that these those his her their he she they us uk u s new latest live report reports reported could would may can will get gets'.split(' '));
+  const title = value.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/international criminal court/g, 'icc').replace(/north korea/g, 'northkorea')
+    .replace(/south korea/g, 'south').replace(/artificial intelligence/g, 'ai')
+    .replace(/\b(?:broadcasts?|loudspeakers?)\b/g, 'broadcast')
+    .replace(/new york city/g, 'nyc').replace(/(\d),(\d{3})/g, '$1$2');
+  return new Set(title.replace(/[^a-z0-9]+/g, ' ').split(' ').filter(word => word.length > 2 && !stop.has(word))
+    .map(word => word.replace(/(ing|ed|es|s)$/, ''))
+    .map(word => ({ french: 'france', ukrainian: 'ukraine', russian: 'russia', british: 'britain', american: 'america', billionaire: 'billion', zuckerberg: 'meta', restart: 'resume', bombard: 'strik', missil: 'strik' })[word] ?? word));
+}
+function differentDevelopment(a, b) {
+  const main = value => value.toLowerCase().split(/\b(?:after|amid|following|while|but)\b/)[0];
+  const attack = value => /\b(bombard\w*|attack\w*|missiles?|airstrikes?|drone\w*|strikes?|struck|shell\w*|raid\w*)\b/.test(value) && !/\bstrikes? (a )?deal\b/.test(value);
+  const peace = value => /\b(talk\w*|negotiat\w*|peace|ceasefire)\b/.test(value);
+  const evacuate = value => /\b(diplomat\w*.*leave|evacuat\w*|ordered? to leave|told to leave)\b/.test(value);
+  const x = main(a), y = main(b);
+  if ((attack(x) && peace(y) && !attack(y)) || (attack(y) && peace(x) && !attack(x))) return true;
+  if ((attack(x) && evacuate(y)) || (attack(y) && evacuate(x))) return true;
+  if ((/\bresponds?\b/.test(x) && /\b(?:calls? on|urges)\b.*\b(?:remove|take down)\b/.test(y)) ||
+      (/\bresponds?\b/.test(y) && /\b(?:calls? on|urges)\b.*\b(?:remove|take down)\b/.test(x))) return true;
+  const speaker = value => value.match(/^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:says|calls|responds|accuses|hopes|warns|urges|defends)\b/)?.[1];
+  return Boolean(speaker(a) && speaker(b) && speaker(a) !== speaker(b));
 }
 function bigrams(value) { const chars = [...value.toLowerCase().replace(/[\s\p{P}\p{S}]/gu, '')]; return new Set(chars.slice(1).map((ch, i) => chars[i] + ch)); }
 function renderReport(items) {
