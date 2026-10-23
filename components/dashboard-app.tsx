@@ -3569,13 +3569,13 @@ function RecordDialog({
         author: formText(data, 'author'),
         category: formText(data, 'category'),
         status,
-        progress: Number(data.get('progress')),
-        startDate: formText(data, 'startDate'),
-        plannedEndDate: formText(data, 'plannedEndDate'),
-        plannedHours: Number(data.get('plannedHours')),
-        dailyMinutes: Number(data.get('dailyMinutes')),
+        progress: status === '已读' ? 100 : 0,
+        startDate: '',
+        plannedEndDate: '',
+        plannedHours: 0,
+        dailyMinutes: 0,
         notes: formText(data, 'notes'),
-        finishedAt: formText(data, 'finishedAt') || (status === '已读' ? localDateString() : undefined),
+        finishedAt: status === '已读' ? localDateString() : undefined,
       };
       const { error } = await client.from('books').insert({
           user_id: session.user.id,
@@ -3788,10 +3788,6 @@ function RecordDialog({
           )}
           {selected === '读书记录' && (
             <>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field name="startDate" label="开始日期" type="date" required defaultValue={localDateString()} />
-                <Field name="plannedEndDate" label="预计结束日期" type="date" required />
-              </div>
               <Field name="title" label="书名" required />
               <Field name="author" label="作者（选填）" />
               <SelectField
@@ -3800,12 +3796,6 @@ function RecordDialog({
                 options={['历史', '人文', '商业', '投资', '文学', '传记', '科技', '其他']}
               />
               <SelectField name="status" label="阅读状态" options={['想读', '在读', '已读']} />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field name="plannedHours" label="计划阅读总时长（小时）" type="number" step="0.5" required />
-                <Field name="dailyMinutes" label="每日计划阅读（分钟）" type="number" required />
-              </div>
-              <Field name="progress" label="当前阅读进度（0-100）" type="number" required />
-              <Field name="finishedAt" label="实际结束日期（已读时填写）" type="date" />
               <Field name="notes" label="阅读安排 / 备注（选填）" />
             </>
           )}
