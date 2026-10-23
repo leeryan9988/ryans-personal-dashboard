@@ -2,7 +2,7 @@ name: Publish global news from official feeds
 
 on:
   schedule:
-    # GitHub cron is UTC; check feeds at 07:00, then publish after the 07:50 Beijing cutoff.
+    # GitHub cron is UTC; the 07:00 check publishes if it starts after the 07:50 Beijing cutoff.
     - cron: '0 23 * * *'
     - cron: '50 23 * * *'
     - cron: '55 23 * * *'
@@ -44,11 +44,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Resolve scheduled run mode
+        id: run_mode
+        shell: bash
+        run: |
+          mode="$MODE"
+          if [[ "$GITHUB_EVENT_NAME" == schedule && "${{ github.event.schedule }}" == '0 23 * * *' ]]; then
+            cutoff="$(TZ=Asia/Shanghai date +%F)T07:50:00+08:00"
+            if (( $(date +%s) >= $(date -d "$cutoff" +%s) )); then
+              mode=publish
+              echo "Delayed 07:00 preflight reached the cutoff; publishing today's briefing."
+            fi
+          fi
+          echo "MODE=$mode" >> "$GITHUB_ENV"
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
       - name: Collect distinct reports from official publisher feeds
-        if: env.MODE != 'enrich'
+        if: steps.run_mode.outputs.mode != 'enrich'
         run: node scripts/cloud-news-feed-only.mjs "$MODE"
       - name: Translate new headlines into Chinese
-        if: env.MODE == 'publish'
+        if: steps.run_mode.outputs.mode == 'publish'
         shell: bash
         run: |
           if [[ -z "$(git status --porcelain public/news)" ]]; then
@@ -57,7 +71,7 @@ jobs:
           fi
           python scripts/translate-news-titles.py "public/news/$(TZ=Asia/Shanghai date +%F).json"
       - name: Add source-based Chinese context
-        if: env.MODE == 'publish' || env.MODE == 'enrich'
+        if: steps.run_mode.outputs.mode == 'publish' || steps.run_mode.outputs.mode == 'enrich'
         shell: bash
         run: |
           if [[ "$MODE" == publish && -z "$(git status --porcelain public/news)" ]]; then
@@ -73,7 +87,7 @@ jobs:
           test -f "$report"
           python scripts/enrich-news-context.py "$report"
       - name: Commit enriched briefing
-        if: env.MODE == 'publish' || env.MODE == 'enrich'
+        if: steps.run_mode.outputs.mode == 'publish' || steps.run_mode.outputs.mode == 'enrich'
         id: commit
         shell: bash
         run: |
@@ -83,10 +97,29 @@ jobs:
             exit 0
           fi
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'news: publish source-based briefing context'
-          git push origin HEAD:main
-          echo "changed=true" >> "$GITHUB_OUTPUT"
+          for attempt in 1 2 3; do
+            git fetch --no-tags origin main:refs/remotes/origin/main
+            if [[ "$MODE" == publish ]]; then
+              report="public/news/$(TZ=Asia/Shanghai date +%F).json"
+              if git cat-file -e "origin/main:$report" 2>/dev/null; then
+                echo "Today's report was published by another run; refusing to overwrite it."
+                echo "changed=false" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+            fi
+            if ! git merge-base --is-ancestor origin/main HEAD; then
+              git rebase --onto origin/main HEAD^ || { git rebase --abort; exit 1; }
+            fi
+            if git push origin HEAD:main; then
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep "$((attempt * 2))"
+          done
+          echo "Could not push after three attempts." >&2
+          exit 1
       - name: Start the existing Pages deployment
-        if: (env.MODE == 'publish' || env.MODE == 'enrich') && steps.commit.outputs.changed == 'true'
+        if: (steps.run_mode.outputs.mode == 'publish' || steps.run_mode.outputs.mode == 'enrich') && steps.commit.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy-pages.yml --ref main
