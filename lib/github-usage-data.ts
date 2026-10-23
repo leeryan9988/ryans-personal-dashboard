@@ -21,6 +21,80 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-10-23 09:33 北京时间",
+  "publishedAtIso": "2026-10-23T01:33:00Z",
+  "growthWindow": "2026.10.13—2026.10.18",
+  "risingSource": "https://github.com/OpenGithubs/github-weekly-rank",
+  "rising": [
+    {
+      "name": "Gathin23/cleanyourtv",
+      "url": "https://github.com/Gathin23/cleanyourtv",
+      "stars": 24206,
+      "weeklyGain": null,
+      "functionZh": "通过局域网连接 Android TV 或 Google TV，备份原有设置、停用广告和预装服务，并安装简洁的电视桌面；提供恢复方法。",
+      "reasonZh": "适合想清理电视首页广告的人；会更改电视的应用状态和默认桌面，先核对支持的机型并保存备份。",
+      "audience": "Android TV 与 Google TV 用户"
+    },
+    {
+      "name": "lyogavin/airllm",
+      "url": "https://github.com/lyogavin/airllm",
+      "stars": 40342,
+      "weeklyGain": 3384,
+      "functionZh": "用逐层加载方式降低大语言模型推理时占用的显存，让较小显卡也能尝试运行大型模型，并提供 Python 示例。",
+      "reasonZh": "显存门槛降低对本地模型实验有用；模型文件仍可能占用大量磁盘，速度与可运行性取决于机器配置。",
+      "audience": "本地 AI 模型研究与开发"
+    },
+    {
+      "name": "storytold/cadcraft",
+      "url": "https://github.com/storytold/cadcraft",
+      "stars": 6472,
+      "weeklyGain": 2948,
+      "functionZh": "用 Rust 开发的开源 CAD 绘图应用，支持图层、标注、对象捕捉及 DXF 读写，可在 Windows 等系统运行。",
+      "reasonZh": "提供可体验的传统 CAD 操作流程，也支持智能体通过命令控制绘图；项目仍处早期开发，正式生产图纸应核对兼容性。",
+      "audience": "制图、建筑与机械设计爱好者"
+    },
+    {
+      "name": "microsoft/mxc",
+      "url": "https://github.com/microsoft/mxc",
+      "stars": 2963,
+      "weeklyGain": null,
+      "functionZh": "微软开源的跨平台隔离执行组件，可为应用运行模型生成的代码、插件和工具设置文件、网络等权限，并提供多种沙箱后端。",
+      "reasonZh": "适合正在开发 AI 智能体或插件执行环境的人；这是开发组件，需要通过 SDK 集成，不是给普通用户直接安装的桌面应用。",
+      "audience": "AI 工具与安全沙箱开发者"
+    }
+  ],
+  "established": [
+    {
+      "name": "microsoft/markitdown",
+      "url": "https://github.com/microsoft/markitdown",
+      "stars": 191670,
+      "weeklyGain": null,
+      "functionZh": "把 PDF、Word、Excel、PPT、网页等内容转换为 Markdown，尽量保留标题、列表、表格与链接，方便交给 AI 分析。",
+      "reasonZh": "适合批量整理资料或建立知识库；转换目标是机器可读文本，复杂排版未必能原样呈现。",
+      "audience": "资料整理与 AI 文档处理"
+    },
+    {
+      "name": "microsoft/terminal",
+      "url": "https://github.com/microsoft/terminal",
+      "stars": 105221,
+      "weeklyGain": null,
+      "functionZh": "微软维护的 Windows 终端程序，可在同一窗口使用 PowerShell、命令提示符和 WSL，并支持标签页与自定义外观。",
+      "reasonZh": "Windows 用户可从 Microsoft Store 安装并自动更新；经常操作命令行时更方便管理多个会话。",
+      "audience": "Windows 开发与系统管理"
+    },
+    {
+      "name": "usememos/memos",
+      "url": "https://github.com/usememos/memos",
+      "stars": 64005,
+      "weeklyGain": null,
+      "functionZh": "可自行部署的轻量笔记应用，按时间线记录想法，支持 Markdown、标签、搜索和自主控制分享范围。",
+      "reasonZh": "适合想长期保存零散笔记、自己管理数据的人；需要自行部署和备份，仓库提供体验站点。",
+      "audience": "个人笔记与自建服务"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-10-21 13:20 北京时间",
   "publishedAtIso": "2026-10-21T05:20:00Z",
   "growthWindow": "2026.10.13—2026.10.18",
