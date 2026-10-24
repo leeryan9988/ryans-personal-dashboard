@@ -75,6 +75,7 @@ import { getSupabase, isCloudConfigured } from '@/lib/supabase';
 import { StickyNotesBoard } from './sticky-notes-board';
 import { GithubUsageView } from './github-usage';
 import { NewsBriefingView } from './news-briefing';
+import { FocusedNewsView } from './focused-news';
 import { matchesDashboardSearch, searchDashboardData, type DashboardSearchResult } from '@/lib/dashboard-search';
 
 type Area =
@@ -88,7 +89,8 @@ type Area =
   | '待办清单'
   | '计划和感悟'
   | 'github使用'
-  | '全球早报';
+  | '全球早报'
+  | 'AI·财经·跨境';
 type RecordKind =
   | '工作产品'
   | '副业利润'
@@ -248,6 +250,7 @@ const navigation: { label: Area; icon: typeof LayoutDashboard }[] = [
   { label: '待办清单', icon: CheckCircle2 },
   { label: 'github使用', icon: FolderOpen },
   { label: '全球早报', icon: Newspaper },
+  { label: 'AI·财经·跨境', icon: TrendingUp },
 ];
 
 const defaultNavigationOrder = navigation.map((item) => item.label);
@@ -980,8 +983,9 @@ export default function DashboardApp() {
           {active === '个人网盘' && <CloudDriveView session={session} searchQuery={query} onSearchChange={setQuery} />}
           {active === 'github使用' && <GithubUsageView searchQuery={query} />}
           {active === '全球早报' && <NewsBriefingView searchQuery={query} />}
+          {active === 'AI·财经·跨境' && <FocusedNewsView searchQuery={query} />}
           {session && <StickyNotesBoard key={session.user.id} userId={session.user.id} active={active === '待办清单'} searchQuery={queries['待办清单'] ?? ''} onSearchChange={(value) => setQueries((current) => ({ ...current, 待办清单: value }))} />}
-          {active !== '个人网盘' && active !== '待办清单' && active !== 'github使用' && active !== '全球早报' && (
+          {active !== '个人网盘' && active !== '待办清单' && active !== 'github使用' && active !== '全球早报' && active !== 'AI·财经·跨境' && (
             <WeeklyReflectionPanel
               area={active}
               records={reflections.filter((item) => item.area === active)}
@@ -1075,7 +1079,7 @@ function Header({
           placeholder={`搜索${active}内容`}
         />
         {query && <button type="button" aria-label="清空搜索" onClick={() => { setQuery(''); setSearchOpen(false); }} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[#71879c] hover:bg-[#edf3f9]"><X className="size-4" /></button>}
-        {searchOpen && query.trim() && active !== '个人网盘' && active !== '待办清单' && active !== '全球早报' && (
+        {searchOpen && query.trim() && active !== '个人网盘' && active !== '待办清单' && active !== '全球早报' && active !== 'AI·财经·跨境' && (
           <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-80 overflow-y-auto rounded-xl border border-[#cbdff2] bg-white p-2 shadow-xl">
             <p className="px-2 py-1 text-xs text-[#607184]" role="status" aria-live="polite">找到 {results.length} 条匹配结果</p>
             {results.slice(0, 15).map((result) => (
