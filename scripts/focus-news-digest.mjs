@@ -2,6 +2,7 @@ import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const patterns = {
+  '亚马逊电商': /\bamazon(?:\.com)?\b.{0,55}\b(marketplace|sellers?|fba|fulfill(?:ment|ment by amazon)?|advertis\w*|prime day|retail|e-?commerce|shopping|stores?|logistics|fees?|merchants?)\b|\b(sellers?|merchants?)\b.{0,35}\bamazon\b|\b(seller central|fulfillment by amazon|amazon prime day|prime (?:big deal )?days?|fba)\b|亚马逊(?:电商|卖家|平台|商城|物流|配送|广告|费用|政策|零售|Prime|FBA)|亞馬遜(?:電商|賣家|平台|物流|廣告)/i,
   AI: /\b(ai|artificial intelligence|machine learning|llm|chatgpt|openai|gemini|semiconductor|chip|gpu|data center|datacenter|robotics?|automation|model training)\b|人工智能|大模型|芯片|半导体|智能体|机器人|数据中心|生成式|人工智慧|晶片|半導體/i,
   '经济金融': /\b(economy|economic|inflation|interest rates?|central bank|federal reserve|fed policy|gdp|stock market|bond yields?|banking|currency|earnings|revenue|fiscal|investment|financial|shares?)\b|经济|金融|通胀|利率|央行|股市|债券|汇率|财报|投资|經濟|金融|通膨|匯率/i,
   '跨境贸易': /\b(trade|tariffs?|exports?|imports?|customs|shipping|supply chain|logistics|cross.border|e.commerce|sanctions?)\b|跨境|贸易|关税|出口|进口|海关|航运|物流|供应链|制裁|貿易|關稅|供應鏈/i,
@@ -59,6 +60,7 @@ const feeds = [
   ['加拿大广播公司', 'https://www.cbc.ca/cmlink/rss-business', /(^|\.)cbc\.ca$/],
   ['路透社', 'https://feeds.reuters.com/reuters/businessNews', /(^|\.)reuters\.com$/],
   ['美联社', 'https://apnews.com/feed', /(^|\.)apnews\.com$/],
+  ['Retail Dive', 'https://www.retaildive.com/feeds/news/', /(^|\.)retaildive\.com$/],
 ];
 
 const results = await Promise.all(feeds.map(async ([media, feedUrl, domain]) => {
@@ -90,7 +92,7 @@ const candidates = [...byUrl.values()]
   .filter((item) => item.topic)
   .sort((a, b) => b.topic.score - a.topic.score || b.publishedTime.localeCompare(a.publishedTime));
 const unique = dedupeStories(candidates);
-const counts = { AI: 0, '经济金融': 0, '跨境贸易': 0 };
+const counts = { AI: 0, '经济金融': 0, '跨境贸易': 0, '亚马逊电商': 0 };
 const sourceCounts = new Map();
 const selected = [];
 for (const item of unique) {
@@ -100,11 +102,11 @@ for (const item of unique) {
   counts[topic]++;
   sourceCounts.set(item.media, (sourceCounts.get(item.media) ?? 0) + 1);
 }
-if (!selected.length) throw new Error('No source-backed AI, economy, or trade stories; previous report is preserved.');
+if (!selected.length) throw new Error('No source-backed focused news stories; previous report is preserved.');
 selected.sort((a, b) => b.publishedTime.localeCompare(a.publishedTime));
 const report = {
   date, publishedAt, windowStart, windowEnd, preparedAt: now.toISOString(),
-  title: `AI · 经济金融 · 跨境贸易｜${date}`,
+  title: `AI · 经济金融 · 跨境贸易 · 亚马逊电商｜${date}`,
   articleCount: selected.length, topicCounts: counts,
   sourceConversationId: 'github-actions-focused-official-rss',
   content: renderReport(selected),
@@ -233,6 +235,12 @@ function topicFor(item) {
 }
 function analysisFor(item) {
   const text = `${item.title} ${item.description}`;
+  if (item.topic.name === '亚马逊电商' && /\b(fees?|commission|fulfillment|fba|storage|shipping)\b|费用|佣金|物流|仓储|配送/i.test(text))
+    return '卖家需核对适用站点、类目、生效时间及费用口径，再按实际售价与履约成本重算毛利；公告与媒体报道应交叉核对。';
+  if (item.topic.name === '亚马逊电商' && /\b(prime day|advertis\w*|shopping|deals?|promotion)\b|促销|广告|购物|流量/i.test(text))
+    return '可关注活动时间、流量、广告成本和转化率的变化；报道中的平台整体数据不等于单个店铺的收益。';
+  if (item.topic.name === '亚马逊电商')
+    return '先确认公告适用的国家站点、卖家类型及执行日期，再评估对选品、履约和利润的实际影响。';
   if (item.topic.name === 'AI' && /\b(job cuts?|layoffs?|workforce|employment)\b|裁员|就业|劳动力/i.test(text))
     return '需核对受影响岗位和规模，以及企业是否明确把变化归因于 AI；招聘、裁员与生产率的后续数据才能说明实际影响。';
   if (item.topic.name === 'AI' && /\b(cyber|hack|vulnerability|security breach)\b|网络安全|黑客|漏洞/i.test(text))
