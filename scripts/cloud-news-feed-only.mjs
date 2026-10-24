@@ -90,7 +90,7 @@ function parseFeed(xml, media, domain) {
     const title = getTag(block, 'title');
     const url = getTag(block, 'link');
     const published = getTag(block, 'pubDate') || getTag(block, 'dc:date');
-    const description = getTag(block, 'description').slice(0, 360);
+    const description = compactDescription(getTag(block, 'description'));
     if (!title || !url || !published || !Number.isFinite(Date.parse(published))) continue;
     let parsed;
     try { parsed = new URL(url); } catch { continue; }
@@ -101,7 +101,20 @@ function parseFeed(xml, media, domain) {
 }
 function getTag(block, name) {
   const raw = block.match(new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${name}>`, 'i'))?.[1] ?? '';
-  return decode(raw.replace(/^<!\[CDATA\[|\]\]>$/g, '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim());
+  // RSS descriptions often escape HTML. Decode before removing tags.
+  const decoded = decode(decode(raw.replace(/^<!\[CDATA\[|\]\]>$/g, '')));
+  return decoded.replace(/<\/(?:p|li|div)>/gi, '. ').replace(/<[^>]*>/g, ' ').replace(/\.\.(?=\s|$)/g, '.').replace(/\s+/g, ' ').trim();
+}
+function compactDescription(value) {
+  const sentences = value.split(/(?<=[.!?])\s+/);
+  let brief = '';
+  for (const sentence of sentences) {
+    const next = brief ? `${brief} ${sentence}` : sentence;
+    if (next.length > 420) break;
+    brief = next;
+    if (brief.length >= 100) break;
+  }
+  return brief.length >= 45 ? brief : '';
 }
 function decode(value) {
   return value.replace(/&#(x[0-9a-f]+|\d+);/gi, (_, n) => String.fromCodePoint(n[0].toLowerCase() === 'x' ? parseInt(n.slice(1), 16) : Number(n)))
