@@ -50,10 +50,11 @@ const feeds = [
   ['金融时报', 'https://www.ft.com/world?format=rss', /(^|\.)ft\.com$/],
   ['南华早报', 'https://www.scmp.com/rss/92/feed', /(^|\.)scmp\.com$/],
   ['南华早报', 'https://www.scmp.com/rss/3/feed', /(^|\.)scmp\.com$/],
-  ['韩联社', 'https://en.yna.co.kr/RSS/economy.xml', /(^|\.)yna\.co\.kr$/],
+  ['韩联社', 'https://en.yna.co.kr/RSS/news.xml', /(^|\.)yna\.co\.kr$/],
   ['新加坡海峡时报', 'https://www.straitstimes.com/news/business/rss.xml', /(^|\.)straitstimes\.com$/],
   ['日本放送协会', 'https://www3.nhk.or.jp/rss/news/cat5.xml', /(^|\.)nhk\.or\.jp$/],
-  ['中央通讯社', 'https://www.cna.com.tw/rss/aie.aspx', /(^|\.)cna\.com\.tw$/],
+  ['中央通讯社', 'https://feeds.feedburner.com/rsscna/finance', /(^|\.)cna\.com\.tw$/],
+  ['中央通讯社', 'https://feeds.feedburner.com/rsscna/technology', /(^|\.)cna\.com\.tw$/],
   ['德国之声', 'https://rss.dw.com/rdf/rss-en-bus', /(^|\.)dw\.com$/],
   ['加拿大广播公司', 'https://www.cbc.ca/cmlink/rss-business', /(^|\.)cbc\.ca$/],
   ['路透社', 'https://feeds.reuters.com/reuters/businessNews', /(^|\.)reuters\.com$/],
@@ -84,7 +85,7 @@ for (const item of results.flat()) {
   if (!byUrl.has(key)) byUrl.set(key, item);
 }
 const candidates = [...byUrl.values()]
-  .filter((item) => !excluded(item) && item.description.length >= 40)
+  .filter((item) => !excluded(item) && !/\/(video|opinion|comment|podcast)\//i.test(new URL(item.url).pathname) && item.description.length >= 40)
   .map((item) => ({ ...item, topic: topicFor(item) }))
   .filter((item) => item.topic)
   .sort((a, b) => b.topic.score - a.topic.score || b.publishedTime.localeCompare(a.publishedTime));
@@ -232,6 +233,12 @@ function topicFor(item) {
 }
 function analysisFor(item) {
   const text = `${item.title} ${item.description}`;
+  if (item.topic.name === 'AI' && /\b(job cuts?|layoffs?|workforce|employment)\b|裁员|就业|劳动力/i.test(text))
+    return '需核对受影响岗位和规模，以及企业是否明确把变化归因于 AI；招聘、裁员与生产率的后续数据才能说明实际影响。';
+  if (item.topic.name === 'AI' && /\b(cyber|hack|vulnerability|security breach)\b|网络安全|黑客|漏洞/i.test(text))
+    return '需核对受影响系统、漏洞证据和修复建议；报道中的潜在风险不等于已经发生的大范围攻击。';
+  if (item.topic.name === 'AI' && /\b(investors?|shares?|stocks?|bubbles?|valuation|treasur)\b|投资者|估值|股价|泡沫/i.test(text))
+    return '市场价格反映预期，仍需对照企业订单、营收及资本开支，判断 AI 投入是否转化为实际收益。';
   if (/\b(tariffs?|customs|duties|trade barriers?)\b|关税|海关|關稅/i.test(text))
     return '若相关措施落地，跨境企业需核对适用商品、税率、生效日期和豁免条件；实际成本影响以官方文件为准。';
   if (/\b(exports?|imports?|sanctions?|supply chain|shipping|logistics)\b|出口|进口|制裁|供应链|航运|物流/i.test(text))
