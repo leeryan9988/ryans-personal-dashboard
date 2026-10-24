@@ -12,10 +12,23 @@ HEADING = re.compile(r"(?m)^### (\d+)\. (.+)$")
 CHINESE = re.compile(r"[\u3400-\u9fff]")
 TRANSLATE_URL = "https://translate.googleapis.com/translate_a/single"
 
+def clarify_ambiguous_terms(title: str) -> str:
+    """Give the translator context for terms with common misleading literal meanings."""
+    replacements = (
+        (r"\bkeffiyehs?\b", "Palestinian keffiyeh headscarves"),
+        (r"\bgovernment U-turn\b", "reversal of the government's previous policy"),
+        (r"\bcloudier footage\b", "less polished camera footage"),
+        (r"\btanker strike\b", "attack on an oil tanker"),
+    )
+    for pattern, clearer in replacements:
+        title = re.sub(pattern, clearer, title, flags=re.I)
+    return title
+
+
 def translate(title: str) -> str:
     if CHINESE.search(title):
         return title
-    query_title = re.sub(r"\bRSF\b", "Sudan Rapid Support Forces (RSF)", title)
+    query_title = clarify_ambiguous_terms(re.sub(r"\bRSF\b", "Sudan Rapid Support Forces (RSF)", title))
     query = urllib.parse.urlencode({"client": "gtx", "sl": "en", "tl": "zh-CN", "dt": "t", "q": query_title})
     request = urllib.request.Request(
         TRANSLATE_URL + "?" + query,
