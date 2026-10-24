@@ -91,7 +91,35 @@ class ArticleLead(HTMLParser):
 
 
 def clean(value: str) -> str:
-    return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", value))).strip()
+    decoded = html.unescape(html.unescape(value))
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", decoded)).strip()
+
+
+def concise_source(value: str) -> str:
+    """Use complete lead sentences; never translate a cut-off RSS fragment."""
+    sentences = re.split(r"(?<=[.!?])\s+", clean(value))
+    brief = ""
+    for sentence in sentences:
+        candidate = (brief + " " + sentence).strip()
+        if len(candidate) > 420:
+            break
+        brief = candidate
+        if len(brief) >= 85:
+            break
+    return brief if len(brief) >= 45 else ""
+
+
+def concise_translation(value: str) -> str:
+    value = clean(value)
+    if re.search(r"(?:https?://|href=|/pp|/strong|\bpstrong\b)", value, re.I):
+        return ""
+    sentences = re.split(r"(?<=[。！？])", value)
+    brief = sentences[0].strip()
+    if len(brief) < 12 and len(sentences) > 1:
+        brief += sentences[1].strip()
+    if len(brief) > 150 or brief.endswith(("，", "；", "：", ",")):
+        return ""
+    return brief
 
 
 def useful(value: str, title: str) -> bool:
@@ -121,8 +149,9 @@ def article_lead(url: str, title: str) -> str:
         parsed = ArticleLead()
         parsed.feed(page)
         for candidate in (*parsed.meta, *parsed.paragraphs[:2]):
-            if useful(candidate, title):
-                return clean(candidate)[:MAX_SOURCE_CHARS]
+            brief = concise_source(candidate)
+            if useful(brief, title):
+                return brief
     except Exception as error:
         print(f"Article lead unavailable ({urllib.parse.urlparse(url).hostname}): {error}", flush=True)
     return ""
@@ -160,19 +189,19 @@ def section_context(section: str) -> tuple[str, str]:
         return "", ""
     source_title = original.group(1) if original else title.group(2)
     rss = RSS_LEAD.search(section)
-    source = clean(rss.group(1)) if rss else ""
+    source = concise_source(rss.group(1)) if rss else ""
     if not useful(source, source_title):
         source = article_lead(link.group(1), source_title)
     if not useful(source, source_title):
         return "", ""
-    return source[:MAX_SOURCE_CHARS], "媒体导语" if rss and source == clean(rss.group(1))[:MAX_SOURCE_CHARS] else "原文导语"
+    return source, "媒体导语" if rss and source == concise_source(rss.group(1)) else "原文导语"
 
 
 def enrich(section: str, source: str, provenance: str) -> tuple[str, bool]:
     section = RSS_LEAD.sub("", section)
     if "**一句话看懂：**" in section or "**内容提示：**" in section:
         return section, "**一句话看懂：**" in section
-    translated = translate(source) if source else ""
+    translated = concise_translation(translate(source)) if source else ""
     if translated:
         note = f"**一句话看懂：** {translated}（依据{provenance}机器翻译）"
     else:
