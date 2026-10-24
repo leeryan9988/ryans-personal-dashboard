@@ -1,6 +1,12 @@
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
+const patterns = {
+  AI: /\b(ai|artificial intelligence|machine learning|llm|chatgpt|openai|gemini|semiconductor|chip|gpu|data center|datacenter|robotics?|automation|model training)\b|人工智能|大模型|芯片|半导体|智能体|机器人|数据中心|生成式|人工智慧|晶片|半導體/i,
+  '经济金融': /\b(economy|economic|inflation|interest rates?|central bank|federal reserve|fed policy|gdp|stock market|bond yields?|banking|currency|earnings|revenue|fiscal|investment|financial|shares?)\b|经济|金融|通胀|利率|央行|股市|债券|汇率|财报|投资|經濟|金融|通膨|匯率/i,
+  '跨境贸易': /\b(trade|tariffs?|exports?|imports?|customs|shipping|supply chain|logistics|cross.border|e.commerce|sanctions?)\b|跨境|贸易|关税|出口|进口|海关|航运|物流|供应链|制裁|貿易|關稅|供應鏈/i,
+};
+
 const root = process.cwd();
 const now = new Date();
 const date = beijingDate(now);
@@ -214,11 +220,6 @@ function differentDevelopment(a, b) {
 }
 function bigrams(value) { const chars = [...value.toLowerCase().replace(/[\s\p{P}\p{S}]/gu, '')]; return new Set(chars.slice(1).map((ch, i) => chars[i] + ch)); }
 
-const patterns = {
-  AI: /\b(ai|artificial intelligence|machine learning|llm|chatgpt|openai|gemini|semiconductor|chip|gpu|data center|datacenter|robotics?|automation|model training)\b|人工智能|大模型|芯片|半导体|智能体|机器人|数据中心|生成式|人工智慧|晶片|半導體/i,
-  '经济金融': /\b(economy|economic|inflation|interest rates?|central bank|federal reserve|fed policy|gdp|stock market|bond yields?|banking|currency|earnings|revenue|fiscal|investment|financial|shares?)\b|经济|金融|通胀|利率|央行|股市|债券|汇率|财报|投资|經濟|金融|通膨|匯率/i,
-  '跨境贸易': /\b(trade|tariffs?|exports?|imports?|customs|shipping|supply chain|logistics|cross.border|e.commerce|sanctions?)\b|跨境|贸易|关税|出口|进口|海关|航运|物流|供应链|制裁|貿易|關稅|供應鏈/i,
-};
 function topicFor(item) {
   const title = item.title;
   const description = item.description;
