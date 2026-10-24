@@ -10,7 +10,7 @@ type Edition = {
   file: string;
 };
 
-type Report = Edition & { content: string };
+type Report = Edition & { content: string; preparedAt?: string };
 type Topic = '全部' | 'AI' | '经济金融' | '跨境贸易';
 type Story = {
   number: string;
@@ -108,7 +108,7 @@ export function FocusedNewsView({ searchQuery = '' }: { searchQuery?: string }) 
   }, [selected?.date, selected?.file, reports]);
 
   const report = selected ? reports[selected.date] : undefined;
-  const stories = useMemo(() => report ? parseStories(report.content) : [], [report]);
+  const stories = useMemo(() => report ? parseStories(report.content).filter((story) => story.summary && !story.summary.startsWith('原文或媒体导语暂不可读取')) : [], [report]);
   const shown = stories.filter((story) =>
     (topic === '全部' || story.topic === topic) &&
     matchesDashboardSearch(searchQuery, story.title, story.originalTitle, story.summary, story.analysis, story.source, story.topic)
@@ -144,7 +144,7 @@ export function FocusedNewsView({ searchQuery = '' }: { searchQuery?: string }) 
     {selected && !report && !error && <p className="px-2 text-sm text-[#57718f]">正在读取 {selected.date} 新闻…</p>}
     {report && <>
       <div className="flex flex-wrap items-baseline justify-between gap-2 px-1 text-sm text-[#57718f]">
-        <span>{beijingTime(report.publishedAt)} 北京时间 · 共 {report.articleCount} 条</span>
+        <span>计划 {beijingTime(report.publishedAt)} 北京时间{report.preparedAt && Date.parse(report.preparedAt) > Date.parse(report.publishedAt) ? ` · 实际采集 ${beijingTime(report.preparedAt)}` : ''} · 可读 {stories.length} 条</span>
         <span>公开 RSS 导语；中文简介为自动翻译，原文链接可核对。</span>
       </div>
       {shown.length ? <div className="grid gap-3 lg:grid-cols-2">
