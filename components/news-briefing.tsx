@@ -155,14 +155,16 @@ function CompactNewsBody({ content }: { content: string }) {
         : legacySourceLine?.replace(/^\*\*|\*\*$/g, '').split('｜')[1]?.trim() ?? '';
       const articleUrl = /\[阅读原文\]\((https?:\/\/[^)]+)\)/.exec(story)?.[1];
 
-      return <article key={index} className="py-2.5 first:pt-0 last:pb-0">
-        <h3 className="text-sm font-semibold leading-5 text-cyan-100">{title}</h3>
-        <p className="mt-1 text-sm leading-5 text-slate-200">{summary}</p>
-        <p className="mt-1 text-xs leading-5 text-slate-400 sm:text-sm">
-          {originalTitle || '原文标题未提供'}{source && <>（{source.replace(/[《》]/g, '')}）</>}
-          {articleUrl && <> <a href={articleUrl} target="_blank" rel="noopener noreferrer" className="whitespace-nowrap text-cyan-300 underline underline-offset-2 hover:text-cyan-100">阅读原文 <ExternalLink className="inline size-3" /></a></>}
-        </p>
-      </article>;
+      return <details key={index} className="group py-2.5 first:pt-0 last:pb-0">
+        <summary title="点击展开完整标题和导语" className="cursor-pointer list-none marker:hidden [&::-webkit-details-marker]:hidden">
+          <h3 className="truncate text-sm font-semibold leading-5 text-cyan-100 group-open:whitespace-normal group-open:overflow-visible">{title}</h3>
+          <p className="mt-1 truncate text-sm leading-5 text-slate-200 group-open:whitespace-normal group-open:overflow-visible">{summary}</p>
+          <p className="mt-1 flex items-center gap-1 text-xs leading-5 text-slate-400 sm:text-sm">
+            <span className="min-w-0 truncate group-open:whitespace-normal group-open:overflow-visible">{originalTitle || '原文标题未提供'}{source && <>（{source.replace(/[《》]/g, '')}）</>}</span>
+            {articleUrl && <a href={articleUrl} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} className="shrink-0 whitespace-nowrap text-cyan-300 underline underline-offset-2 hover:text-cyan-100">阅读原文 <ExternalLink className="inline size-3" /></a>}
+          </p>
+        </summary>
+      </details>;
     })}
   </div>;
 }
