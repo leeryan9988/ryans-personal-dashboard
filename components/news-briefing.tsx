@@ -127,51 +127,50 @@ function FullMarkdownBody({ content }: { content: string }) {
 }
 
 
-function mobileNewsText(value: string) {
-  return value
-    .replace(/\[([^\]]+)\]\(https?:\/\/[^)]+\)/g, '$1')
-    .replace(/\*\*/g, '')
-    .trim();
+function plainNewsText(value: string) {
+  return value.replace(/\[([^\]]+)\]\(https?:\/\/[^)]+\)/g, '$1').replace(/\*\*/g, '').trim();
 }
 
-function MobileNewsBody({ content }: { content: string }) {
+function CompactNewsBody({ content }: { content: string }) {
   const headings = [...content.matchAll(/^###\s+\d+[.)]\s.+$/gm)];
   const stories = headings.map((heading, index) => content.slice(heading.index ?? 0, headings[index + 1]?.index ?? content.length));
   if (!stories.length) return <FullMarkdownBody content={content} />;
 
-  return <div className="space-y-4">
+  return <div className="divide-y divide-sky-300/15">
     {stories.map((story, index) => {
       const lines = story.split('\n').map((line) => line.trim()).filter(Boolean);
-      const title = mobileNewsText(lines[0].replace(/^###\s+/, ''));
-      const labeledSummary = lines.find((line) => /^\*\*(一句话看懂|内容提示)：\*\*/.test(line));
-      const firstParagraph = lines.find((line) =>
-        !line.startsWith('#') && !line.startsWith('**') &&
-        !/^\[[^\]]+\]\(https?:\/\/[^)]+\)\s*$/.test(line) && !line.startsWith('|') && line !== '---' && !/^[-*]\s/.test(line)
-      );
-      const rawSummary = labeledSummary
-        ? mobileNewsText(labeledSummary.replace(/^\*\*(一句话看懂|内容提示)：\*\*\s*/, ''))
-        : mobileNewsText(firstParagraph ?? '').split(/(?<=[。！？])/)[0];
-      const summary = rawSummary.replace(/（依据[^（）]*(?:整理|翻译)）\s*$/, '').trim();
+      const title = plainNewsText(lines[0].replace(/^###\s+/, ''));
+      const summaryLine = lines.find((line) => /^\*\*(一句话看懂|内容提示)：\*\*/.test(line));
+      const summary = summaryLine
+        ? plainNewsText(summaryLine.replace(/^\*\*(一句话看懂|内容提示)：\*\*\s*/, '')).replace(/（依据[^（）]*(?:整理|翻译)）\s*$/, '').trim()
+        : '原站导语不足，暂无法可靠概括。';
+      const originalLine = lines.find((line) => line.startsWith('**原文标题：**'));
+      const originalTitle = originalLine
+        ? plainNewsText(originalLine.replace(/^\*\*原文标题：\*\*\s*/, ''))
+        : '';
       const sourceLine = lines.find((line) => line.startsWith('**来源与时间：**'));
       const legacySourceLine = lines.find((line) => /^\*\*[^*]*｜[^*]*｜[^*]*\*\*$/.test(line));
       const source = sourceLine
         ? sourceLine.replace(/^\*\*来源与时间：\*\*\s*/, '').split('｜')[0].trim()
         : legacySourceLine?.replace(/^\*\*|\*\*$/g, '').split('｜')[1]?.trim() ?? '';
-      const mediaName = source.replace(/[《》]/g, '');
+      const articleUrl = /\[阅读原文\]\((https?:\/\/[^)]+)\)/.exec(story)?.[1];
 
-      return <article key={index} className="space-y-1">
-        <h3 className="text-sm font-semibold leading-6 text-cyan-100">{title}</h3>
-        {summary && <p className="text-sm leading-6 text-slate-200">{summary}{mediaName && <span className="ml-1 whitespace-nowrap text-slate-400">（{mediaName}）</span>}</p>}
+      return <article key={index} className="py-2.5 first:pt-0 last:pb-0">
+        <h3 className="text-sm font-semibold leading-5 text-cyan-100">{title}</h3>
+        <p className="mt-1 text-sm leading-5 text-slate-200">{summary}</p>
+        <p className="mt-1 text-xs leading-5 text-slate-400 sm:text-sm">
+          {originalTitle || '原文标题未提供'}{source && <>（{source.replace(/[《》]/g, '')}）</>}
+          {articleUrl && <> <a href={articleUrl} target="_blank" rel="noopener noreferrer" className="whitespace-nowrap text-cyan-300 underline underline-offset-2 hover:text-cyan-100">阅读原文 <ExternalLink className="inline size-3" /></a></>}
+        </p>
       </article>;
     })}
   </div>;
 }
 
 function MarkdownBody({ content }: { content: string }) {
-  return <>
-    <div className="sm:hidden"><MobileNewsBody content={content} /></div>
-    <div className="hidden sm:block"><FullMarkdownBody content={content} /></div>
-  </>;
+  return content.includes('**原文标题：**') && content.includes('**来源标记：**')
+    ? <CompactNewsBody content={content} />
+    : <FullMarkdownBody content={content} />;
 }
 
 export function NewsBriefingView({ searchQuery = '' }: { searchQuery?: string }) {
