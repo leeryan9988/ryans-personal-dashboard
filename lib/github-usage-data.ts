@@ -21,6 +21,107 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-10-26 08:06:56 北京时间",
+  "publishedAtIso": "2026-10-26T08:06:56+08:00",
+  "growthWindow": "2026.10.20—2026.10.25（OpenGithubs 周榜统计区间）",
+  "risingSource": "https://github.com/OpenGithubs/github-weekly-rank/blob/0c3c92347fad09a8ba034f6cd55015f0080e0590/README.md",
+  "rising": [
+    {
+      "name": "deepseek-ai/DeepInfer",
+      "url": "https://github.com/deepseek-ai/DeepInfer",
+      "stars": 22386,
+      "weeklyGain": 9823,
+      "functionZh": "为 DeepSeek 模型提供高性能离线推理框架，包含并行执行、异步调度、结构化输出和确定性采样等能力。",
+      "reasonZh": "适合研究大规模推理基础设施；近期仍有修复提交。目前支持特定高端 GPU/NPU，完整在线服务还需补齐缓存、负载均衡等组件，普通 Windows 电脑不适合直接运行。",
+      "audience": "模型部署与推理基础设施开发者"
+    },
+    {
+      "name": "akitaonrails/ai-memory",
+      "url": "https://github.com/akitaonrails/ai-memory",
+      "stars": 13513,
+      "weeklyGain": 3408,
+      "functionZh": "为 Codex、Claude Code 等编程智能体提供共享长期记忆和任务交接，把项目经验保存为可检索、可版本管理的 Markdown。",
+      "reasonZh": "适合跨工具或跨设备接续项目，默认基础流程无需模型 API；近期持续维护。Windows 原生支持仍标为实验性，WSL2 路线更成熟，记忆服务需自行维护。",
+      "audience": "经常切换编程智能体的个人与团队"
+    },
+    {
+      "name": "pengchujin/aerial-tv",
+      "url": "https://github.com/pengchujin/aerial-tv",
+      "stars": 4979,
+      "weeklyGain": 2316,
+      "functionZh": "为 Android 电视、盒子和投影仪提供简洁桌面，支持应用整理、手机配置、壁纸和航拍屏保。",
+      "reasonZh": "适合想减少首页推荐干扰的人；近期仍更新机型适配。需按机型开启 ADB 并设置桌面接管，有兼容性限制，固件开机广告不能因此去除。",
+      "audience": "Android 电视与投影仪用户"
+    },
+    {
+      "name": "withmarbleapp/os-taxonomy",
+      "url": "https://github.com/withmarbleapp/os-taxonomy",
+      "stars": 7355,
+      "weeklyGain": 2026,
+      "functionZh": "把小学阶段知识拆成细粒度主题和先修关系，提供 JSON 数据、课程标准映射与部分教学建议，并附交互学习内容制作技能。",
+      "reasonZh": "适合构建学习路径、课程图谱和教学原型；近期有课程映射更新。部分内容由智能体编写，覆盖与证据均有限，需教师复核并遵守各层数据许可。",
+      "audience": "教育开发者、课程设计者与教师"
+    },
+    {
+      "name": "NVIDIA/OpenShell",
+      "url": "https://github.com/NVIDIA/OpenShell",
+      "stars": 19860,
+      "weeklyGain": 2839,
+      "functionZh": "为自主 AI 智能体提供隔离运行环境，按策略限制文件、网络与系统调用，并通过受控接口使用凭据。",
+      "reasonZh": "适合需要管理智能体工具权限的开发团队；近期仍有维护提交。需要容器或虚拟化环境，Windows WSL2 支持仍属实验性，安全策略需结合实际环境配置。",
+      "audience": "智能体平台与安全基础设施开发者"
+    }
+  ],
+  "established": [
+    {
+      "name": "kovidgoyal/calibre",
+      "url": "https://github.com/kovidgoyal/calibre",
+      "stars": 26251,
+      "weeklyGain": null,
+      "functionZh": "跨平台电子书管理器，可整理书库、查看、编辑和转换多种电子书格式，并与阅读设备传输内容、获取书籍元数据。",
+      "reasonZh": "适合电子书多、格式杂或使用多个阅读设备的人；近期仍修复电子书文件处理问题，Windows、macOS 和 Linux 均可使用。",
+      "audience": "电子书读者与个人书库管理者"
+    },
+    {
+      "name": "FreeCAD/FreeCAD",
+      "url": "https://github.com/FreeCAD/FreeCAD",
+      "stars": 34775,
+      "weeklyGain": null,
+      "functionZh": "跨平台参数化三维建模工具，可通过带约束的二维草图建立模型，调整尺寸参数，并从三维模型生成工程图。",
+      "reasonZh": "适合设计零件、产品原型和学习 CAD；近期仍有工程图修复提交。提供稳定版安装包，参数建模有学习门槛，正式制造前需核对尺寸与导出结果。",
+      "audience": "机械设计、三维打印与工程学习者"
+    },
+    {
+      "name": "audacity/audacity",
+      "url": "https://github.com/audacity/audacity",
+      "stars": 18831,
+      "weeklyGain": null,
+      "functionZh": "跨平台多轨音频编辑与录音软件，可用于录制声音、编排多段音轨和编辑音频素材。",
+      "reasonZh": "适合录制口述、访谈、播客和整理音频；近期仍有开发提交。主分支正在进行 Audacity 4 的界面与架构改造，日常使用优先选择官方稳定发行版。",
+      "audience": "播客、录音与音频内容创作者"
+    },
+    {
+      "name": "rclone/rclone",
+      "url": "https://github.com/rclone/rclone",
+      "stars": 60541,
+      "weeklyGain": null,
+      "functionZh": "在本机与多种网盘、对象存储之间复制或同步文件和目录，可连接 OneDrive、Google Drive、S3 等存储。",
+      "reasonZh": "适合跨云搬运和自动备份；近期仍修复存储服务行为。它主要通过命令行使用，首次同步应检查方向和删除规则，避免误删目标文件。",
+      "audience": "多网盘用户、备份与系统管理人员"
+    },
+    {
+      "name": "paperless-ngx/paperless-ngx",
+      "url": "https://github.com/paperless-ngx/paperless-ngx",
+      "stars": 47096,
+      "weeklyGain": null,
+      "functionZh": "可自行部署的文档管理系统，把扫描件等纸质资料整理成可搜索的在线档案，提供集中归档与检索界面。",
+      "reasonZh": "适合积累发票、合同和扫描件的个人或团队；近期仍有维护提交，可通过 Docker Compose 部署。敏感资料需使用可信主机并建立备份，文件并非默认加密存储。",
+      "audience": "个人资料归档与小团队文档管理"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-10-23 09:33 北京时间",
   "publishedAtIso": "2026-10-23T01:33:00Z",
   "growthWindow": "2026.10.13—2026.10.18",
