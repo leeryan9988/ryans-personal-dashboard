@@ -1,8 +1,15 @@
 name: Publish global news from official feeds
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/cloud-news-briefing.yml
+      - scripts/translate-news-titles.py
+      - scripts/enrich-news-context.py
   schedule:
-    # GitHub cron is UTC; the 07:00 check publishes if it starts after the 07:50 Beijing cutoff.
+    # GitHub cron is UTC; script repairs can also trigger an immediate missing-date backfill.
+    # The 07:00 check publishes if it starts after the 07:50 Beijing cutoff.
     - cron: '0 23 * * *'
     - cron: '50 23 * * *'
     - cron: '55 23 * * *'
