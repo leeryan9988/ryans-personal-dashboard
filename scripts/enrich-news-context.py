@@ -14,6 +14,7 @@ import json
 import re
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -23,7 +24,11 @@ SECTION = re.compile(r"(?m)^### (\d+)\. (.+)$")
 LINK = re.compile(r"\[阅读原文\]\((https://[^)]+)\)")
 RSS_LEAD = re.compile(r"(?m)^\*\*媒体导语（原文）：\*\* (.+)$")
 ORIGINAL = re.compile(r"(?m)^\*\*原文标题：\*\* (.+)$")
-TRANSLATE_URL = "https://translate.googleapis.com/translate_a/single"
+TRANSLATE_URLS = (
+    "https://translate.googleapis.com/translate_a/single",
+    "https://translate.google.com/translate_a/single",
+)
+DISABLED_TRANSLATION_HOSTS: set[str] = set()
 MAX_SOURCE_CHARS = 360
 MAX_PAGE_BYTES = 400_000
 ALLOWED_HOSTS = (
@@ -163,23 +168,35 @@ def translate(value: str) -> str:
     query = urllib.parse.urlencode({
         "client": "gtx", "sl": "auto", "tl": "zh-CN", "dt": "t", "q": value,
     })
-    request = urllib.request.Request(TRANSLATE_URL + "?" + query, headers={
-        "User-Agent": "Mozilla/5.0 (compatible; RyanNewsBriefing/1.0)",
-    })
-    for attempt in range(3):
-        try:
-            with urllib.request.urlopen(request, timeout=15) as response:
-                payload = json.load(response)
-            result = clean("".join(part[0] or "" for part in payload[0]))
-            if not re.search(r"[\u3400-\u9fff]", result):
-                raise ValueError("Translation did not contain Chinese text")
-            return result
-        except Exception:
-            if attempt == 2:
-                return ""
-            time.sleep(1 + attempt)
+    for endpoint in TRANSLATE_URLS:
+        if endpoint in DISABLED_TRANSLATION_HOSTS:
+            continue
+        request = urllib.request.Request(endpoint + "?" + query, headers={
+            "User-Agent": "Mozilla/5.0 (compatible; RyanNewsBriefing/1.0)",
+        })
+        for attempt in range(2):
+            try:
+                with urllib.request.urlopen(request, timeout=15) as response:
+                    payload = json.load(response)
+                result = clean("".join(part[0] or "" for part in payload[0]))
+                if re.search(r"[\u3400-\u9fff]", result):
+                    return result
+                raise ValueError("Translation response did not contain Chinese text")
+            except urllib.error.HTTPError as error:
+                if error.code == 429:
+                    DISABLED_TRANSLATION_HOSTS.add(endpoint)
+                    print(f"Context translation host rate limited: {urllib.parse.urlparse(endpoint).hostname}", flush=True)
+                    break
+                if attempt:
+                    DISABLED_TRANSLATION_HOSTS.add(endpoint)
+                    break
+                time.sleep(2)
+            except Exception:
+                if attempt:
+                    DISABLED_TRANSLATION_HOSTS.add(endpoint)
+                    break
+                time.sleep(2)
     return ""
-
 
 def section_context(section: str) -> tuple[str, str]:
     title = SECTION.search(section)
@@ -204,6 +221,8 @@ def enrich(section: str, source: str, provenance: str) -> tuple[str, bool]:
     translated = concise_translation(translate(source)) if source else ""
     if translated:
         note = f"**一句话看懂：** {translated}（依据{provenance}机器翻译）"
+    elif source:
+        note = "**内容提示：** 媒体导语可读取，但中文翻译服务暂不可用；请阅读原文。"
     else:
         note = "**内容提示：** 原文或媒体导语暂不可读取，不能仅凭标题可靠概括。"
     link = LINK.search(section)
