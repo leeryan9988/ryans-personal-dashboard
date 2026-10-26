@@ -8,6 +8,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from offline_news_translate import translate_offline
 
 HEADING = re.compile(r"(?m)^### (\d+)\. (.+)$")
 CHINESE = re.compile(r"[\u3400-\u9fff]")
@@ -65,18 +66,50 @@ def translate(title: str) -> str:
                     DISABLED_TRANSLATION_HOSTS.add(endpoint)
                     break
                 time.sleep(2)
+    try:
+        offline = translate_offline(query_title)
+        if CHINESE.search(offline):
+            return offline
+    except Exception as error:
+        print(f"Offline translation unavailable: {type(error).__name__}", flush=True)
     return FALLBACK_PREFIX + title
 
 def main() -> None:
+    if len(sys.argv) != 2:
+        raise SystemExit("Usage: translate-news-titles.py public/news/YYYY-MM-DD.json")
     path = Path(sys.argv[1])
     report = json.loads(path.read_text(encoding="utf-8"))
     content = report["content"]
-    if "**原文标题：**" in content:
-        print("Headlines already translated; leaving report unchanged.")
-        return
     headings = list(HEADING.finditer(content))
     if len(headings) != report["articleCount"]:
         raise ValueError(f"Expected {report['articleCount']} headlines, found {len(headings)}")
+
+    if "**原文标题：**" in content:
+        replacements = {}
+        for index, match in enumerate(headings):
+            if not match.group(2).startswith(FALLBACK_PREFIX):
+                continue
+            section = content[match.start():headings[index + 1].start() if index + 1 < len(headings) else len(content)]
+            original_match = re.search(r"(?m)^\*\*原文标题：\*\* (.+)$", section)
+            if original_match:
+                replacements[match.group(1)] = translate(original_match.group(1).strip())
+        if replacements:
+            content = HEADING.sub(
+                lambda match: f"### {match.group(1)}. {replacements.get(match.group(1), match.group(2))}",
+                content,
+            )
+        fallback_count = sum(match.group(2).startswith(FALLBACK_PREFIX) for match in HEADING.finditer(content))
+        if fallback_count == 0:
+            content = content.replace(
+                "中文标题尽可能由机器翻译生成；翻译服务不可用的条目保留原题并标注。",
+                "中文标题由自动翻译生成。",
+            )
+        report["content"] = content
+        report["translationFallbackCount"] = fallback_count
+        path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(f"Retried {len(replacements)} headlines; {fallback_count} still retain the original.")
+        return
+
     translations = {}
     fallback_count = 0
     for match in headings:
@@ -93,6 +126,7 @@ def main() -> None:
     content = HEADING.sub(replace, content)
     content = content.replace(
         "以下为媒体官方RSS所列原文标题；未生成中文摘要或简析，也未独立核验报道内容。",
+        "中文标题由自动翻译生成，并保留原文标题供对照；未生成中文摘要或简析，也未独立核验报道内容。" if fallback_count == 0 else
         "中文标题尽可能由机器翻译生成；翻译服务不可用的条目保留原题并标注。原文标题供对照；未生成中文摘要或简析，也未独立核验报道内容。",
     )
     if content.count("**原文标题：**") != report["articleCount"]:
@@ -100,7 +134,7 @@ def main() -> None:
     report["content"] = content
     report["translationFallbackCount"] = fallback_count
     path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"Processed {len(headings)} headlines; {fallback_count} retained the original after translation limits.")
+    print(f"Processed {len(headings)} headlines; {fallback_count} retained the original.")
 
 if __name__ == "__main__":
     main()

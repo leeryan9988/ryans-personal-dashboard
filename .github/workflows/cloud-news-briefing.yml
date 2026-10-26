@@ -7,6 +7,8 @@ on:
       - .github/workflows/cloud-news-briefing.yml
       - scripts/translate-news-titles.py
       - scripts/enrich-news-context.py
+      - scripts/cloud-news-feed-only.mjs
+      - scripts/offline_news_translate.py
   schedule:
     # GitHub cron is UTC; script repairs can also trigger an immediate missing-date backfill.
     # The 07:00 check publishes if it starts after the 07:50 Beijing cutoff.
@@ -44,6 +46,8 @@ jobs:
     env:
       MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || github.event.schedule == '0 23 * * *' && 'check' || 'publish' }}
       TARGET_DATE: ${{ inputs.date }}
+      ARGOS_STANZA_AVAILABLE: 'false'
+      ARGOS_CHUNK_TYPE: MINISBD
     steps:
       - uses: actions/checkout@v4
         with:
@@ -63,20 +67,52 @@ jobs:
               echo "Delayed 07:00 preflight reached the cutoff; publishing today's briefing."
             fi
           fi
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            today="$(TZ=Asia/Shanghai date +%F)"
+            report="public/news/$today.json"
+            if [[ -f "$report" ]] && grep -Eq '"translationFallbackCount": [1-9][0-9]*' "$report"; then
+              mode=enrich
+              echo "TARGET_DATE=$today" >> "$GITHUB_ENV"
+              echo "Repairing today's degraded briefing with offline translation."
+            fi
+          fi
           echo "MODE=$mode" >> "$GITHUB_ENV"
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
       - name: Collect distinct reports from official publisher feeds
         if: steps.run_mode.outputs.mode != 'enrich'
         run: node scripts/cloud-news-feed-only.mjs "$MODE"
-      - name: Translate new headlines into Chinese
-        if: steps.run_mode.outputs.mode == 'publish'
+      - name: Recover publisher leads for today's degraded briefing
+        if: steps.run_mode.outputs.mode == 'enrich'
         shell: bash
         run: |
-          if [[ -z "$(git status --porcelain public/news)" ]]; then
+          if [[ "$TARGET_DATE" == "$(TZ=Asia/Shanghai date +%F)" ]]; then
+            node scripts/cloud-news-feed-only.mjs rehydrate
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.run_mode.outputs.mode == 'publish' || steps.run_mode.outputs.mode == 'enrich'
+        with:
+          python-version: '3.12'
+      - name: Install offline English-to-Chinese translation runtime
+        if: steps.run_mode.outputs.mode == 'publish' || steps.run_mode.outputs.mode == 'enrich'
+        run: |
+          python -m pip install --disable-pip-version-check --no-deps argostranslate==1.11.0
+          python -m pip install --disable-pip-version-check ctranslate2==4.8.4 sentencepiece==0.2.2 minisbd==0.9.5 sacremoses==0.1.1 onnxruntime==1.23.2 packaging
+      - name: Translate new and previously untranslated headlines into Chinese
+        if: steps.run_mode.outputs.mode == 'publish' || steps.run_mode.outputs.mode == 'enrich'
+        shell: bash
+        run: |
+          if [[ "$MODE" == publish && -z "$(git status --porcelain public/news)" ]]; then
             echo "No new briefing to translate"
             exit 0
           fi
-          python scripts/translate-news-titles.py "public/news/$(TZ=Asia/Shanghai date +%F).json"
+          if [[ "$MODE" == enrich ]]; then
+            [[ "$TARGET_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "Provide a valid date"; exit 1; }
+            report="public/news/$TARGET_DATE.json"
+          else
+            report="public/news/$(TZ=Asia/Shanghai date +%F).json"
+          fi
+          test -f "$report"
+          python scripts/translate-news-titles.py "$report"
       - name: Add source-based Chinese context
         if: steps.run_mode.outputs.mode == 'publish' || steps.run_mode.outputs.mode == 'enrich'
         shell: bash

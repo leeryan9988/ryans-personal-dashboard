@@ -18,6 +18,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from offline_news_translate import translate_offline
 
 
 SECTION = re.compile(r"(?m)^### (\d+)\. (.+)$")
@@ -196,7 +197,11 @@ def translate(value: str) -> str:
                     DISABLED_TRANSLATION_HOSTS.add(endpoint)
                     break
                 time.sleep(2)
-    return ""
+    try:
+        return translate_offline(value)
+    except Exception as error:
+        print(f"Offline context translation unavailable: {type(error).__name__}", flush=True)
+        return ""
 
 def section_context(section: str) -> tuple[str, str]:
     title = SECTION.search(section)
@@ -216,8 +221,9 @@ def section_context(section: str) -> tuple[str, str]:
 
 def enrich(section: str, source: str, provenance: str) -> tuple[str, bool]:
     section = RSS_LEAD.sub("", section)
-    if "**一句话看懂：**" in section or "**内容提示：**" in section:
-        return section, "**一句话看懂：**" in section
+    section = re.sub(r"(?m)^\*\*内容提示：\*\*[^\n]*\n?", "", section)
+    if "**一句话看懂：**" in section:
+        return section, True
     translated = concise_translation(translate(source)) if source else ""
     if translated:
         note = f"**一句话看懂：** {translated}（依据{provenance}机器翻译）"
@@ -251,6 +257,11 @@ def main() -> None:
                 for i, match in enumerate(matches)]
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         sources = list(pool.map(section_context, sections))
+    # Initialize the local model once before concurrent translations.
+    try:
+        translate_offline("news update")
+    except Exception as error:
+        print(f"Offline model unavailable: {type(error).__name__}", flush=True)
     complete = []
     covered = 0
     for i, (section, (source, provenance)) in enumerate(zip(sections, sources), 1):

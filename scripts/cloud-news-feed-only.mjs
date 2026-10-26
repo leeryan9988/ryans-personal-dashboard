@@ -2,7 +2,7 @@ import { access, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const mode = process.argv[2] ?? 'check';
-if (!['check', 'publish'].includes(mode)) throw new Error('Usage: node scripts/cloud-news-feed-only.mjs check|publish');
+if (!['check', 'publish', 'rehydrate'].includes(mode)) throw new Error('Usage: node scripts/cloud-news-feed-only.mjs check|publish|rehydrate');
 const root = process.cwd();
 const now = new Date();
 const date = beijingDate(now);
@@ -11,8 +11,9 @@ const index = JSON.parse(await readFile(indexPath, 'utf8'));
 if (!Array.isArray(index) || !index[0]?.date || !index[0]?.file) throw new Error('Invalid news index.');
 
 const previousDate = new Date(Date.parse(`${date}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
-const windowEnd = mode === 'check' ? now.toISOString() : `${date}T07:50:00+08:00`;
-const windowStart = mode === 'check' ? new Date(now.getTime() - 86_400_000).toISOString() : index[0].windowEnd;
+const windowEnd = mode === 'check' ? now.toISOString() : mode === 'rehydrate' ? index[0].windowEnd : `${date}T07:50:00+08:00`;
+const windowStart = mode === 'check' ? new Date(now.getTime() - 86_400_000).toISOString() : mode === 'rehydrate' ? index[0].windowStart : index[0].windowEnd;
+if (mode === 'rehydrate' && (index[0].date !== date || !windowStart || !windowEnd)) throw new Error('Only the current dated briefing can recover its original leads.');
 if (mode === 'publish') {
   if (index[0].date === date) { console.log(`${date} already published; no overwrite.`); process.exit(0); }
   if (index[0].date !== previousDate || !windowStart) throw new Error(`Date gap or missing prior cutoff: ${index[0].date}.`);
@@ -20,7 +21,7 @@ if (mode === 'publish') {
   if (Date.parse(windowStart) >= Date.parse(windowEnd)) throw new Error('Invalid news window.');
 }
 
-const previous = JSON.parse(await readFile(join(root, 'public/news', index[0].file), 'utf8'));
+const previous = JSON.parse(await readFile(join(root, 'public/news', mode === 'rehydrate' ? index[1].file : index[0].file), 'utf8'));
 const previousLinks = new Set([...previous.content.matchAll(/\[阅读原文\]\((https?:\/\/[^)]+)\)/g)].map(m => cleanUrl(m[1])));
 const feeds = [
   ['BBC', 'https://feeds.bbci.co.uk/news/world/rss.xml', /(^|\.)bbc\.(com|co\.uk)$/],
@@ -69,6 +70,24 @@ const ranked = [...byUrl.values()].filter(item => !excluded(item))
 const selected = dedupeStories(ranked);
 console.log(`Candidates: ${byUrl.size} unique links; ${selected.length} after topic and event deduplication.`);
 if (mode === 'check') process.exit(selected.length > 0 ? 0 : 1);
+if (mode === 'rehydrate') {
+  const reportPath = join(root, 'public/news', `${date}.json`);
+  const report = JSON.parse(await readFile(reportPath, 'utf8'));
+  if (report.date !== date || report.articleCount <= 0) throw new Error('Current briefing is missing or invalid.');
+  let recovered = 0;
+  report.content = report.content.split(/(?=^###\s+\d+\.\s)/m).map((section, index) => {
+    if (index === 0 || section.includes('**媒体导语（原文）：**')) return section;
+    const url = /\[阅读原文\]\((https?:\/\/[^)]+)\)/.exec(section)?.[1];
+    const originalLine = /^\*\*原文标题：\*\* .+$/m.exec(section)?.[0];
+    const item = url ? byUrl.get(cleanUrl(url)) : null;
+    if (!originalLine || !item?.description || item.description.length < 45 || item.description === item.title) return section;
+    recovered++;
+    return section.replace(originalLine, `${originalLine}\n\n**媒体导语（原文）：** ${escape(item.description)}`);
+  }).join('');
+  if (recovered) await writeFile(reportPath, JSON.stringify(report, null, 2) + '\n');
+  console.log(`Recovered ${recovered}/${report.articleCount} publisher leads for ${date}; existing links and article count were preserved.`);
+  process.exit(0);
+}
 if (selected.length === 0) throw new Error('No dated feed reports; existing briefing unchanged.');
 
 const items = selected;
