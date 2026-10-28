@@ -21,6 +21,107 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-10-28 08:00:05 北京时间",
+  "publishedAtIso": "2026-10-28T00:00:05Z",
+  "growthWindow": "2026.10.20—2026.10.25（OpenGithubs 周榜）；2026.10.28 Trending 日榜仅作热度参考，日增量不作周增量",
+  "risingSource": "https://github.com/OpenGithubs/github-weekly-rank/blob/0c3c92347fad09a8ba034f6cd55015f0080e0590/README.md",
+  "rising": [
+    {
+      "name": "gitroomhq/postiz-app",
+      "url": "https://github.com/gitroomhq/postiz-app",
+      "stars": 39347,
+      "weeklyGain": null,
+      "functionZh": "社交媒体内容管理平台，可安排多平台发帖、自动化发布流程并分析内容表现，提供自建版和托管服务。",
+      "reasonZh": "适合集中管理海外内容渠道；近期仍有安全修复。自建部署需配置各平台授权，不能据此认定支持微信公众号或小红书，使用前应核对平台接口和部署版本。",
+      "audience": "内容创作者、社媒运营与自动化团队"
+    },
+    {
+      "name": "HKUDS/DeepTutor",
+      "url": "https://github.com/HKUDS/DeepTutor",
+      "stars": 45826,
+      "weeklyGain": null,
+      "functionZh": "可自建的 AI 学习工作区，把资料知识库、问答、练习题、引导学习、阅读与可视化串成同一套学习流程。",
+      "reasonZh": "适合围绕自己的教材建立学习辅助系统；近期发布了学习路径和恢复能力更新。需配置模型服务，部分功能还需检索或嵌入服务，生成答案应对照原资料复核。",
+      "audience": "自主学习者、教师与教育应用开发者"
+    },
+    {
+      "name": "Nutlope/hallmark",
+      "url": "https://github.com/Nutlope/hallmark",
+      "stars": 38948,
+      "weeklyGain": null,
+      "functionZh": "供 Codex、Claude Code 等编程智能体使用的网页设计技能，包含主题、页面改版与审计流程，并在浏览器检查布局和可用性。",
+      "reasonZh": "适合改善 AI 生成页面的重复模板感；近期仍有主题与修复更新。它提供设计指令和检查流程，最终效果仍需结合真实内容与项目功能验收。",
+      "audience": "使用编程智能体制作网站的开发者与设计者"
+    },
+    {
+      "name": "HeyPuter/everything",
+      "url": "https://github.com/HeyPuter/everything",
+      "stars": 4396,
+      "weeklyGain": 1781,
+      "functionZh": "集中开发多个开源网页应用，涵盖文档、表格、协作、创作等领域，部分应用附在线演示和独立源码入口。",
+      "reasonZh": "适合寻找可运行原型或学习完整应用实现；近期仍更新表格功能。各应用成熟度不同，不能把整体目标当成已具备商业软件的全部能力，试用前需核对具体子项目。",
+      "audience": "开源办公工具探索者与网页应用开发者"
+    },
+    {
+      "name": "ly05010419/MacNativeGames",
+      "url": "https://github.com/ly05010419/MacNativeGames",
+      "stars": 6028,
+      "weeklyGain": 2416,
+      "functionZh": "研究在 Apple 芯片设备上直接运行自备 Switch 游戏 ARM64 代码，并将 NVN 图形接口映射到 Metal，提供实验与构建记录。",
+      "reasonZh": "适合研究游戏图形兼容与移植；近期持续补充着色器兼容记录。项目不包含游戏内容，需自备游戏及设备导出的文件，不同游戏和系统版本的支持程度不同。",
+      "audience": "Apple 芯片用户与游戏兼容技术研究者"
+    }
+  ],
+  "established": [
+    {
+      "name": "darktable-org/darktable",
+      "url": "https://github.com/darktable-org/darktable",
+      "stars": 13345,
+      "weeklyGain": null,
+      "functionZh": "开源摄影工作流与非破坏性 RAW 处理工具，可管理数码底片、调整影像并导出成片，原始文件可保留。",
+      "reasonZh": "适合系统学习摄影后期和批量处理照片；近期仍有维护提交，提供 Windows 等平台版本。操作方式有学习门槛，速度取决于硬件与所用处理模块。",
+      "audience": "摄影爱好者、人像拍摄与 RAW 后期用户"
+    },
+    {
+      "name": "HandBrake/HandBrake",
+      "url": "https://github.com/HandBrake/HandBrake",
+      "stars": 24805,
+      "weeklyGain": null,
+      "functionZh": "跨平台视频转码工具，把已有视频转换为 MP4、MKV 或 WebM 等格式，便于在电脑、手机、电视及网页播放。",
+      "reasonZh": "适合整理手机视频、录屏和交付素材；近期仍改进 Windows 界面。转码画质、体积和耗时存在取舍，建议保留原片再选择参数。",
+      "audience": "视频创作者与个人影像管理用户"
+    },
+    {
+      "name": "ankitects/anki",
+      "url": "https://github.com/ankitects/anki",
+      "stars": 32342,
+      "weeklyGain": null,
+      "functionZh": "采用间隔重复方法的记忆卡片程序，按复习计划反复呈现学习内容，仓库提供桌面版源码与开发说明。",
+      "reasonZh": "适合长期记忆词汇、知识点和面试材料；近期仍更新依赖。复习效果依赖卡片质量和持续使用，应把复杂知识拆成清晰、可检验的小问题。",
+      "audience": "语言学习者、考试备考与面试练习者"
+    },
+    {
+      "name": "laurent22/joplin",
+      "url": "https://github.com/laurent22/joplin",
+      "stars": 56908,
+      "weeklyGain": null,
+      "functionZh": "以本地优先方式保存 Markdown 笔记和待办，支持笔记本、标签、全文搜索、网页剪藏及多设备同步，可启用端到端加密。",
+      "reasonZh": "适合建立个人笔记系统并在 Windows 和手机间使用；近期仍有维护提交。需自行选择同步服务并配置加密与备份，云服务费用取决于所选方案。",
+      "audience": "个人知识管理与跨设备笔记用户"
+    },
+    {
+      "name": "qbittorrent/qBittorrent",
+      "url": "https://github.com/qbittorrent/qBittorrent",
+      "stars": 41168,
+      "weeklyGain": null,
+      "functionZh": "基于 Qt 和 libtorrent 的开源 BitTorrent 客户端，用于管理种子下载与文件分享，提供图形界面和多语言支持。",
+      "reasonZh": "适合分发或下载获授权的大型文件；近期仍维护构建流程。实际速度取决于可用节点与网络，应从官方渠道获取程序并核对来源。",
+      "audience": "需要 BitTorrent 文件传输的个人与技术用户"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-10-26 08:06:56 北京时间",
   "publishedAtIso": "2026-10-26T08:06:56+08:00",
   "growthWindow": "2026.10.20—2026.10.25（OpenGithubs 周榜统计区间）",
