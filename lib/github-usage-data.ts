@@ -21,6 +21,107 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-10-30 08:03:54 北京时间",
+  "publishedAtIso": "2026-10-30T00:03:54Z",
+  "growthWindow": "2026.10.20—2026.10.25（OpenGithubs 最新可用周榜）；2026.10.30 Trending 日榜仅作热度参考，日增量不作周增量",
+  "risingSource": "https://github.com/OpenGithubs/github-weekly-rank/blob/0c3c92347fad09a8ba034f6cd55015f0080e0590/README.md",
+  "rising": [
+    {
+      "name": "pbakaus/impeccable",
+      "url": "https://github.com/pbakaus/impeccable",
+      "stars": 95269,
+      "weeklyGain": null,
+      "functionZh": "供 Codex 等编程智能体使用的界面设计技能，提供布局、排版、打磨、审计等命令，并用确定性规则检查常见设计问题。",
+      "reasonZh": "适合对已有网页逐块改进；近期仍有修复提交。技能能给出设计方向和检查结果，不能替代真实设备上的功能与可用性验收。",
+      "audience": "使用编程智能体制作网页的开发者与设计者"
+    },
+    {
+      "name": "JetBrains/thinkrail",
+      "url": "https://github.com/JetBrains/thinkrail",
+      "stars": 5988,
+      "weeklyGain": null,
+      "functionZh": "JetBrains 孵化中的智能体 IDE，围绕 pi 提供编辑器、终端、独立工作区、Git 变更审阅及随项目维护的规格文档。",
+      "reasonZh": "适合希望在图形界面组织智能体开发任务的人；近期持续开发。项目仍处孵化阶段，模型服务与凭据需自行配置，应先用小项目评估稳定性。",
+      "audience": "AI 辅助开发与项目维护人员"
+    },
+    {
+      "name": "nightly-labs/openbot",
+      "url": "https://github.com/nightly-labs/openbot",
+      "stars": 3859,
+      "weeklyGain": null,
+      "functionZh": "本地优先的桌面智能体工作区，为 Codex、Claude 等工具提供独立会话、任务队列、文件交换、内置浏览器和智能体间通信。",
+      "reasonZh": "适合管理多个持续工作的助手；近期仍有更新，提供 Windows 安装包。当前是开发预览，智能体可在较高权限下执行操作，许可也有非商业限制，试用前需认真核对。",
+      "audience": "多智能体工作流探索者与开发者"
+    },
+    {
+      "name": "Donchitos/Claude-Code-Game-Studios",
+      "url": "https://github.com/Donchitos/Claude-Code-Game-Studios",
+      "stars": 29148,
+      "weeklyGain": null,
+      "functionZh": "为 Claude Code 配置游戏工作室式分工，包含设计、程序、美术、音频和测试等角色，以及从策划到交付的技能、模板和检查流程。",
+      "reasonZh": "适合独立游戏开发者参考如何组织 AI 协作；近期发布了流程重构版本。它是工作流配置，需要配合实际引擎、素材和测试，不能保证自动完成或交付游戏。",
+      "audience": "独立游戏开发者与 AI 协作流程研究者"
+    },
+    {
+      "name": "hypit-ai/hypit",
+      "url": "https://github.com/hypit-ai/hypit",
+      "stars": 26493,
+      "weeklyGain": 2341,
+      "functionZh": "让编程智能体用可编辑工作流制作视频，可从文字或模板开始，编排字幕、素材、动态图形和效果，并渲染成片。",
+      "reasonZh": "适合尝试可重复的视频制作流程；近期仍有维护记录。生成模型是可选项，智能体及外部模型服务可能收费；参考素材和人物形象应取得相应授权，不应把宣传播放量当效果保证。",
+      "audience": "视频创作者、营销素材制作与自动化开发者"
+    }
+  ],
+  "established": [
+    {
+      "name": "blender/blender",
+      "url": "https://github.com/blender/blender",
+      "stars": 21420,
+      "weeklyGain": null,
+      "functionZh": "免费的三维创作套件，覆盖建模、骨骼绑定、动画、模拟、渲染、合成、运动跟踪和视频编辑等流程。",
+      "reasonZh": "适合制作三维作品、产品展示和动画；官方 GitHub 镜像近期仍同步开发提交。功能广、学习成本较高，建议从单个小作品入门并优先使用稳定版。",
+      "audience": "三维设计、动画与视觉内容创作者"
+    },
+    {
+      "name": "gchq/CyberChef",
+      "url": "https://github.com/gchq/CyberChef",
+      "stars": 36250,
+      "weeklyGain": null,
+      "functionZh": "在浏览器中通过拖放步骤处理文本和文件，支持编码转换、哈希校验、压缩解压及多种数据解析，并可保存处理配方。",
+      "reasonZh": "适合查看编码内容、转换数据和复用处理步骤；近期仍更新依赖。可自行部署，敏感数据应在可信环境处理，加密操作也需使用正确的算法和参数。",
+      "audience": "开发者、数据整理与技术分析人员"
+    },
+    {
+      "name": "ShareX/ShareX",
+      "url": "https://github.com/ShareX/ShareX",
+      "stars": 40510,
+      "weeklyGain": null,
+      "functionZh": "Windows 截图、录屏和文件分享工具，支持滚动截图、标注、GIF、OCR、颜色拾取以及按快捷键执行的捕获后处理流程。",
+      "reasonZh": "适合写教程、反馈问题和录制短演示；近期仍改进界面。可只保存到本地，启用自动上传前应核对目标服务及截图中的隐私信息。",
+      "audience": "Windows 用户、内容作者与技术支持人员"
+    },
+    {
+      "name": "actualbudget/actual",
+      "url": "https://github.com/actualbudget/actual",
+      "stars": 29862,
+      "weeklyGain": null,
+      "functionZh": "本地优先的个人预算工具，支持记账、信封预算法和跨设备同步，可使用桌面应用、自建服务或第三方托管。",
+      "reasonZh": "适合整理家庭收支和持续跟踪预算；近期仍修复交互问题。开源应用本身免费，选择托管服务仍可能收费，记账资料需要备份。",
+      "audience": "个人与家庭预算管理用户"
+    },
+    {
+      "name": "ente/ente",
+      "url": "https://github.com/ente/ente",
+      "stars": 29746,
+      "weeklyGain": null,
+      "functionZh": "提供端到端加密的跨平台应用与服务源码，包括照片备份管理、两步验证器和重要资料保管工具，也支持自建部署。",
+      "reasonZh": "适合重视照片和账号资料隐私、需要跨设备使用的人；近期仍改进照片命令行功能。各产品收费与额度不同，云照片服务和自建运维都应提前评估成本及恢复方式。",
+      "audience": "照片备份、两步验证与隐私管理用户"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-10-28 08:00:05 北京时间",
   "publishedAtIso": "2026-10-28T00:00:05Z",
   "growthWindow": "2026.10.20—2026.10.25（OpenGithubs 周榜）；2026.10.28 Trending 日榜仅作热度参考，日增量不作周增量",
