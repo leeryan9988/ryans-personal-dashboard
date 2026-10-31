@@ -2635,6 +2635,16 @@ function WeeklyReflectionPanel({
   );
 }
 
+function ImageOrderButtons({ index, length, move }: { index: number; length: number; move: (from: number, to: number) => void }) {
+  return <div className="grid grid-cols-4 gap-1 p-1">{[[-2, '↑', '上移'], [-1, '←', '左移'], [1, '→', '右移'], [2, '↓', '下移']].map(([offset, label, name]) => {
+    const to = index + Number(offset);
+    return <button key={String(name)} type="button" aria-label={`图片${index + 1}${name}`} disabled={to < 0 || to >= length || (offset === -1 && index % 2 === 0) || (offset === 1 && index % 2 === 1)} onClick={() => move(index, to)} className="rounded border border-[#c8d9eb] bg-white px-1 py-1 text-sm text-[#174578] disabled:opacity-30">{label}</button>;
+  })}</div>;
+}
+function moveImage<T>(items: T[], from: number, to: number): T[] {
+  const result = [...items]; const [item] = result.splice(from, 1); result.splice(to, 0, item); return result;
+}
+
 function PlanAndReflectionView({
   notes,
   searchQuery,
@@ -2782,7 +2792,7 @@ function PlanAndReflectionView({
                 <div key={`${file.name}-${file.lastModified}-${index}`} className="relative overflow-hidden rounded-xl border border-[#d7e3ef] bg-white">
                   <img src={previewUrls[index]} alt={`待上传图片 ${index + 1}`} className="aspect-square w-full object-cover" />
                   <button type="button" aria-label={`移除 ${file.name}`} onClick={() => setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))} className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-full bg-[#102a43]/75 text-white"><X className="size-4" /></button>
-                  <p className="truncate px-2 py-1.5 text-[11px] text-[#607184]" title={file.name}>{file.name}</p>
+                  <p className="truncate px-2 py-1.5 text-[11px] text-[#607184]" title={file.name}>{file.name}</p><ImageOrderButtons index={index} length={files.length} move={(from, to) => setFiles((current) => moveImage(current, from, to))} />
                 </div>
               ))}
             </div>
@@ -2800,7 +2810,7 @@ function PlanAndReflectionView({
         ))}
         {filteredNotes.length === 0 && <div className="col-span-full rounded-2xl border border-dashed border-[#b9cbe0] bg-white/60 p-10 text-center text-sm text-[#718078]">{searchQuery.trim() ? '没有找到匹配的计划和感悟记录' : '还没有计划和感悟记录'}</div>}
       </section>
-      {managingNote && <PlanNoteManagerDialog note={managingNote} session={session} close={() => setManagingNote(null)} onSaved={onSaved} />}
+      {managingNote && <PlanNoteManagerDialog note={managingNote} imageUrls={imageUrls} session={session} close={() => setManagingNote(null)} onSaved={onSaved} />}
     </>
   );
 }
@@ -2893,15 +2903,18 @@ function PlanNoteCard({
 
 function PlanNoteManagerDialog({
   note,
+  imageUrls,
   session,
   close,
   onSaved,
 }: {
   note: PlanNote;
+  imageUrls: Record<string, string>;
   session: Session | null;
   close: () => void;
   onSaved: () => Promise<void>;
 }) {
+  const [imagePaths, setImagePaths] = useState(() => [...note.imagePaths]);
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
   const [category, setCategory] = useState(note.category || '未分类');
@@ -2921,7 +2934,7 @@ function PlanNoteManagerDialog({
     setIsSaving(true);
     setMessage('');
     try {
-      const { error } = await client.from('plan_notes').update({ title: title.trim(), content: content.trim(), category }).eq('id', note.id);
+      const { error } = await client.from('plan_notes').update({ title: title.trim(), content: content.trim(), category, image_paths: imagePaths }).eq('id', note.id);
       if (error) {
         setMessage(`保存失败：${error.message}`);
         return;
@@ -2971,6 +2984,7 @@ function PlanNoteManagerDialog({
           <label className="block text-sm"><span className="mb-1.5 block font-medium">标题</span><input value={title} onChange={(event) => setTitle(event.target.value)} className="h-10 w-full rounded-xl border border-[#d7e3ef] px-3" /></label>
           <ChoicePicker name="managedCategory" label="归类" options={['未分类', '工作', '副业', '身体', '财务', '读书', '生活', '灵感']} value={category} onChange={setCategory} />
           <label className="block text-sm"><span className="mb-1.5 block font-medium">正文</span><textarea value={content} onChange={(event) => setContent(event.target.value)} rows={7} className="w-full resize-y rounded-xl border border-[#d7e3ef] p-3" /></label>
+          {imagePaths.length > 0 && <div><p className="mb-2 text-sm font-medium">调整图片顺序</p><div className="grid grid-cols-2 gap-2">{imagePaths.map((path, index) => <div key={path} className="overflow-hidden rounded-xl border border-[#d7e3ef]">{imageUrls[path] && <img src={imageUrls[path]} alt={`图片 ${index + 1}`} className="aspect-square w-full object-cover" />}<ImageOrderButtons index={index} length={imagePaths.length} move={(from, to) => setImagePaths((current) => moveImage(current, from, to))} /></div>)}</div></div>}
           {message && <p role="status" className={`rounded-xl px-4 py-3 text-sm ${confirmDelete ? 'bg-[#fff3f3] text-[#a13b3b]' : 'bg-[#eef4f9] text-[#36536f]'}`}>{message}</p>}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
             <button type="button" disabled={isSaving} onClick={() => void deleteNote()} className="rounded-xl border border-[#efc6c6] px-4 py-2 text-sm font-medium text-[#a13b3b] disabled:opacity-60">{confirmDelete ? '确认删除' : '删除记录'}</button>
