@@ -2787,7 +2787,7 @@ function PlanAndReflectionView({
             <label className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#b9cbe0] bg-white px-4 py-2 text-sm text-[#174578]"><ImagePlus className="size-4" />选择图片<input type="file" accept="image/*" multiple className="hidden" onChange={(event) => { addImages(Array.from(event.target.files ?? [])); event.target.value = ''; }} /></label>
           </div>
           {files.length > 0 && (
-            <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[#dce7f1] pt-4 sm:grid-cols-4">
+            <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[#dce7f1] pt-4">
               {files.map((file, index) => (
                 <div key={`${file.name}-${file.lastModified}-${index}`} className="relative overflow-hidden rounded-xl border border-[#d7e3ef] bg-white">
                   <img src={previewUrls[index]} alt={`待上传图片 ${index + 1}`} className="aspect-square w-full object-cover" />
