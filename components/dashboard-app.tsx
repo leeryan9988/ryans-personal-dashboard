@@ -38,7 +38,7 @@ import {
   WalletCards,
   X,
 } from 'lucide-react';
-import { type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type SyntheticEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Session } from '@supabase/supabase-js';
 import {
@@ -2635,11 +2635,38 @@ function WeeklyReflectionPanel({
   );
 }
 
-function ImageOrderButtons({ index, length, move }: { index: number; length: number; move: (from: number, to: number) => void }) {
-  return <div className="grid grid-cols-4 gap-1 p-1">{[[-2, '↑', '上移'], [-1, '←', '左移'], [1, '→', '右移'], [2, '↓', '下移']].map(([offset, label, name]) => {
-    const to = index + Number(offset);
-    return <button key={String(name)} type="button" aria-label={`图片${index + 1}${name}`} disabled={to < 0 || to >= length || (offset === -1 && index % 2 === 0) || (offset === 1 && index % 2 === 1)} onClick={() => move(index, to)} className="rounded border border-[#c8d9eb] bg-white px-1 py-1 text-sm text-[#174578] disabled:opacity-30">{label}</button>;
-  })}</div>;
+function DraggablePlanImage({ index, group, move, children }: { index: number; group: string; move: (from: number, to: number) => void; children: ReactNode }) {
+  const start = useRef<{ x: number; y: number; pointerId: number } | null>(null);
+  const [offset, setOffset] = useState<{ x: number; y: number } | null>(null);
+  return <div data-plan-image-group={group} data-plan-image-index={index}
+    className="relative rounded-xl border border-[#d7e3ef] bg-white select-none touch-none cursor-grab active:cursor-grabbing"
+    style={offset ? { transform: `translate(${offset.x}px, ${offset.y}px)`, zIndex: 20, opacity: 0.8 } : undefined}
+    onPointerDown={(event) => {
+      if ((event.target as HTMLElement).closest('button') || event.button !== 0) return;
+      start.current = { x: event.clientX, y: event.clientY, pointerId: event.pointerId };
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }}
+    onPointerMove={(event) => {
+      const origin = start.current;
+      if (!origin || origin.pointerId !== event.pointerId) return;
+      const x = event.clientX - origin.x, y = event.clientY - origin.y;
+      if (Math.hypot(x, y) > 5) setOffset({ x, y });
+    }}
+    onPointerUp={(event) => {
+      const origin = start.current;
+      if (origin && Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > 5) {
+        const target = document.elementsFromPoint(event.clientX, event.clientY)
+          .map((element) => element.closest<HTMLElement>('[data-plan-image-group]'))
+          .find((element) => element && element !== event.currentTarget && element.dataset.planImageGroup === group);
+        const destination = Number(target?.dataset.planImageIndex);
+        if (target && Number.isInteger(destination) && destination !== index) move(index, destination);
+      }
+      start.current = null;
+      setOffset(null);
+    }}
+    onPointerCancel={() => { start.current = null; setOffset(null); }}>
+    {children}
+  </div>;
 }
 function moveImage<T>(items: T[], from: number, to: number): T[] {
   const result = [...items]; const [item] = result.splice(from, 1); result.splice(to, 0, item); return result;
@@ -2782,18 +2809,18 @@ function PlanAndReflectionView({
           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div className="flex items-center gap-3">
               <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#e5eef8] text-[#174578]"><ImagePlus className="size-5" /></div>
-              <div><p className="text-sm font-medium text-[#17324d]">把图片直接拖到这里</p><p className="mt-0.5 text-xs text-[#607184]">也可以复制图片后按 Ctrl + V，最多 4 张、单张 5MB</p></div>
+              <div><p className="text-sm font-medium text-[#17324d]">把图片直接拖到这里</p><p className="mt-0.5 text-xs text-[#607184]">也可以复制图片后按 Ctrl + V，最多 4 张、单张 5MB；按住图片拖动排序</p></div>
             </div>
             <label className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#b9cbe0] bg-white px-4 py-2 text-sm text-[#174578]"><ImagePlus className="size-4" />选择图片<input type="file" accept="image/*" multiple className="hidden" onChange={(event) => { addImages(Array.from(event.target.files ?? [])); event.target.value = ''; }} /></label>
           </div>
           {files.length > 0 && (
             <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[#dce7f1] pt-4">
               {files.map((file, index) => (
-                <div key={`${file.name}-${file.lastModified}-${index}`} className="relative overflow-hidden rounded-xl border border-[#d7e3ef] bg-white">
-                  <img src={previewUrls[index]} alt={`待上传图片 ${index + 1}`} className="aspect-square w-full object-cover" />
+                <DraggablePlanImage key={`${file.name}-${file.lastModified}-${index}`} index={index} group="draft" move={(from, to) => setFiles((current) => moveImage(current, from, to))}>
+                  <img draggable={false} src={previewUrls[index]} alt={`待上传图片 ${index + 1}`} className="aspect-square w-full object-cover" />
                   <button type="button" aria-label={`移除 ${file.name}`} onClick={() => setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))} className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-full bg-[#102a43]/75 text-white"><X className="size-4" /></button>
-                  <p className="truncate px-2 py-1.5 text-[11px] text-[#607184]" title={file.name}>{file.name}</p><ImageOrderButtons index={index} length={files.length} move={(from, to) => setFiles((current) => moveImage(current, from, to))} />
-                </div>
+                  <p className="truncate px-2 py-1.5 text-[11px] text-[#607184]" title={file.name}>{file.name}</p>
+                </DraggablePlanImage>
               ))}
             </div>
           )}
@@ -2984,7 +3011,7 @@ function PlanNoteManagerDialog({
           <label className="block text-sm"><span className="mb-1.5 block font-medium">标题</span><input value={title} onChange={(event) => setTitle(event.target.value)} className="h-10 w-full rounded-xl border border-[#d7e3ef] px-3" /></label>
           <ChoicePicker name="managedCategory" label="归类" options={['未分类', '工作', '副业', '身体', '财务', '读书', '生活', '灵感']} value={category} onChange={setCategory} />
           <label className="block text-sm"><span className="mb-1.5 block font-medium">正文</span><textarea value={content} onChange={(event) => setContent(event.target.value)} rows={7} className="w-full resize-y rounded-xl border border-[#d7e3ef] p-3" /></label>
-          {imagePaths.length > 0 && <div><p className="mb-2 text-sm font-medium">调整图片顺序</p><div className="grid grid-cols-2 gap-2">{imagePaths.map((path, index) => <div key={path} className="overflow-hidden rounded-xl border border-[#d7e3ef]">{imageUrls[path] && <img src={imageUrls[path]} alt={`图片 ${index + 1}`} className="aspect-square w-full object-cover" />}<ImageOrderButtons index={index} length={imagePaths.length} move={(from, to) => setImagePaths((current) => moveImage(current, from, to))} /></div>)}</div></div>}
+          {imagePaths.length > 0 && <div><p className="mb-2 text-sm font-medium">按住图片拖动调整顺序</p><div className="grid grid-cols-2 gap-2">{imagePaths.map((path, index) => <DraggablePlanImage key={path} index={index} group="saved" move={(from, to) => setImagePaths((current) => moveImage(current, from, to))}>{imageUrls[path] && <img draggable={false} src={imageUrls[path]} alt={`图片 ${index + 1}`} className="aspect-square w-full object-cover" />}</DraggablePlanImage>)}</div></div>}
           {message && <p role="status" className={`rounded-xl px-4 py-3 text-sm ${confirmDelete ? 'bg-[#fff3f3] text-[#a13b3b]' : 'bg-[#eef4f9] text-[#36536f]'}`}>{message}</p>}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
             <button type="button" disabled={isSaving} onClick={() => void deleteNote()} className="rounded-xl border border-[#efc6c6] px-4 py-2 text-sm font-medium text-[#a13b3b] disabled:opacity-60">{confirmDelete ? '确认删除' : '删除记录'}</button>
