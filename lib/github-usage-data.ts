@@ -21,6 +21,107 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-11-02 08:00:06 北京时间",
+  "publishedAtIso": "2026-11-02T00:00:06Z",
+  "growthWindow": "2026.11.02 Trending 日榜热度参考；OpenGithubs 最新可用周榜仍为 2026.10.20—2026.10.25，未获得本期可靠周增量，均为 null",
+  "risingSource": "https://github.com/trending",
+  "rising": [
+    {
+      "name": "cjpais/Handy",
+      "url": "https://github.com/cjpais/Handy",
+      "stars": 36519,
+      "weeklyGain": null,
+      "functionZh": "跨平台离线语音转文字工具，按快捷键录音后在本机识别，再把文字输入当前应用，支持 Whisper 等模型。",
+      "reasonZh": "适合口述笔记、长文本和面试回答草稿；近期仍修复平台兼容问题。需要麦克风及相关系统权限，准确度和速度受模型、语言与硬件影响；它提供转写，不等于双向语音对话。",
+      "audience": "经常口述输入的 Windows、macOS 与 Linux 用户"
+    },
+    {
+      "name": "lightpanda-io/browser",
+      "url": "https://github.com/lightpanda-io/browser",
+      "stars": 40088,
+      "weeklyGain": null,
+      "functionZh": "面向 AI 和自动化的无头浏览器，可执行网页脚本、提取内容，并通过 CDP 与自动化客户端连接。",
+      "reasonZh": "适合研究网页自动化与内容提取；近期仍有代码维护。Windows 需通过 WSL 使用，网页兼容性应实测；项目方的性能基准不能代表所有网站。",
+      "audience": "网页自动化、智能体与数据采集开发者"
+    },
+    {
+      "name": "thedotmack/claude-mem",
+      "url": "https://github.com/thedotmack/claude-mem",
+      "stars": 109203,
+      "weeklyGain": null,
+      "functionZh": "自动记录编程智能体会话中的工作观察，压缩并保存为可检索记忆，在后续会话中按需恢复项目上下文。",
+      "reasonZh": "适合希望减少跨会话重复说明的人；近期仍有维护。需核对所用工具的集成方式、模型费用和保存范围，不能把项目宣传的额度节省比例当保证。",
+      "audience": "长期使用编程智能体的个人与开发团队"
+    },
+    {
+      "name": "kornia/kornia",
+      "url": "https://github.com/kornia/kornia",
+      "stars": 11772,
+      "weeklyGain": null,
+      "functionZh": "基于 PyTorch 的可微分计算机视觉库，提供图像变换、数据增强、几何视觉和批处理能力，并可使用 GPU 加速。",
+      "reasonZh": "适合把图像处理步骤接入训练和推理流程；近期仍修复几何算法。它是 Python 开发库，需要编程基础，并非直接安装即可修图的桌面软件。",
+      "audience": "计算机视觉、影像算法与 AI 开发者"
+    },
+    {
+      "name": "hyprwm/Hyprland",
+      "url": "https://github.com/hyprwm/Hyprland",
+      "stars": 39355,
+      "weeklyGain": null,
+      "functionZh": "高度可配置的动态平铺 Wayland 合成器，提供工作区、窗口规则、动画、插件和进程间控制接口。",
+      "reasonZh": "适合定制 Linux 桌面与键盘工作流；近期仍持续开发。需要相容的 Linux 图形环境及配置经验，不是 Windows 桌面替换程序。",
+      "audience": "Linux 桌面定制与效率工具爱好者"
+    }
+  ],
+  "established": [
+    {
+      "name": "mpv-player/mpv",
+      "url": "https://github.com/mpv-player/mpv",
+      "stars": 37663,
+      "weeklyGain": null,
+      "functionZh": "开源命令行媒体播放器，支持多种音视频格式、字幕、脚本和可调播放参数，可在 Windows、macOS 与 Linux 使用。",
+      "reasonZh": "适合希望精细控制播放和复用脚本的人；近期仍维护音频与播放相关代码。界面较简洁，部分硬件解码和低性能设备参数需自行配置。",
+      "audience": "影音播放、字幕与脚本工作流用户"
+    },
+    {
+      "name": "notepad-plus-plus/notepad-plus-plus",
+      "url": "https://github.com/notepad-plus-plus/notepad-plus-plus",
+      "stars": 29759,
+      "weeklyGain": null,
+      "functionZh": "Windows 文本与源代码编辑器，支持多种编程语言和自然语言文件，可用于编辑文本、查看配置与阅读代码。",
+      "reasonZh": "适合日常处理纯文本和配置文件；近期仍改进界面行为。它是文本编辑器，不能替代完整的构建或运行环境，应从官方发布渠道下载安装。",
+      "audience": "Windows 文本处理与轻量代码编辑用户"
+    },
+    {
+      "name": "openscad/openscad",
+      "url": "https://github.com/openscad/openscad",
+      "stars": 10567,
+      "weeklyGain": null,
+      "functionZh": "通过脚本描述几何形状并生成实体三维 CAD 模型，支持参数化修改、组合几何与二维轮廓挤出，可导入导出 STL 等格式。",
+      "reasonZh": "适合制作尺寸明确的零件、可定制模型和三维打印原型；近期仍维护代码与构建。使用方式偏编程，需要学习建模语法并检查最终尺寸。",
+      "audience": "参数化建模、三维打印与创客用户"
+    },
+    {
+      "name": "DIYgod/RSSHub",
+      "url": "https://github.com/DIYgod/RSSHub",
+      "stars": 46753,
+      "weeklyGain": null,
+      "functionZh": "把多种网站和服务的内容转换成 RSS 订阅源，通过不同路由集中获取更新，也可自行部署实例。",
+      "reasonZh": "适合建立信息订阅和阅读流程；近期仍修复路由。各来源可能需要账号、配置或受访问限制，源站变化会影响可用性，应检查所需路由。",
+      "audience": "新闻订阅、研究资料收集与自建服务用户"
+    },
+    {
+      "name": "Devolutions/UniGetUI",
+      "url": "https://github.com/Devolutions/UniGetUI",
+      "stars": 26806,
+      "weeklyGain": null,
+      "functionZh": "用统一图形界面搜索、安装、升级和卸载多个包管理器的软件，重点支持 Windows，也提供其他系统的构建。",
+      "reasonZh": "适合集中管理电脑上的应用；近期仍修复仓库刷新问题。仓库已迁移到 Devolutions，安装包及软件源应核对发布者；不要将第三方同名网站当官方渠道。",
+      "audience": "Windows 软件管理与多包管理器用户"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-10-30 08:03:54 北京时间",
   "publishedAtIso": "2026-10-30T00:03:54Z",
   "growthWindow": "2026.10.20—2026.10.25（OpenGithubs 最新可用周榜）；2026.10.30 Trending 日榜仅作热度参考，日增量不作周增量",
