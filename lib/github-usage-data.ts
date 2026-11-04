@@ -21,6 +21,107 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-11-04 08:00:45 北京时间",
+  "publishedAtIso": "2026-11-04T00:00:45Z",
+  "growthWindow": "2026.10.27—2026.11.01（OpenGithubs 周榜统计区间）",
+  "risingSource": "https://github.com/OpenGithubs/github-weekly-rank/blob/618073b7ea027551ee5eee0b193d59d5dbdda3a9/README.md",
+  "rising": [
+    {
+      "name": "unclebob/ub-mode",
+      "url": "https://github.com/unclebob/ub-mode",
+      "stars": 6784,
+      "weeklyGain": 3164,
+      "functionZh": "为编程智能体提供工程实践技能，组织从实现、测试到重构的流程，并结合复杂度、重复代码和变异测试等配套检查工具。",
+      "reasonZh": "适合希望约束 AI 编程过程、把工作拆成可验证小步骤的人；近期仍有维护。技能和配套工具需分别配置，检查阈值也应结合项目判断，不能替代代码审阅。",
+      "audience": "AI 辅助开发、测试与代码质量管理人员"
+    },
+    {
+      "name": "xiaoyang111222/cn-math-taxonomy",
+      "url": "https://github.com/xiaoyang111222/cn-math-taxonomy",
+      "stars": 6376,
+      "weeklyGain": 2703,
+      "functionZh": "把中小学及高中多学科知识组织成知识点和先修关系图谱，附题库、在线探索和前置知识诊断演示。",
+      "reasonZh": "适合研究知识图谱和学习路径；近期仍补充题目与图示。部分课标映射和题目仍待核验，先修关系需要教师审核，商业使用需另获授权。",
+      "audience": "教师、家长与教育应用开发者"
+    },
+    {
+      "name": "NVIDIA/SkillSpector",
+      "url": "https://github.com/NVIDIA/SkillSpector",
+      "stars": 24208,
+      "weeklyGain": 2439,
+      "functionZh": "扫描 AI 智能体技能中的危险模式与依赖风险，结合静态分析和可选的模型语义分析，输出风险评分及多种格式报告。",
+      "reasonZh": "适合安装第三方技能前进行初筛；近期仍修复分析误报。静态扫描可不调用模型，语义分析需配置服务；报告可能有误报或漏报，不能保证技能绝对安全。",
+      "audience": "Codex 等工具用户、技能维护者与安全团队"
+    },
+    {
+      "name": "rddmwmddr/android-ad-cleaner",
+      "url": "https://github.com/rddmwmddr/android-ad-cleaner",
+      "stars": 6070,
+      "weeklyGain": 1851,
+      "functionZh": "通过 ADB 和机型适配流程调整安卓系统及应用自带的广告、推荐和营销通知开关，提供 Windows、Mac 桌面客户端及恢复说明。",
+      "reasonZh": "适合希望减少手机营销干扰的人；近期发布了兼容性修复。需要开启 USB 调试并核对具体机型，部分适配仍待复测，执行前应保存备份并逐项确认更改。",
+      "audience": "国产安卓手机用户与设备维护人员"
+    },
+    {
+      "name": "baidu/Unlimited-OCR",
+      "url": "https://github.com/baidu/Unlimited-OCR",
+      "stars": 30478,
+      "weeklyGain": 1667,
+      "functionZh": "提供面向长文档的 OCR 与多页解析模型和推理代码，支持按页序输入图像，利用跨页上下文输出解析结果。",
+      "reasonZh": "适合研究长篇扫描件和文档解析；近期仍更新模型资料。示例使用高显存 NVIDIA GPU，属于需要部署的模型项目，识别结果与跨页合并仍需人工核对。",
+      "audience": "文档处理、知识库与 OCR 开发者"
+    }
+  ],
+  "established": [
+    {
+      "name": "musescore/MuseScore",
+      "url": "https://github.com/musescore/MuseScore",
+      "stars": 15352,
+      "weeklyGain": null,
+      "functionZh": "开源制谱与作曲软件，可输入和编辑乐谱、播放乐谱，导入导出 MusicXML 和 MIDI，并打印或生成 PDF。",
+      "reasonZh": "适合学习制谱、编曲和整理演奏谱；近期仍修复编辑功能。日常使用优先选择官方稳定版，复杂谱面的导入与排版应逐页检查。",
+      "audience": "音乐学习者、教师、作曲与编曲人员"
+    },
+    {
+      "name": "LMMS/lmms",
+      "url": "https://github.com/LMMS/lmms",
+      "stars": 10595,
+      "weeklyGain": null,
+      "functionZh": "跨平台音乐制作软件，提供钢琴卷帘、节拍编排、歌曲编辑器、混音器及乐器效果插件，用于创作和编排音乐。",
+      "reasonZh": "适合尝试电子音乐、节奏和伴奏制作；近期仍有修复提交。插件格式与平台兼容性需核对，想取得稳定效果仍需要学习编曲和混音基础。",
+      "audience": "音乐制作入门者与电子音乐创作者"
+    },
+    {
+      "name": "TriliumNext/Trilium",
+      "url": "https://github.com/TriliumNext/Trilium",
+      "stars": 38691,
+      "weeklyGain": null,
+      "functionZh": "跨平台层级笔记应用，支持深层树状组织、全文搜索、笔记版本、关系图、画布及自建同步服务，用于构建个人知识库。",
+      "reasonZh": "适合长期整理大量关联资料；近期仍有维护。提供中文界面和稳定版，若使用自建同步，需要自行安排服务器、升级与备份。",
+      "audience": "个人知识管理、研究笔记与自建服务用户"
+    },
+    {
+      "name": "FreeTubeApp/FreeTube",
+      "url": "https://github.com/FreeTubeApp/FreeTube",
+      "stars": 22311,
+      "weeklyGain": null,
+      "functionZh": "面向隐私的桌面 YouTube 播放器，可在不登录账号的情况下管理订阅、播放列表和历史，并将这些记录保存在本机。",
+      "reasonZh": "适合希望把观看记录留在本地的人；近期仍维护翻译与程序。项目处于 Beta，依赖第三方提取方式，源站变化可能影响播放，也不能消除视频请求本身的网络可见性。",
+      "audience": "YouTube 桌面观看与本地订阅管理用户"
+    },
+    {
+      "name": "files-community/Files",
+      "url": "https://github.com/files-community/Files",
+      "stars": 46479,
+      "weeklyGain": null,
+      "functionZh": "为 Windows 提供文件与文件夹管理界面，支持多任务操作、文件标签和系统集成，便于组织日常资料。",
+      "reasonZh": "适合想改进文件整理体验的 Windows 用户；近期仍更新依赖。可选 Microsoft Store 购买或官方经典安装程序，预览版与稳定版应按需求区分。",
+      "audience": "Windows 文件整理与桌面效率用户"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-11-02 08:00:06 北京时间",
   "publishedAtIso": "2026-11-02T00:00:06Z",
   "growthWindow": "2026.11.02 Trending 日榜热度参考；OpenGithubs 最新可用周榜仍为 2026.10.20—2026.10.25，未获得本期可靠周增量，均为 null",
