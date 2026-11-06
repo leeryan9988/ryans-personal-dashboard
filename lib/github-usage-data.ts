@@ -21,6 +21,107 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-11-06 08:00:03 北京时间",
+  "publishedAtIso": "2026-11-06T00:00:03Z",
+  "growthWindow": "2026.10.27—2026.11.01（OpenGithubs 最新可用周榜）；2026.11.06 Trending 日榜仅作热度参考，auto-ontology 无可靠周增量，填 null",
+  "risingSource": "https://github.com/OpenGithubs/github-weekly-rank/blob/618073b7ea027551ee5eee0b193d59d5dbdda3a9/README.md",
+  "rising": [
+    {
+      "name": "DuarteSantos8/openGym",
+      "url": "https://github.com/DuarteSantos8/openGym",
+      "stars": 19718,
+      "weeklyGain": 2471,
+      "functionZh": "开源健身与体重记录工具，可安排训练计划、记录组数重量、查看训练肌群和进度，并支持手机独立使用或自建同步服务。",
+      "reasonZh": "适合把训练历史留在自己掌握的设备上；近期仍更新文档与版本。自建同步需要维护服务器和备份，训练建议与估算指标应结合个人情况判断。",
+      "audience": "健身记录、力量训练与自建服务用户"
+    },
+    {
+      "name": "anthropics/knowledge-work-plugins",
+      "url": "https://github.com/anthropics/knowledge-work-plugins",
+      "stars": 34860,
+      "weeklyGain": 1896,
+      "functionZh": "面向 Claude Cowork 和 Claude Code 的岗位插件集合，把技能、命令及工具连接组织为营销、销售、数据、产品等工作流程。",
+      "reasonZh": "适合参考和定制自己的业务助手；近期仍更新连接组件。需要匹配的 Claude 环境和外部服务权限，插件模板不能保证业务结果，重要输出仍需审核。",
+      "audience": "知识工作者、运营与业务流程维护人员"
+    },
+    {
+      "name": "citrolabs/ego-lite",
+      "url": "https://github.com/citrolabs/ego-lite",
+      "stars": 21786,
+      "weeklyGain": 1843,
+      "functionZh": "为人与 AI 智能体提供独立工作空间的浏览器，通过配套技能让智能体操作网页，同时使用迁移的登录状态与浏览器资料。",
+      "reasonZh": "适合探索浏览器自动化；近期仍有 Beta 发布维护。提供 Windows 和 macOS 客户端，Linux 尚在路线图；迁移账号会扩大智能体可访问范围，应控制授权并检查重要操作。",
+      "audience": "网页自动化与 AI 助手工作流用户"
+    },
+    {
+      "name": "vorssaint/vorssaint-utils",
+      "url": "https://github.com/vorssaint/vorssaint-utils",
+      "stars": 33086,
+      "weeklyGain": 1665,
+      "functionZh": "macOS 菜单栏工具箱，集合应用音量、系统监测、窗口布局、剪贴板历史和卸载等功能，可按需启用模块。",
+      "reasonZh": "适合希望集中管理桌面工具的人；近期仍更新改进记录。要求 Apple Silicon 与 macOS 14 或更新版本，部分功能需要辅助功能或录屏权限，麦克风静音不是隐私隔离保证。",
+      "audience": "Apple Silicon Mac 用户与桌面效率爱好者"
+    },
+    {
+      "name": "NVIDIA/auto-ontology",
+      "url": "https://github.com/NVIDIA/auto-ontology",
+      "stars": 7264,
+      "weeklyGain": null,
+      "functionZh": "从企业数据与元数据构建语义目录和知识图谱，为自然语言查询、SQL 生成、定义核验及数据来源追溯提供上下文层。",
+      "reasonZh": "适合研究跨数据源的智能查询；近期发布版本更新。需要部署数据库和服务并配置模型端点/API 密钥，接入业务数据前应核对权限，不能保证生成查询始终正确。",
+      "audience": "数据平台、知识图谱与企业 AI 应用开发者"
+    }
+  ],
+  "established": [
+    {
+      "name": "mltframework/shotcut",
+      "url": "https://github.com/mltframework/shotcut",
+      "stars": 15612,
+      "weeklyGain": null,
+      "functionZh": "免费的跨平台视频编辑器，基于 MLT、FFmpeg 和 Qt 提供桌面视频剪辑环境，可从官方渠道直接下载安装。",
+      "reasonZh": "适合制作演示、短片和日常视频；近期仍修复音频混音问题。建议使用稳定版，复杂工程先用实际素材测试，并保存项目和源文件备份。",
+      "audience": "视频剪辑入门者、教程与内容创作者"
+    },
+    {
+      "name": "localsend/localsend",
+      "url": "https://github.com/localsend/localsend",
+      "stars": 97441,
+      "weeklyGain": null,
+      "functionZh": "在同一局域网的设备之间发送文件和消息，支持 Windows、macOS、Linux、Android 和 iOS，无需第三方中转服务器。",
+      "reasonZh": "适合手机与电脑之间快速传照片和资料；近期仍修复桌面兼容问题。设备必须能够在局域网互通，防火墙和访客网络隔离可能影响发现与传输。",
+      "audience": "多设备用户、照片与文件传输用户"
+    },
+    {
+      "name": "immich-app/immich",
+      "url": "https://github.com/immich-app/immich",
+      "stars": 118340,
+      "weeklyGain": null,
+      "functionZh": "自建照片与视频管理服务，提供手机备份、相册共享、元数据查看、人脸及对象搜索等功能。",
+      "reasonZh": "适合集中整理个人或家庭影像；近期持续维护。需要服务器和存储规划，官方提醒采用 3-2-1 备份，不能把单个相册服务当作唯一副本。",
+      "audience": "摄影爱好者、家庭相册与 NAS 用户"
+    },
+    {
+      "name": "Kareadita/Kavita",
+      "url": "https://github.com/Kareadita/Kavita",
+      "stars": 12061,
+      "weeklyGain": null,
+      "functionZh": "可自建的跨平台阅读服务器，管理 EPUB、PDF、漫画和图片合集，提供网页阅读、搜索、阅读清单及用户权限。",
+      "reasonZh": "适合把已有电子书和漫画集中阅读；近期仍有版本更新。项目仍处 Beta，升级前应备份数据库；部分在线元数据等功能属于付费 Kavita+，分享内容需有相应权利。",
+      "audience": "电子书、漫画阅读与家庭书库用户"
+    },
+    {
+      "name": "nomacs/nomacs",
+      "url": "https://github.com/nomacs/nomacs",
+      "stars": 3300,
+      "weeklyGain": null,
+      "functionZh": "免费的跨平台图片查看器，支持常见图片、RAW 与 PSD 等格式，可用于浏览照片及查看图像信息。",
+      "reasonZh": "适合快速查看本地照片与设计文件；近期仍修复文件排序。具体格式和功能取决于安装包及可选组件，应以所用平台稳定版的支持情况为准。",
+      "audience": "摄影爱好者、图片整理与设计素材用户"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-11-04 08:00:45 北京时间",
   "publishedAtIso": "2026-11-04T00:00:45Z",
   "growthWindow": "2026.10.27—2026.11.01（OpenGithubs 周榜统计区间）",
