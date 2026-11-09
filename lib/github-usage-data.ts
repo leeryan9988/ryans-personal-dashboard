@@ -21,6 +21,107 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-11-09 08:06:19 北京时间",
+  "publishedAtIso": "2026-11-09T00:06:19Z",
+  "growthWindow": "2026.11.03—2026.11.08（OpenGithubs 周榜统计区间）；高星实用项目无可靠周增量，填 null",
+  "risingSource": "https://github.com/OpenGithubs/github-weekly-rank/blob/f76afca5f43a41961361507b449c02fb90f0fbcd/README.md",
+  "rising": [
+    {
+      "name": "heydamir/unslop",
+      "url": "https://github.com/heydamir/unslop",
+      "stars": 11965,
+      "weeklyGain": 3945,
+      "functionZh": "面向 Codex、Claude Code 等工具的界面改版技能，可检查页面的排版、间距和视觉元素，再按选定方向逐步修改。",
+      "reasonZh": "适合给已有看板或落地页做视觉审阅；近期仍在修复网页快照。分析在线页面需要 Playwright 和 Chromium，改动仍应通过真实设备和可访问性检查。",
+      "audience": "网页设计、前端开发与 AI 辅助建站用户"
+    },
+    {
+      "name": "storytold/craft-anything",
+      "url": "https://github.com/storytold/craft-anything",
+      "stars": 22557,
+      "weeklyGain": 3836,
+      "functionZh": "通过可见的网页、界面截图等资料研究软件行为，组织编程智能体构建独立原型，并检查原型与参考目标的差异。",
+      "reasonZh": "适合学习产品交互和验证原型；近期有发布并持续修复。仍处于早期 Alpha，部分智能体接入未充分验证；只应使用有权使用的参考资料。",
+      "audience": "独立开发者、产品原型和交互研究人员"
+    },
+    {
+      "name": "wangzan101/Mika",
+      "url": "https://github.com/wangzan101/Mika",
+      "stars": 7737,
+      "weeklyGain": 3339,
+      "functionZh": "运行在安卓手机上的 AI 助手，可处理网页和文件，并在配对手机控制后，通过后台画面操作应用。",
+      "reasonZh": "适合试验移动端重复操作；近期有版本发布和兼容性修复。需要配置模型，控制应用通常要配对无线调试；发送消息、下单等操作应先人工核对。",
+      "audience": "安卓自动化和手机 AI 助手探索者"
+    },
+    {
+      "name": "anhao/ai-pose-gallery-zh",
+      "url": "https://github.com/anhao/ai-pose-gallery-zh",
+      "stars": 6441,
+      "weeklyGain": 2667,
+      "functionZh": "把姿势白模、深度图、服装及人像参考整理为中文图库，并提供角色参考组合界面和 ComfyUI 节点。",
+      "reasonZh": "适合快速找姿势和构图参考；近期仍整理素材索引。图库含默认隐藏的成人向素材，原图版权属于原作者；商用或使用真人肖像前应另行核对授权。",
+      "audience": "插画、角色设计与 ComfyUI 工作流用户"
+    },
+    {
+      "name": "CopilotKit/OpenBot",
+      "url": "https://github.com/CopilotKit/OpenBot",
+      "stars": 10478,
+      "weeklyGain": 2813,
+      "functionZh": "可自建的 AI 助手工作台，为助手提供浏览器、文件和工具，可接入 AG-UI 智能体并记录操作。",
+      "reasonZh": "适合试验可审阅的助手流程；近期有新版本及安装更新修复。需配置模型与运行环境；多人使用前应设置登录和工具权限，敏感操作仍需人工审批。",
+      "audience": "智能体开发、自动化与内部工具维护团队"
+    }
+  ],
+  "established": [
+    {
+      "name": "qgis/QGIS",
+      "url": "https://github.com/qgis/QGIS",
+      "stars": 14797,
+      "weeklyGain": null,
+      "functionZh": "跨平台地理信息系统，管理矢量、栅格等空间数据，可制作专题地图并执行空间分析。",
+      "reasonZh": "适合把地理数据整理成可解释的地图；近期仍有测试和界面维护。分析前应核对数据来源与坐标参考系，插件需确认版本兼容。",
+      "audience": "地图制作者、地理研究及空间数据分析人员"
+    },
+    {
+      "name": "OpenRefine/OpenRefine",
+      "url": "https://github.com/OpenRefine/OpenRefine",
+      "stars": 12090,
+      "weeklyGain": null,
+      "functionZh": "在本机浏览器中导入、检查和清洗杂乱数据，支持对齐外部数据源并补充信息。",
+      "reasonZh": "适合清理表格中的拼写差异、重复项及格式问题；近期仍修复数据关联功能。批量转换前应保留原始文件，使用在线对齐服务时应核对发送的数据范围。",
+      "audience": "表格清洗、数据分析与资料整理人员"
+    },
+    {
+      "name": "prusa3d/PrusaSlicer",
+      "url": "https://github.com/prusa3d/PrusaSlicer",
+      "stars": 9467,
+      "weeklyGain": null,
+      "functionZh": "把三维模型切片成打印指令，支持 FDM 和 mSLA 打印机，可调整打印参数并预览生成的指令。",
+      "reasonZh": "适合检查模型布局和打印设置；近期仍更新配置及测试版。应按实际打印机和材料选择配置，日常打印宜优先使用稳定版。",
+      "audience": "三维打印用户、创客与原型制作人员"
+    },
+    {
+      "name": "KDE/krita",
+      "url": "https://github.com/KDE/krita",
+      "stars": 10717,
+      "weeklyGain": null,
+      "functionZh": "开源数字绘画软件，用于从草图到成稿的插画、漫画、概念设计及贴图绘制。",
+      "reasonZh": "适合在桌面上完成绘画项目；GitHub 镜像近期仍同步构建修复。主仓库和问题跟踪由 KDE 维护，日常创作可从官网选择稳定版。",
+      "audience": "插画师、漫画作者与数字绘画学习者"
+    },
+    {
+      "name": "google-deepmind/mujoco",
+      "url": "https://github.com/google-deepmind/mujoco",
+      "stars": 16392,
+      "weeklyGain": null,
+      "functionZh": "通用物理仿真引擎，模拟多关节结构与环境的接触和运动，提供交互可视化、C API 和 Python 绑定。",
+      "reasonZh": "适合在实物实验前测试机器人或运动模型；近期有版本发布和文档维护。需要建模和编程基础，仿真精度取决于参数，结果仍应与实测对照。",
+      "audience": "机器人、生物力学及物理仿真研究开发人员"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-11-06 08:00:03 北京时间",
   "publishedAtIso": "2026-11-06T00:00:03Z",
   "growthWindow": "2026.10.27—2026.11.01（OpenGithubs 最新可用周榜）；2026.11.06 Trending 日榜仅作热度参考，auto-ontology 无可靠周增量，填 null",
