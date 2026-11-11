@@ -21,6 +21,107 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-11-11 08:00:26 北京时间",
+  "publishedAtIso": "2026-11-11T00:00:26Z",
+  "growthWindow": "2026.11.11 Trending 日榜仅作热度参考；jakubkrehel/skills 周增量采用 OpenGithubs 2026.11.03—2026.11.08 周榜，其余无可靠周口径均为 null",
+  "risingSource": "https://github.com/OpenGithubs/github-weekly-rank/blob/f76afca5f43a41961361507b449c02fb90f0fbcd/README.md",
+  "rising": [
+    {
+      "name": "meta/astryx",
+      "url": "https://github.com/meta/astryx",
+      "stars": 22727,
+      "weeklyGain": null,
+      "functionZh": "基于 React 的开源设计系统，提供界面组件、主题、深色模式和命令行工具，可通过 CSS 变量定制品牌样式。",
+      "reasonZh": "适合搭建风格一致的产品界面；近期持续发布并修复组件。当前仍为 Beta，要求 React 19 或更新版本，接入现有项目应先测试交互与样式兼容。",
+      "audience": "前端开发者、设计系统维护者"
+    },
+    {
+      "name": "homeassistant-ai/ha-mcp",
+      "url": "https://github.com/homeassistant-ai/ha-mcp",
+      "stars": 6625,
+      "weeklyGain": null,
+      "functionZh": "把 Home Assistant 设备和配置能力通过 MCP 提供给 AI 客户端，用于查询状态、配置自动化和管理智能家居。",
+      "reasonZh": "适合已有 Home Assistant 的用户探索自然语言操作；近期仍发布开发版本。需要适配的 Home Assistant 和管理员授权，应保护连接地址与令牌，修改设备或自动化前先备份和确认。",
+      "audience": "智能家居、自建服务与自动化用户"
+    },
+    {
+      "name": "we-promise/sure",
+      "url": "https://github.com/we-promise/sure",
+      "stars": 11907,
+      "weeklyGain": null,
+      "functionZh": "从 Maybe Finance 延续的社区个人财务应用，可自建服务，通过网页或其他客户端集中查看和整理个人财务数据。",
+      "reasonZh": "适合希望自行掌握财务记录的人；近期持续维护。需要维护服务和备份，数据量大时可能有性能问题；测试版与稳定版应区分，它是管理工具，不替代专业判断。",
+      "audience": "个人记账、财务资料整理与自建服务用户"
+    },
+    {
+      "name": "vercel-labs/agent-browser",
+      "url": "https://github.com/vercel-labs/agent-browser",
+      "stars": 49184,
+      "weeklyGain": null,
+      "functionZh": "面向 AI 智能体的浏览器自动化命令行工具，把网页转换为带元素引用的文本快照，再执行点击、输入和导航。",
+      "reasonZh": "适合建立可检查的网页操作流程；近期发布版本并维护安装包。需安装浏览器和系统依赖，页面变化后要重新读取快照，登录与提交等操作应限制权限并核验结果。",
+      "audience": "网页自动化、测试和智能体开发者"
+    },
+    {
+      "name": "jakubkrehel/skills",
+      "url": "https://github.com/jakubkrehel/skills",
+      "stars": 11960,
+      "weeklyGain": 1920,
+      "functionZh": "一组界面设计工程技能，覆盖排版、颜色、布局、文案和可访问性，可审阅页面或分支中的界面变化。",
+      "reasonZh": "适合让编程智能体按明确维度检查界面；近期仍修复技能引用。需要支持技能的智能体环境，自动审阅不能替代真实用户、键盘和屏幕阅读器测试。",
+      "audience": "使用编程智能体制作界面的设计者与开发者"
+    }
+  ],
+  "established": [
+    {
+      "name": "streetcomplete/StreetComplete",
+      "url": "https://github.com/streetcomplete/StreetComplete",
+      "stars": 5143,
+      "weeklyGain": null,
+      "functionZh": "通过地图上的简单实地调查问题，帮助用户补充 OpenStreetMap 的道路、地点等信息，不需要先学习完整的地图标记规则。",
+      "reasonZh": "适合散步或出行时贡献附近地图数据；近期仍修复问题。回答会通过个人 OSM 账号成为公开编辑，应以现场观察为准，不能仅凭猜测填写。",
+      "audience": "地图爱好者、步行探索与社区贡献者"
+    },
+    {
+      "name": "transmission/transmission",
+      "url": "https://github.com/transmission/transmission",
+      "stars": 15409,
+      "weeklyGain": null,
+      "functionZh": "跨平台 BitTorrent 客户端，提供桌面界面、无界面服务与网页远程控制，可下载和分发种子中的文件。",
+      "reasonZh": "适合分发或获取获授权的大文件；近期仍维护桌面功能。远程控制应配置访问保护，部分文档仍在更新，下载内容的来源和授权需自行核对。",
+      "audience": "开源镜像、大文件传输与自建下载服务用户"
+    },
+    {
+      "name": "dbeaver/dbeaver",
+      "url": "https://github.com/dbeaver/dbeaver",
+      "stars": 52389,
+      "weeklyGain": null,
+      "functionZh": "跨平台数据库工具，提供 SQL 编辑、数据浏览、结构查看、ER 图和导入导出等功能，可连接多种数据库。",
+      "reasonZh": "适合把多个数据库集中到图形界面管理；近期仍有发布和维护。需要相应驱动及账号权限，编辑生产数据前应检查事务设置并备份。",
+      "audience": "数据库开发、运维与数据分析人员"
+    },
+    {
+      "name": "penpot/penpot",
+      "url": "https://github.com/penpot/penpot",
+      "stars": 62263,
+      "weeklyGain": null,
+      "functionZh": "基于开放标准的产品界面设计平台，支持实时协作、设计变量、弹性布局及设计检查，可使用网页服务或自行部署。",
+      "reasonZh": "适合设计与开发共同维护组件和界面规范；近期有稳定版本及性能问题维护。自建实例需维护服务和备份，设计稿仍需经过实际代码实现与交互验收。",
+      "audience": "产品设计师、前端团队与设计系统维护者"
+    },
+    {
+      "name": "wezterm/wezterm",
+      "url": "https://github.com/wezterm/wezterm",
+      "stars": 29517,
+      "weeklyGain": null,
+      "functionZh": "基于 Rust 的跨平台终端模拟器和多路复用工具，使用 GPU 加速，为命令行工作提供可配置的桌面环境。",
+      "reasonZh": "适合长期使用终端的人；近期仍有文档与平台修复。正式发布间隔较长，选择稳定版或夜间版前应评估需求，显示效果也应在自己的图形环境中验证。",
+      "audience": "开发者、服务器维护与命令行用户"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-11-09 08:06:19 北京时间",
   "publishedAtIso": "2026-11-09T00:06:19Z",
   "growthWindow": "2026.11.03—2026.11.08（OpenGithubs 周榜统计区间）；高星实用项目无可靠周增量，填 null",
