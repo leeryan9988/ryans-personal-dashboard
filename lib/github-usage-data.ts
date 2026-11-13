@@ -21,6 +21,107 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-11-13 08:05:58 北京时间",
+  "publishedAtIso": "2026-11-13T00:05:58Z",
+  "growthWindow": "2026.11.13 GitHub Trending 日榜热度参考；OpenGithubs 最新可用周榜为 2026.11.03—2026.11.08，本期入选项目无可靠周增量，均填 null",
+  "risingSource": "https://github.com/trending",
+  "rising": [
+    {
+      "name": "GoogleChrome/modern-web-guidance-src",
+      "url": "https://github.com/GoogleChrome/modern-web-guidance-src",
+      "stars": 2873,
+      "weeklyGain": null,
+      "functionZh": "Modern Web Guidance 的源仓库，包含编写、校准和评估网页开发指南所用的代码与文档。配套指南把浏览器兼容性与现代 Web 实践提供给编程助手。",
+      "reasonZh": "适合检查生成代码是否沿用了过时做法；近期仍扩充扫描规则。源仓库面向贡献和评估，日常使用可从配套指南入手，兼容性仍需按目标浏览器实测。",
+      "audience": "前端开发者、网页标准学习者和编程助手用户"
+    },
+    {
+      "name": "QwenLM/qwen-code",
+      "url": "https://github.com/QwenLM/qwen-code",
+      "stars": 29792,
+      "weeklyGain": null,
+      "functionZh": "开源 AI 编程助手，支持在终端等界面阅读项目、协助改代码，并接入技能与 MCP 工具。",
+      "reasonZh": "适合试验不同模型的开发流程；近期有预览版和维护提交。模型凭据与费用取决于服务商，预览功能可能变化，执行命令和修改文件前应检查授权。",
+      "audience": "终端开发者、代码维护者和 AI 编程工具用户"
+    },
+    {
+      "name": "ashhart/TensorFold",
+      "url": "https://github.com/ashhart/TensorFold",
+      "stars": 1930,
+      "weeklyGain": null,
+      "functionZh": "用 Zig 实现的大语言模型推理服务，可直接读取模型权重，在 Apple Silicon 或支持的 NVIDIA GPU 上运行模型。",
+      "reasonZh": "适合研究如何在本机提供模型推理服务；近期有版本和变更记录。模型与硬件支持需看项目文档，显存或统一内存用量会随模型、上下文和并发变化。",
+      "audience": "本地模型部署、推理引擎与 GPU 开发者"
+    },
+    {
+      "name": "addyosmani/agent-skills",
+      "url": "https://github.com/addyosmani/agent-skills",
+      "stars": 116657,
+      "weeklyGain": null,
+      "functionZh": "为编程助手提供从写规格、制定计划到实现、测试、审查和发布的工作流程与检查要求。",
+      "reasonZh": "适合给团队的 AI 编程任务建立一致的检查步骤；近期仍有文档维护讨论。需要支持技能的助手，流程模板应按项目裁剪，测试和人工审阅仍要落实。",
+      "audience": "编程助手用户、开发团队与代码审阅者"
+    },
+    {
+      "name": "nvm-sh/nvm",
+      "url": "https://github.com/nvm-sh/nvm",
+      "stars": 96006,
+      "weeklyGain": null,
+      "functionZh": "按用户安装并在 shell 会话中切换 Node.js 版本，便于在同一台电脑上运行依赖不同 Node.js 版本的项目。",
+      "reasonZh": "适合维护多个前端或 Node.js 项目；近期仍修复下载校验。面向兼容 POSIX 的 shell，Windows 原生 PowerShell 用户应先核对环境，WSL 可按项目说明使用。",
+      "audience": "JavaScript 开发者、多项目维护者和持续集成维护人员"
+    }
+  ],
+  "established": [
+    {
+      "name": "arduino/arduino-ide",
+      "url": "https://github.com/arduino/arduino-ide",
+      "stars": 3349,
+      "weeklyGain": null,
+      "functionZh": "Arduino IDE 2.x 桌面开发环境的源仓库，用于编辑 Arduino 程序，并通过 Arduino CLI 完成编译和上传。",
+      "reasonZh": "适合把代码写入开发板并开展电子制作；近期有正式版本与翻译更新。使用前需确认板卡支持包、驱动和串口，旧版 IDE 对应另一个仓库。",
+      "audience": "电子创客、Arduino 入门者和硬件课程教师"
+    },
+    {
+      "name": "GNOME/gimp",
+      "url": "https://github.com/GNOME/gimp",
+      "stars": 6582,
+      "weeklyGain": null,
+      "functionZh": "GNU 图像处理程序的 GitHub 镜像，对应 GIMP 桌面软件，可用于照片调整、图层合成与图像编辑。",
+      "reasonZh": "适合需要自由编辑本地图片的人；镜像近期仍同步图像文档格式相关修复。默认分支是开发版，日常使用可从官网获取稳定版，项目问题主要在 GNOME GitLab 跟踪。",
+      "audience": "摄影爱好者、图像编辑学习者和素材制作者"
+    },
+    {
+      "name": "neovim/neovim",
+      "url": "https://github.com/neovim/neovim",
+      "stars": 103630,
+      "weeklyGain": null,
+      "functionZh": "可扩展的 Vim 系文本编辑器，支持插件、可编程终端、异步任务和外部界面。",
+      "reasonZh": "适合构建以键盘为主的代码和文本编辑环境；近期仍修复进程处理问题。配置与插件有学习成本，日常工作宜优先使用稳定版并按需添加插件。",
+      "audience": "终端用户、Vim 用户和代码维护者"
+    },
+    {
+      "name": "ArchiveBox/ArchiveBox",
+      "url": "https://github.com/ArchiveBox/ArchiveBox",
+      "stars": 29020,
+      "weeklyGain": null,
+      "functionZh": "自建网页归档工具，可把网址或书签保存为 HTML、截图、PDF 等格式，并通过网页界面、命令行或 API 管理。",
+      "reasonZh": "适合保留可能改版或下线的研究资料；近期仍更新候选版本。动态内容和登录页面的保存效果要逐项核实，私有归档应限制访问并安排备份。",
+      "audience": "研究人员、网页资料整理与自建服务用户"
+    },
+    {
+      "name": "nextcloud/server",
+      "url": "https://github.com/nextcloud/server",
+      "stars": 37497,
+      "weeklyGain": null,
+      "functionZh": "自建文件同步与共享服务器，可在多台设备访问文件，并通过应用扩展日历、联系人等协作功能。",
+      "reasonZh": "适合个人或团队自行管理共享资料；近期有正式版本与功能维护。自建需负责升级、访问权限和备份，启用同步前应规划容量和恢复方式。",
+      "audience": "家庭服务器、团队文件协作与自建网盘用户"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-11-11 08:00:26 北京时间",
   "publishedAtIso": "2026-11-11T00:00:26Z",
   "growthWindow": "2026.11.11 Trending 日榜仅作热度参考；jakubkrehel/skills 周增量采用 OpenGithubs 2026.11.03—2026.11.08 周榜，其余无可靠周口径均为 null",
