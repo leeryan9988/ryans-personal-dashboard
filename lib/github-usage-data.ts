@@ -21,6 +21,107 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-11-16 08:00:00 北京时间",
+  "publishedAtIso": "2026-11-16T00:00:00Z",
+  "growthWindow": "2026.11.16 GitHub Trending 日榜热度参考；OpenGithubs 最新可用周榜为 2026.11.03—2026.11.08，本期项目无可靠周增量，均填 null",
+  "risingSource": "https://github.com/trending",
+  "rising": [
+    {
+      "name": "dream-num/univer",
+      "url": "https://github.com/dream-num/univer",
+      "stars": 25593,
+      "weeklyGain": null,
+      "functionZh": "可嵌入网页产品的办公 SDK，提供电子表格、文档编辑、公式计算和可扩展的插件框架。",
+      "reasonZh": "适合给业务系统加入可编辑表格和计算能力；近期发布了 1.5.0。开源核心可独立使用，部分协作与文件处理能力属于商业扩展，应先核对所需功能。",
+      "audience": "业务系统开发者、表格产品团队"
+    },
+    {
+      "name": "backnotprop/plannotator",
+      "url": "https://github.com/backnotprop/plannotator",
+      "stars": 11819,
+      "weeklyGain": null,
+      "functionZh": "在本地浏览器里标注编程助手给出的计划、规格和原型，也可审阅代码差异或 PR，把反馈交还给助手。",
+      "reasonZh": "适合把审阅意见指向具体段落或改动；近期仍在改进收件箱。不同助手的接入方式不同，批注可以辅助审阅，关键改动仍需人工确认。",
+      "audience": "Codex 等编程助手用户、代码审阅者"
+    },
+    {
+      "name": "google-labs-code/stitch-skills",
+      "url": "https://github.com/google-labs-code/stitch-skills",
+      "stars": 9277,
+      "weeklyGain": null,
+      "functionZh": "为 Google Stitch 提供一组技能和插件，可用文字或图片生成界面方案、修改设计，并把设计稿转换为组件。",
+      "reasonZh": "适合在设计稿和前端原型之间迭代；近期问题区仍有活动，但主分支最近一次提交在 8 月。需要配置 Stitch MCP 和相应凭据，生成组件仍需验证。",
+      "audience": "产品设计师、前端开发者、原型制作人员"
+    },
+    {
+      "name": "ag-ui-protocol/ag-ui",
+      "url": "https://github.com/ag-ui-protocol/ag-ui",
+      "stars": 17832,
+      "weeklyGain": null,
+      "functionZh": "以标准事件连接智能体后端和面向用户的前端，支持通过 SSE、WebSocket 等方式传递运行过程和交互信息。",
+      "reasonZh": "适合让应用以一致方式呈现助手的输出与状态；近几日有发布和修复。它提供协议与连接工具，应用仍要实现自己的界面、权限及错误处理。",
+      "audience": "智能体产品、前端和后端开发团队"
+    },
+    {
+      "name": "ggml-org/ggml",
+      "url": "https://github.com/ggml-org/ggml",
+      "stars": 15898,
+      "weeklyGain": null,
+      "functionZh": "面向机器学习的 C/C++ 张量库，支持多种处理器和计算后端，并提供低位量化等基础能力。",
+      "reasonZh": "适合开发和研究在不同硬件上运行的轻量推理；近期发布了 1.0.0。它是底层库，需自行集成；不同后端的算子支持和性能应以实际测试为准。",
+      "audience": "本地模型、数值计算和推理引擎开发者"
+    }
+  ],
+  "established": [
+    {
+      "name": "jgraph/drawio",
+      "url": "https://github.com/jgraph/drawio",
+      "stars": 9383,
+      "weeklyGain": null,
+      "functionZh": "浏览器端图表与白板编辑器，可用于制作流程图、结构图和协作讨论所需的示意图。",
+      "reasonZh": "适合把流程和系统关系画清楚；11 月有新版本，问题区仍有活动。此仓库版本不支持实时协同编辑，SVG 导出主要用于嵌入页面。",
+      "audience": "流程设计、技术文档与团队沟通人员"
+    },
+    {
+      "name": "typst/typst",
+      "url": "https://github.com/typst/typst",
+      "stars": 57217,
+      "weeklyGain": null,
+      "functionZh": "基于标记语言的排版工具，提供本地编译器与命令行，支持公式、参考文献和可复用的格式规则。",
+      "reasonZh": "适合将报告或论文的内容与排版一起纳入版本管理；近期仍有代码和问题跟进。已有 LaTeX 模板通常需要重新适配，交付前也要检查字体与投稿要求。",
+      "audience": "论文作者、科研人员、技术写作者"
+    },
+    {
+      "name": "KDE/kdenlive",
+      "url": "https://github.com/KDE/kdenlive",
+      "stars": 6117,
+      "weeklyGain": null,
+      "functionZh": "基于 MLT 和 KDE 的开源视频编辑器，支持在桌面上剪辑视频并使用音视频效果。",
+      "reasonZh": "适合制作教程、短片和家庭视频；GitHub 镜像近期仍同步开发。日常项目宜使用官网稳定版，并提前用实际素材验证预览和输出。",
+      "audience": "视频创作者、剪辑学习者"
+    },
+    {
+      "name": "miniflux/v2",
+      "url": "https://github.com/miniflux/v2",
+      "stars": 9941,
+      "weeklyGain": null,
+      "functionZh": "自建订阅阅读器，支持 RSS、Atom、JSON Feed、OPML 导入导出，以及分类、收藏和全文搜索。",
+      "reasonZh": "适合用一个界面跟进多个站点和播客；本月有发布且仍跟进性能改进。自建需要维护 PostgreSQL、安排备份，内容更新取决于订阅源。",
+      "audience": "新闻订阅者、研究资料收集者、自建服务用户"
+    },
+    {
+      "name": "mixxxdj/mixxx",
+      "url": "https://github.com/mixxxdj/mixxx",
+      "stars": 7403,
+      "weeklyGain": null,
+      "functionZh": "跨平台 DJ 软件，可在 Windows、macOS 和 Linux 上进行现场音乐混音。",
+      "reasonZh": "适合整理现场混音工作流或练习打碟；近期仍维护音效与控制器支持。现场演出宜用稳定版，并提前核对控制器映射和声卡配置。",
+      "audience": "DJ 学习者、音乐爱好者与现场演出人员"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-11-13 08:05:58 北京时间",
   "publishedAtIso": "2026-11-13T00:05:58Z",
   "growthWindow": "2026.11.13 GitHub Trending 日榜热度参考；OpenGithubs 最新可用周榜为 2026.11.03—2026.11.08，本期入选项目无可靠周增量，均填 null",
