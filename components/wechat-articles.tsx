@@ -78,7 +78,7 @@ export function WechatArticlesView({ userId }: { userId: string | null }) {
     }
   }
 
-  return <section className="mx-auto w-full max-w-[1050px] overflow-hidden rounded-3xl bg-[#071633] text-white shadow-xl">
+  return <section className="w-full overflow-hidden rounded-3xl bg-[#071633] text-white shadow-xl">
     <header className="bg-gradient-to-r from-[#102a59] to-[#244b98] px-6 py-7 sm:px-8">
       <div className="flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-cyan-200"><FileText className="size-4" /> 微信公众号</div>
       <h1 className="mt-2 text-3xl font-bold">文章库</h1>
