@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check, ChevronDown, Copy, FileText } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
+import { WechatTopicSamples } from './wechat-topic-samples';
 
 type Article = {
   id: string;
@@ -112,6 +113,7 @@ export function WechatArticlesView({ userId }: { userId: string | null }) {
           </ol>}
         </div>;
       })}
+      <WechatTopicSamples userId={userId} />
     </div>
   </section>;
 }
