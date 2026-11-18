@@ -21,6 +21,107 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-11-18 08:07:18 北京时间",
+  "publishedAtIso": "2026-11-18T00:07:18Z",
+  "growthWindow": "2026.11.10—2026.11.15（OpenGithubs 周榜统计区间）；2026.11.18 GitHub Trending 日榜仅作热度参考，无可靠周口径者填 null",
+  "risingSource": "https://github.com/OpenGithubs/github-weekly-rank/blob/511fb047292556b5fd17c071d94d720be28fa787/README.md",
+  "rising": [
+    {
+      "name": "zortos293/Lichii",
+      "url": "https://github.com/zortos293/Lichii",
+      "stars": 9641,
+      "weeklyGain": 6987,
+      "functionZh": "实验性的 Nintendo Switch 和 Switch 2 模拟器，提供渲染与游戏兼容性开发，并有社区兼容性报告可查。",
+      "reasonZh": "适合观察模拟器的兼容性进展；近期仍发布构建并修复着色器。项目仍处实验阶段，不附带游戏或系统文件，实际兼容性因游戏和硬件而异。",
+      "audience": "模拟器研究者、测试者与自制程序开发者"
+    },
+    {
+      "name": "patch-gg/pixelfx",
+      "url": "https://github.com/patch-gg/pixelfx",
+      "stars": 7978,
+      "weeklyGain": 4925,
+      "functionZh": "像素风动画特效库，可在网页图库预览、重配颜色或镜像，也可导出精灵图供游戏项目使用。",
+      "reasonZh": "适合快速试验天气、界面或粒子动画；近期仍有文档提交和社区活动。导出素材后应核对帧率、调色板和目标引擎的导入设置。",
+      "audience": "像素美术创作者、独立游戏开发者和原型设计师"
+    },
+    {
+      "name": "getarcaneapp/arcane",
+      "url": "https://github.com/getarcaneapp/arcane",
+      "stars": 9308,
+      "weeklyGain": null,
+      "functionZh": "用于管理 Docker 的网页界面，可在仪表板查看容器，并管理基于 Compose 的项目。",
+      "reasonZh": "适合集中维护自建服务；近期发布了 3.0.1 并改进活动记录。部署前要核对 2.x 与 3.x 的差异，并限制管理界面的访问权限。",
+      "audience": "家庭服务器、自建服务和 Docker 管理用户"
+    },
+    {
+      "name": "mvanhorn/last30days-skill",
+      "url": "https://github.com/mvanhorn/last30days-skill",
+      "stars": 69031,
+      "weeklyGain": null,
+      "functionZh": "给智能体提供近期话题调研能力，从 Reddit、Hacker News、GitHub 等来源收集讨论，并整理成带线索的摘要。",
+      "reasonZh": "适合快速了解近期讨论并找到后续阅读入口；近几日有发布和文档更新。部分来源需额外配置，互动热度不等于事实可信度，关键结论应回查原文。",
+      "audience": "内容策划、产品研究和信息检索用户"
+    },
+    {
+      "name": "google-research/paper-orchestra",
+      "url": "https://github.com/google-research/paper-orchestra",
+      "stars": 2960,
+      "weeklyGain": null,
+      "functionZh": "用多个智能体把研究想法与实验日志整理成 LaTeX 论文草稿，分工处理提纲、文献、正文和图表。",
+      "reasonZh": "适合探索如何把研究记录整理成可编辑草稿；近期有代码修复。需要配置模型服务，引用、图表和实验结论应逐项与原始资料核对，并遵循投稿方的 AI 使用规则。",
+      "audience": "研究人员、科研写作支持和论文工具开发者"
+    }
+  ],
+  "established": [
+    {
+      "name": "sveltejs/svelte",
+      "url": "https://github.com/sveltejs/svelte",
+      "stars": 89582,
+      "weeklyGain": null,
+      "functionZh": "网页界面编译器，将声明式组件转换成更新页面的 JavaScript，用于构建交互式网页应用。",
+      "reasonZh": "适合把交互和展示拆成可维护组件；近期仍更新依赖。接入现有项目需核对 Svelte 版本及构建方式，并在真实浏览器中验证交互。",
+      "audience": "前端开发者、界面原型制作者与 Web 学习者"
+    },
+    {
+      "name": "logseq/logseq",
+      "url": "https://github.com/logseq/logseq",
+      "stars": 45634,
+      "weeklyGain": null,
+      "functionZh": "开源知识管理工具，用于记录和组织笔记，并提供数据库版及插件扩展。",
+      "reasonZh": "适合将长期积累的笔记集中整理；近期仍发布夜间构建并更新本地化。数据库版仍为测试版，新移动端和实时协作处于更早阶段，试用前建议备份并用独立测试笔记库。",
+      "audience": "学习笔记、研究记录和个人知识库用户"
+    },
+    {
+      "name": "qarmin/czkawka",
+      "url": "https://github.com/qarmin/czkawka",
+      "stars": 35275,
+      "weeklyGain": null,
+      "functionZh": "跨平台文件整理工具，可查找重复文件、空目录、大文件以及相似图片；仓库提供 Krokiet 图形界面与命令行。",
+      "reasonZh": "适合清理下载目录和重复照片；近期仍有代码改进。相似图片未必能够互换，删除前应逐项预览并备份；新用户可优先试用维护中的 Krokiet 界面。",
+      "audience": "照片整理、磁盘清理和本地文件管理用户"
+    },
+    {
+      "name": "OpenTTD/OpenTTD",
+      "url": "https://github.com/OpenTTD/OpenTTD",
+      "stars": 8512,
+      "weeklyGain": null,
+      "functionZh": "开源交通经营模拟游戏，可建造并经营运输网络，也支持联机与附加内容。",
+      "reasonZh": "适合体验线路规划和运输网络经营；近期仍有翻译更新。候选版和夜间版可能不如稳定版可靠，联机前宜核对各端版本和模组。",
+      "audience": "经营模拟玩家、交通网络爱好者和多人联机玩家"
+    },
+    {
+      "name": "photoview/photoview",
+      "url": "https://github.com/photoview/photoview",
+      "stars": 6580,
+      "weeklyGain": null,
+      "functionZh": "面向自建服务器的照片与视频图库，扫描指定目录并生成缩略图，以原文件夹结构在网页中展示媒体。",
+      "reasonZh": "适合浏览已有的家庭或摄影素材库；近期仍更新文档并处理问题。正式发布间隔较长，使用开发分支前应核对数据库升级要求，图库不能替代原文件备份。",
+      "audience": "摄影爱好者、家庭相册与 NAS 管理用户"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-11-16 08:00:00 北京时间",
   "publishedAtIso": "2026-11-16T00:00:00Z",
   "growthWindow": "2026.11.16 GitHub Trending 日榜热度参考；OpenGithubs 最新可用周榜为 2026.11.03—2026.11.08，本期项目无可靠周增量，均填 null",
