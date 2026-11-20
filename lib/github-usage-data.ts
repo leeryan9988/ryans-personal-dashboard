@@ -21,6 +21,107 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-11-20 08:00:18 北京时间",
+  "publishedAtIso": "2026-11-20T00:00:18Z",
+  "growthWindow": "2026.11.20 GitHub Trending 日榜热度参考；OpenGithubs 最新可用周榜为 2026.11.10—2026.11.15，本期项目无可靠周增量，均填 null",
+  "risingSource": "https://github.com/trending",
+  "rising": [
+    {
+      "name": "HKUDS/CLI-Anything",
+      "url": "https://github.com/HKUDS/CLI-Anything",
+      "stars": 60533,
+      "weeklyGain": null,
+      "functionZh": "为软件构建可供智能体调用的命令行接口，并提供 CLI-Hub 来查找、安装和管理社区工具封装。",
+      "reasonZh": "适合把图形软件或既有工具接入自动化流程；主分支最近提交在 9 月，问题区仍有活动。部分封装还需安装对应的原始软件，接口可用性应逐个验证。",
+      "audience": "软件自动化、智能体开发与工具集成人员"
+    },
+    {
+      "name": "openvinotoolkit/openvino",
+      "url": "https://github.com/openvinotoolkit/openvino",
+      "stars": 11554,
+      "weeklyGain": null,
+      "functionZh": "用于优化和部署深度学习推理的工具包，可接入多种模型框架并在支持的 CPU、Intel GPU 或 NPU 上运行。",
+      "reasonZh": "适合评估现有设备的模型部署方案；近期仍修复算子精度问题。设备、模型和算子支持要按版本核对，性能提升需要用自己的模型与数据实测。",
+      "audience": "本地 AI、边缘设备和模型部署开发者"
+    },
+    {
+      "name": "mjmirza/app-store-compliance",
+      "url": "https://github.com/mjmirza/app-store-compliance",
+      "stars": 1817,
+      "weeklyGain": null,
+      "functionZh": "社区维护的应用上架检查资料与提交前扫描工具，整理 App Store、Google Play 常见拒审情形及排查步骤。",
+      "reasonZh": "适合在提交前补充检查清单；本月有版本发布，问题区仍跟进脚本修复。资料和扫描结果可能不完整，不能保证过审，最终应回查平台官方要求。",
+      "audience": "移动应用开发者、测试与发布负责人"
+    },
+    {
+      "name": "XiaoYouChR/Ghost-Downloader-3",
+      "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3",
+      "stars": 12677,
+      "weeklyGain": null,
+      "functionZh": "集中管理多协议下载的客户端，支持 HTTP、BT 等任务，以及浏览器扩展和远程调用接口。",
+      "reasonZh": "适合把多个下载来源放到同一界面管理；近期发布版本并修复安装包。应只下载有权获取的内容，使用扩展接管下载时需核对账号和浏览器授权范围。",
+      "audience": "多来源文件下载、素材管理与桌面用户"
+    },
+    {
+      "name": "zhouxiaoka/autoclip",
+      "url": "https://github.com/zhouxiaoka/autoclip",
+      "stars": 11195,
+      "weeklyGain": null,
+      "functionZh": "桌面视频剪辑工具，从长视频中筛选片段，生成字幕、封面和发布文案，可进入编辑器继续调整。",
+      "reasonZh": "适合把已获授权的播客、访谈或课程整理成短视频；本月有发布，问题区仍有反馈。云端模型可能收费，片段语境、字幕和人物取景需人工审阅。",
+      "audience": "视频创作者、课程运营与内容编辑"
+    }
+  ],
+  "established": [
+    {
+      "name": "toeverything/AFFiNE",
+      "url": "https://github.com/toeverything/AFFiNE",
+      "stars": 75150,
+      "weeklyGain": null,
+      "functionZh": "把文档、白板、数据库和页面链接放到同一工作区，支持本地优先的笔记组织与跨设备协作。",
+      "reasonZh": "适合把文字记录与视觉规划结合起来；近期仍维护编辑器。正式版与 Canary 版应区分，自建或同步前需规划备份，并核对所需云端与 AI 功能的服务条件。",
+      "audience": "个人知识管理、项目规划与协作团队"
+    },
+    {
+      "name": "jitsi/jitsi-meet",
+      "url": "https://github.com/jitsi/jitsi-meet",
+      "stars": 30274,
+      "weeklyGain": null,
+      "functionZh": "开源视频会议平台，提供浏览器与移动端接入、屏幕内容分享、聊天和投票，也可自行部署。",
+      "reasonZh": "适合举办在线讨论或集成会议能力；近期仍更新核心依赖。自建需要维护服务器和网络，使用公共实例发起会议需按当前服务要求登录。",
+      "audience": "远程协作、在线教学与会议服务开发人员"
+    },
+    {
+      "name": "restic/restic",
+      "url": "https://github.com/restic/restic",
+      "stars": 37307,
+      "weeklyGain": null,
+      "functionZh": "跨平台备份程序，把文件保存为可恢复的快照，支持本地目录、SFTP 及多种对象存储后端。",
+      "reasonZh": "适合建立可自动执行的文件备份；近期发布了新版本。备份密码遗失可能导致数据无法恢复，应妥善保管并定期做恢复演练。",
+      "audience": "个人文件备份、服务器维护与自建服务用户"
+    },
+    {
+      "name": "opentoonz/opentoonz",
+      "url": "https://github.com/opentoonz/opentoonz",
+      "stars": 8310,
+      "weeklyGain": null,
+      "functionZh": "开源二维动画制作软件，可用于搭建绘制、动画与后期制作流程。",
+      "reasonZh": "适合系统学习二维动画制作；近期仍有代码维护。学习成本较高，日常使用宜从官方稳定安装包开始，夜间构建应先用副本项目测试。",
+      "audience": "二维动画学习者、动画作者与创作团队"
+    },
+    {
+      "name": "matplotlib/matplotlib",
+      "url": "https://github.com/matplotlib/matplotlib",
+      "stars": 23491,
+      "weeklyGain": null,
+      "functionZh": "Python 可视化库，用于制作静态、动画和交互图表，并输出适合报告或出版的图形。",
+      "reasonZh": "适合把分析过程与图表代码一起复用；近期仍修复类型相关问题。需要 Python 基础，字体、单位和图形表达应结合数据与输出环境检查。",
+      "audience": "数据分析、科研绘图与 Python 学习者"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-11-18 08:07:18 北京时间",
   "publishedAtIso": "2026-11-18T00:07:18Z",
   "growthWindow": "2026.11.10—2026.11.15（OpenGithubs 周榜统计区间）；2026.11.18 GitHub Trending 日榜仅作热度参考，无可靠周口径者填 null",
