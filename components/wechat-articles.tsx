@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check, ChevronDown, Copy, FileText } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
+import { WechatArticleCollections } from './wechat-article-collections';
 import { WechatTopicSamples } from './wechat-topic-samples';
 
 type Article = {
@@ -83,12 +84,13 @@ export function WechatArticlesView({ userId }: { userId: string | null }) {
     <header className="bg-gradient-to-r from-[#102a59] to-[#244b98] px-6 py-7 sm:px-8">
       <div className="flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-cyan-200"><FileText className="size-4" /> 微信公众号</div>
       <h1 className="mt-2 text-3xl font-bold">文章库</h1>
-      <p className="mt-2 text-sm text-sky-100">每周准备 7 篇。展开周列表，点击标题预览，点击标题旁按钮复制图文。</p>
+      <p className="mt-2 text-sm text-sky-100">按分组或周列表查看文章，点击标题预览，点击旁边按钮复制图文。</p>
     </header>
     <div className="space-y-3 p-4 sm:p-6">
       {error && <p role="alert" className="rounded-xl bg-rose-100 p-3 text-sm text-rose-900">{error}</p>}
       {!userId && <p className="rounded-xl border border-white/15 p-5 text-sm text-slate-300">登录后查看文章。</p>}
       {userId && weeks.length === 0 && !error && <p className="rounded-xl border border-white/15 p-5 text-sm text-slate-300">还没有文章。</p>}
+      <WechatArticleCollections userId={userId} />
       {weeks.map((week, index) => {
         const expanded = expandedWeek === week.monday;
         return <div key={week.monday} className="overflow-hidden rounded-2xl border border-[#25426e] bg-[#0b1d40]">
