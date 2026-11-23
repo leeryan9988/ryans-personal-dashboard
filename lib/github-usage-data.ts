@@ -21,6 +21,107 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-11-23 08:03:07 北京时间",
+  "publishedAtIso": "2026-11-23T00:03:07Z",
+  "growthWindow": "2026.11.23 GitHub Trending 日榜热度参考；OpenGithubs 最新可用周榜为 2026.11.10—2026.11.15，本期项目无可靠周增量，均填 null",
+  "risingSource": "https://github.com/trending",
+  "rising": [
+    {
+      "name": "jingyaogong/minimind",
+      "url": "https://github.com/jingyaogong/minimind",
+      "stars": 68632,
+      "weeklyGain": null,
+      "functionZh": "提供小型语言模型的结构与训练代码，覆盖预训练、微调和强化学习等环节，帮助理解模型训练流程。",
+      "reasonZh": "适合逐步阅读代码并复现小模型实验；近期仍更新文档。项目宣传的两小时是特定硬件上的 SFT 实测，并非完整训练链路的通用耗时，需要核对显存和数据条件。",
+      "audience": "机器学习入门者、模型训练学习者"
+    },
+    {
+      "name": "cursor/plugins",
+      "url": "https://github.com/cursor/plugins",
+      "stars": 18430,
+      "weeklyGain": null,
+      "functionZh": "Cursor 官方插件集合与插件规范，按目录提供开发工具、工作流及外部服务的集成。",
+      "reasonZh": "适合查找现成集成或参考插件结构；近期仍维护插件资料。需要匹配的 Cursor 环境，第三方服务可能需要账号和额外权限，应逐个核对。",
+      "audience": "Cursor 用户、插件作者和开发团队"
+    },
+    {
+      "name": "firecrawl/firecrawl",
+      "url": "https://github.com/firecrawl/firecrawl",
+      "stars": 207011,
+      "weeklyGain": null,
+      "functionZh": "把网页抓取为便于处理的 Markdown 等内容，提供本地工具、自建服务与托管 API 及相应 SDK。",
+      "reasonZh": "适合为检索或资料整理流程收集网页内容；近期仍有 API 修复。动态网页可能需要本机浏览器，云端功能、费用与本地能力应区分，采集前应确认访问许可。",
+      "audience": "信息整理、知识库与网页数据应用开发者"
+    },
+    {
+      "name": "nginx/nginx",
+      "url": "https://github.com/nginx/nginx",
+      "stars": 32881,
+      "weeklyGain": null,
+      "functionZh": "提供 Web 服务、反向代理、负载均衡与内容缓存，可作为网页应用和服务的网络入口。",
+      "reasonZh": "适合组织多个后端服务的访问；近期有版本发布和协议问题跟进。配置需要网络与系统基础，上线前应检查 TLS、转发规则和访问权限。",
+      "audience": "网站维护、后端与自建服务管理人员"
+    },
+    {
+      "name": "obra/superpowers",
+      "url": "https://github.com/obra/superpowers",
+      "stars": 324150,
+      "weeklyGain": null,
+      "functionZh": "为编程智能体提供可组合的开发技能，组织需求讨论、实施计划、实现、测试与代码审阅。",
+      "reasonZh": "适合建立可重复的 AI 编程流程；本月有正式发布，问题区仍活跃。不同客户端的安装和行为可能不同，模板应适配项目，不能替代实际测试与审阅。",
+      "audience": "编程助手用户、开发团队与项目维护者"
+    }
+  ],
+  "established": [
+    {
+      "name": "BookStackApp/BookStack",
+      "url": "https://github.com/BookStackApp/BookStack",
+      "stars": 19149,
+      "weeklyGain": null,
+      "functionZh": "自建信息与文档整理平台，为团队提供接近文字处理软件的内容编辑与知识归档体验。",
+      "reasonZh": "适合把操作说明和团队资料集中维护；近期镜像仍有同步提交。主开发与问题跟踪已迁移到 Codeberg，自建前应按官方说明准备环境和备份。",
+      "audience": "团队知识库、内部文档与自建服务用户"
+    },
+    {
+      "name": "signalapp/Signal-Desktop",
+      "url": "https://github.com/signalapp/Signal-Desktop",
+      "stars": 16741,
+      "weeklyGain": null,
+      "functionZh": "连接手机 Signal 的桌面通信客户端，可在 Windows、macOS 和 Linux 电脑上收发消息。",
+      "reasonZh": "适合在电脑处理已有 Signal 对话；近期仍发布测试版本。需要先与 Android 或 iOS 客户端关联，日常使用可优先选择官方正式版。",
+      "audience": "Signal 用户、跨设备通信用户"
+    },
+    {
+      "name": "navidrome/navidrome",
+      "url": "https://github.com/navidrome/navidrome",
+      "stars": 24903,
+      "weeklyGain": null,
+      "functionZh": "自建音乐收藏服务器，可通过浏览器和兼容的移动客户端播放自己的音乐资料库。",
+      "reasonZh": "适合在多台设备访问已有音乐收藏；近期仍修复信息刷新问题。主分支可能不稳定，宜使用正式发布包，并维护媒体文件和数据库备份。",
+      "audience": "音乐收藏者、家庭服务器与 NAS 用户"
+    },
+    {
+      "name": "LibreCAD/LibreCAD",
+      "url": "https://github.com/LibreCAD/LibreCAD",
+      "stars": 6629,
+      "weeklyGain": null,
+      "functionZh": "跨平台二维 CAD 绘图软件，支持编辑二维图纸，并提供多种图纸与图像格式转换命令。",
+      "reasonZh": "适合制作平面图和简单工程图；近期仍修复字体处理问题。默认分支是预发布代码，DWG 支持取决于构建选项，交换图纸前应核对尺寸与格式。",
+      "audience": "二维制图学习者、创客与工程绘图人员"
+    },
+    {
+      "name": "sharkdp/bat",
+      "url": "https://github.com/sharkdp/bat",
+      "stars": 61374,
+      "weeklyGain": null,
+      "functionZh": "在终端显示文本文件，提供语法高亮、Git 修改提示、不可见字符显示和自动分页。",
+      "reasonZh": "适合阅读代码、配置与日志；近期仍有代码和文档维护。管道输出与终端显示行为有所不同，替换现有 cat 命令前应检查脚本兼容。",
+      "audience": "命令行用户、开发者与系统维护人员"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-11-20 08:00:18 北京时间",
   "publishedAtIso": "2026-11-20T00:00:18Z",
   "growthWindow": "2026.11.20 GitHub Trending 日榜热度参考；OpenGithubs 最新可用周榜为 2026.11.10—2026.11.15，本期项目无可靠周增量，均填 null",
