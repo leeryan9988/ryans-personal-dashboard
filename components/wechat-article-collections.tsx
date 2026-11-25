@@ -5,7 +5,7 @@ import { getSupabase } from '@/lib/supabase';
 
 type Entry = { id: string; group_name: string; position: number; title: string; created_at: string };
 type Content = { id: string; html: string; markdown: string };
-export function WechatArticleCollections({ userId }: { userId: string | null }) {
+export function WechatArticleCollections({ userId, table = 'wechat_article_collections', label = '情感文章', emptyMessage }: { userId: string | null; table?: 'wechat_article_collections' | 'benchmark_article_collections'; label?: string; emptyMessage?: string }) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<Record<string, boolean>>({});
@@ -20,13 +20,13 @@ export function WechatArticleCollections({ userId }: { userId: string | null }) 
     setEntries([]); setContents({}); setSelected({}); setExpanded({}); setError(''); setLoading({}); setCopied(null); pending.current.clear();
     if (!userId) return;
     const client = getSupabase(); if (!client) return;
-    void client.from('wechat_article_collections').select('id,group_name,position,title,created_at').eq('user_id', userId).order('position').then(({ data, error: issue }) => {
+    void client.from(table).select('id,group_name,position,title,created_at').eq('user_id', userId).order('position').then(({ data, error: issue }) => {
       if (epoch.current !== current) return;
       if (issue) setError('文章分组暂时无法读取，请刷新重试。');
       else setEntries((data ?? []) as Entry[]);
     });
     return () => { epoch.current++; };
-  }, [userId]);
+  }, [userId, table]);
   const groups = useMemo(() => {
     const result = new Map<string, Entry[]>();
     for (const entry of entries) result.set(entry.group_name, [...(result.get(entry.group_name) ?? []), entry]);
@@ -40,7 +40,7 @@ export function WechatArticleCollections({ userId }: { userId: string | null }) 
     const operation = (async () => {
       const client = getSupabase(); if (!client || !userId) throw new Error('请先登录。');
       setLoading(state => ({ ...state, [id]: true }));
-      const { data, error: issue } = await client.from('wechat_article_collections').select('id,html,markdown').eq('id', id).eq('user_id', userId).single();
+      const { data, error: issue } = await client.from(table).select('id,html,markdown').eq('id', id).eq('user_id', userId).single();
       if (epoch.current !== current) throw new Error('登录状态已变化，请重新打开文章。');
       if (issue || !data) throw new Error('文章暂时无法读取，请重试。');
       setContents(state => ({ ...state, [id]: data as Content })); return data as Content;
@@ -65,11 +65,12 @@ export function WechatArticleCollections({ userId }: { userId: string | null }) 
     } catch { if (current === epoch.current) setError('复制失败，请先打开文章后重试，并允许 HTTPS 看板访问剪贴板。'); }
   }
   if (!userId) return null;
-  return <div className="space-y-3" aria-label="情感文章分组">
+  return <div className="space-y-3" aria-label={`${label}分组`}>
     {error && <p role="alert" className="rounded-xl bg-rose-100 p-3 text-sm text-rose-900">{error}</p>}
+    {emptyMessage && !entries.length && !error && <p className="rounded-xl border border-white/15 p-5 text-sm text-slate-300">{emptyMessage}</p>}
     {groups.map(([name, articles]) => <div key={name} className="overflow-hidden rounded-2xl border border-cyan-700 bg-[#0b1d40]">
       <button type="button" aria-expanded={!!expanded[name]} className="flex w-full items-center gap-3 px-4 py-4 text-left hover:bg-white/5" onClick={() => { setExpanded(state => ({ ...state, [name]: !state[name] })); }}>
-        <span className="rounded-full bg-cyan-900 px-2.5 py-1 text-xs text-cyan-100">情感文章</span><span className="font-semibold">{name}</span><span className="text-xs text-slate-300">{articles.length} 篇</span><ChevronDown className={`ml-auto size-4 ${!!expanded[name] ? 'rotate-180' : ''}`} />
+        <span className="rounded-full bg-cyan-900 px-2.5 py-1 text-xs text-cyan-100">{label}</span><span className="font-semibold">{name}</span><span className="text-xs text-slate-300">{articles.length} 篇</span><ChevronDown className={`ml-auto size-4 ${!!expanded[name] ? 'rotate-180' : ''}`} />
       </button>
       {!!expanded[name] && <ol className="space-y-2 border-t border-[#25426e] p-3">
         {articles.map(a => <li key={a.id} className="rounded-xl border border-[#1f416e] bg-[#11274d] p-3">

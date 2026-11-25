@@ -77,6 +77,7 @@ import { StickyNotesBoard } from './sticky-notes-board';
 import { GithubUsageView } from './github-usage';
 import { NewsBriefingView } from './news-briefing';
 import { WechatArticlesView } from './wechat-articles';
+import { WechatArticleCollections } from './wechat-article-collections';
 import { matchesDashboardSearch, searchDashboardData, type DashboardSearchResult } from '@/lib/dashboard-search';
 
 type Area =
@@ -986,7 +987,7 @@ export default function DashboardApp() {
           {active === 'github使用' && <GithubUsageView searchQuery={query} />}
           {active === '全球早报' && <NewsBriefingView searchQuery={query} />}
           {active === '微信公众号' && <WechatArticlesView userId={session?.user.id ?? null} />}
-          {active === '对标洞见/涂磊' && <section className="w-full overflow-hidden rounded-3xl bg-[#071633] text-white shadow-xl"><header className="bg-gradient-to-r from-[#102a59] to-[#244b98] px-6 py-7 sm:px-8"><div className="text-xs font-bold tracking-widest text-cyan-200">对标洞见 / 涂磊</div><h1 className="mt-2 text-3xl font-bold">文章库</h1><p className="mt-2 text-sm text-sky-100">按分组查看对标文章。</p></header><div className="p-4 sm:p-6"><p className="rounded-xl border border-white/15 p-5 text-sm text-slate-300">暂无对标文章。</p></div></section>}
+          {active === '对标洞见/涂磊' && <section className="w-full overflow-hidden rounded-3xl bg-[#071633] text-white shadow-xl"><header className="bg-gradient-to-r from-[#102a59] to-[#244b98] px-6 py-7 sm:px-8"><div className="text-xs font-bold tracking-widest text-cyan-200">对标洞见 / 涂磊</div><h1 className="mt-2 text-3xl font-bold">文章库</h1><p className="mt-2 text-sm text-sky-100">按分组查看文章，点击标题预览，点击旁边按钮复制图文。</p></header><div className="p-4 sm:p-6"><WechatArticleCollections userId={session?.user.id ?? null} table="benchmark_article_collections" label="对标文章" emptyMessage="暂无对标文章，推送后会按分组显示。" /></div></section>}
           {session && <StickyNotesBoard key={session.user.id} userId={session.user.id} active={active === '待办清单'} searchQuery={queries['待办清单'] ?? ''} onSearchChange={(value) => setQueries((current) => ({ ...current, 待办清单: value }))} />}
           {active !== '个人网盘' && active !== '待办清单' && active !== 'github使用' && active !== '全球早报' && active !== '微信公众号' && active !== '对标洞见/涂磊' && (
             <WeeklyReflectionPanel
