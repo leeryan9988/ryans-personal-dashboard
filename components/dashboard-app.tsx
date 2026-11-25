@@ -91,7 +91,8 @@ type Area =
   | '计划和感悟'
   | 'github使用'
   | '全球早报'
-  | '微信公众号';
+  | '微信公众号'
+  | '对标洞见/涂磊';
 type RecordKind =
   | '工作产品'
   | '副业利润'
@@ -243,7 +244,7 @@ async function decryptSession(value: string, encodedKey: string) {
 
 const navigation: { label: Area; icon: typeof LayoutDashboard }[] = [
   { label: '工作', icon: BriefcaseBusiness },
-  { label: '副业', icon: TrendingUp },
+  { label: '对标洞见/涂磊', icon: FileText },
   { label: '身体', icon: Dumbbell },
   { label: '读书清单', icon: BookOpen },
   { label: '个人网盘', icon: HardDrive },
@@ -985,8 +986,9 @@ export default function DashboardApp() {
           {active === 'github使用' && <GithubUsageView searchQuery={query} />}
           {active === '全球早报' && <NewsBriefingView searchQuery={query} />}
           {active === '微信公众号' && <WechatArticlesView userId={session?.user.id ?? null} />}
+          {active === '对标洞见/涂磊' && <section className="w-full overflow-hidden rounded-3xl bg-[#071633] text-white shadow-xl"><header className="bg-gradient-to-r from-[#102a59] to-[#244b98] px-6 py-7 sm:px-8"><div className="text-xs font-bold tracking-widest text-cyan-200">对标洞见 / 涂磊</div><h1 className="mt-2 text-3xl font-bold">文章库</h1><p className="mt-2 text-sm text-sky-100">按分组查看对标文章。</p></header><div className="p-4 sm:p-6"><p className="rounded-xl border border-white/15 p-5 text-sm text-slate-300">暂无对标文章。</p></div></section>}
           {session && <StickyNotesBoard key={session.user.id} userId={session.user.id} active={active === '待办清单'} searchQuery={queries['待办清单'] ?? ''} onSearchChange={(value) => setQueries((current) => ({ ...current, 待办清单: value }))} />}
-          {active !== '个人网盘' && active !== '待办清单' && active !== 'github使用' && active !== '全球早报' && active !== '微信公众号' && (
+          {active !== '个人网盘' && active !== '待办清单' && active !== 'github使用' && active !== '全球早报' && active !== '微信公众号' && active !== '对标洞见/涂磊' && (
             <WeeklyReflectionPanel
               area={active}
               records={reflections.filter((item) => item.area === active)}
@@ -1080,7 +1082,7 @@ function Header({
           placeholder={`搜索${active}内容`}
         />
         {query && <button type="button" aria-label="清空搜索" onClick={() => { setQuery(''); setSearchOpen(false); }} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[#71879c] hover:bg-[#edf3f9]"><X className="size-4" /></button>}
-        {searchOpen && query.trim() && active !== '个人网盘' && active !== '待办清单' && active !== '全球早报' && active !== '微信公众号' && (
+        {searchOpen && query.trim() && active !== '个人网盘' && active !== '待办清单' && active !== '全球早报' && active !== '微信公众号' && active !== '对标洞见/涂磊' && (
           <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-80 overflow-y-auto rounded-xl border border-[#cbdff2] bg-white p-2 shadow-xl">
             <p className="px-2 py-1 text-xs text-[#607184]" role="status" aria-live="polite">找到 {results.length} 条匹配结果</p>
             {results.slice(0, 15).map((result) => (
