@@ -21,6 +21,107 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-11-25 08:06:04 北京时间",
+  "publishedAtIso": "2026-11-25T00:06:04Z",
+  "growthWindow": "2026.11.18—2026.11.23（OpenGithubs 周榜统计区间）；2026.11.25 GitHub Trending 日榜仅作热度参考，无可靠周口径者填 null",
+  "risingSource": "https://github.com/OpenGithubs/github-weekly-rank/blob/24f03f1fe471049a2999c1aaf3a9c921d155381d/README.md",
+  "rising": [
+    {
+      "name": "erkamyaman/rust-anything",
+      "url": "https://github.com/erkamyaman/rust-anything",
+      "stars": 9202,
+      "weeklyGain": 4011,
+      "functionZh": "记录既有程序的行为，把应用逐步改写为 Rust，并用记录回放检查每一步改写后的结果。",
+      "reasonZh": "适合探索如何分阶段迁移或优化程序；近期发布了 4.1.0。检查只能覆盖已记录的行为，未覆盖输入、性能和外部依赖仍需单独测试。",
+      "audience": "软件迁移、性能优化和 Rust 学习开发者"
+    },
+    {
+      "name": "kunkundi/crossdesk",
+      "url": "https://github.com/kunkundi/crossdesk",
+      "stars": 7291,
+      "weeklyGain": 1896,
+      "functionZh": "跨平台远程桌面工具，可通过桌面、浏览器和移动端控制电脑，并提供局域网连接及自建服务方式。",
+      "reasonZh": "适合远程维护自己的设备；近期仍优化桌面捕获开销。不同平台的编解码与权限需核对，远程访问前应配置可靠认证并限制授权设备。",
+      "audience": "多设备用户、远程支持和自建服务管理人员"
+    },
+    {
+      "name": "deepseek-ai/chat-demo",
+      "url": "https://github.com/deepseek-ai/chat-demo",
+      "stars": 5396,
+      "weeklyGain": 2443,
+      "functionZh": "直接由浏览器调用 DeepSeek API 的静态聊天示例，支持多会话、流式回复、附件和聊天记录导入导出。",
+      "reasonZh": "适合学习或搭建简单的个人 API 聊天界面；近期发布了 0.1.4。需要 API 密钥，密钥和记录保存在浏览器；发送内容会进入配置的服务，不等于完全离线。",
+      "audience": "API 聊天用户、前端学习者和原型开发者"
+    },
+    {
+      "name": "KKKKhazix/agent-autoloop",
+      "url": "https://github.com/KKKKhazix/agent-autoloop",
+      "stars": 6485,
+      "weeklyGain": 1864,
+      "functionZh": "为命令行智能体提供事件调度与后台任务跟进，把事件来源、智能体和通知渠道拆成可替换插件。",
+      "reasonZh": "适合研究重复任务如何等待反馈后继续执行；近期仍修复任务停止行为。需要持续运行的主机、已配置的命令行助手及相关权限，部署在电脑上并不意味着关机后还能执行。",
+      "audience": "自动化开发者、命令行智能体用户"
+    },
+    {
+      "name": "Tracer-Cloud/opensre",
+      "url": "https://github.com/Tracer-Cloud/opensre",
+      "stars": 15177,
+      "weeklyGain": null,
+      "functionZh": "面向 CI/CD 故障的命令行智能体，可读取失败运行、分析原因，并准备修复供代码审阅。",
+      "reasonZh": "适合探索构建失败的排查流程；近期仍维护依赖和记录持久化。项目是公开 Alpha，模型和仓库访问需要配置，建议先审阅修复再执行或合并。",
+      "audience": "项目维护者、开发运维与持续集成团队"
+    }
+  ],
+  "established": [
+    {
+      "name": "Zettlr/Zettlr",
+      "url": "https://github.com/Zettlr/Zettlr",
+      "stars": 13958,
+      "weeklyGain": null,
+      "functionZh": "面向文本与学术写作的编辑器，提供引用管理集成、全文搜索，以及基于 Pandoc 等工具的多格式导出。",
+      "reasonZh": "适合将笔记与出版稿件放在同一写作环境；近期仍修复问题。复杂模板和导出可能需要额外工具，交付前应核对引用、字体和目标格式。",
+      "audience": "学术写作者、长文作者和知识管理用户"
+    },
+    {
+      "name": "Stellarium/stellarium",
+      "url": "https://github.com/Stellarium/stellarium",
+      "stars": 10198,
+      "weeklyGain": null,
+      "functionZh": "电脑上的开源天象模拟软件，以三维视图展示肉眼、双筒镜或望远镜可见的天空。",
+      "reasonZh": "适合学习星空和辅助规划观测；近期仍有构建维护。显示结果依赖时间、地点和设置，实际可见情况还受天气及光污染影响。",
+      "audience": "天文爱好者、观测入门者和科普教师"
+    },
+    {
+      "name": "Sigil-Ebook/Sigil",
+      "url": "https://github.com/Sigil-Ebook/Sigil",
+      "stars": 7073,
+      "weeklyGain": null,
+      "functionZh": "跨平台 EPUB 编辑器，可编辑 EPUB 2 与 EPUB 3 电子书，并通过插件扩展工作流程。",
+      "reasonZh": "适合整理和修订自有电子书；近期仍修复索引生成问题。阅读器的排版支持可能不同，发布前应校验文件并在目标阅读器上预览。",
+      "audience": "电子书制作者、作者和排版编辑"
+    },
+    {
+      "name": "janeczku/calibre-web",
+      "url": "https://github.com/janeczku/calibre-web",
+      "stars": 18615,
+      "weeklyGain": null,
+      "functionZh": "基于已有 Calibre 数据库的网页书库，可在浏览器中浏览、阅读和下载电子书。",
+      "reasonZh": "适合把整理好的 Calibre 书库提供给多个设备访问；近期仍更新依赖和格式处理。需要有效的 Calibre 数据库，开放远程访问前应设置账号权限并备份书库。",
+      "audience": "电子书收藏、家庭书库与自建服务用户"
+    },
+    {
+      "name": "sharkdp/fd",
+      "url": "https://github.com/sharkdp/fd",
+      "stars": 45185,
+      "weeklyGain": null,
+      "functionZh": "面向命令行的文件查找工具，用简洁参数搜索文件名和目录，支持正则、通配符及并行命令执行。",
+      "reasonZh": "适合快速定位本地文件；近期仍维护依赖和平台行为。默认忽略隐藏文件和 Git 忽略项，找不到文件时应先检查这些过滤条件。",
+      "audience": "命令行用户、开发者和文件整理人员"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-11-23 08:03:07 北京时间",
   "publishedAtIso": "2026-11-23T00:03:07Z",
   "growthWindow": "2026.11.23 GitHub Trending 日榜热度参考；OpenGithubs 最新可用周榜为 2026.11.10—2026.11.15，本期项目无可靠周增量，均填 null",
