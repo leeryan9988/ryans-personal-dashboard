@@ -31,8 +31,17 @@ export function WechatArticleCollections({ userId, table = 'wechat_article_colle
     const result = new Map<string, Entry[]>();
     for (const entry of entries) result.set(entry.group_name, [...(result.get(entry.group_name) ?? []), entry]);
     const created = (items: Entry[]) => Math.min(...items.map(item => Date.parse(item.created_at)));
-    return [...result].sort(([a, left], [b, right]) => created(right) - created(left) || b.localeCompare(a, 'zh-CN', { numeric: true }));
-  }, [entries]);
+    for (const items of result.values()) items.sort((a, b) => a.position - b.position);
+    return [...result].sort(([a, left], [b, right]) => {
+      if (table === 'benchmark_article_collections') {
+        const aNumber = /^正式版(\d+)号$/.exec(a);
+        const bNumber = /^正式版(\d+)号$/.exec(b);
+        if (aNumber && bNumber) return Number(bNumber[1]) - Number(aNumber[1]);
+        if (aNumber || bNumber) return aNumber ? -1 : 1;
+      }
+      return created(right) - created(left) || b.localeCompare(a, 'zh-CN', { numeric: true });
+    });
+  }, [entries, table]);
   function loadContent(id: string): Promise<Content> {
     if (contents[id]) return Promise.resolve(contents[id]);
     const existing = pending.current.get(id); if (existing) return existing;
