@@ -21,6 +21,107 @@ export type GithubUsageEdition = {
 export const githubUsageEditions: GithubUsageEdition[] = [
 {
   "title": "GitHub 使用",
+  "publishedAt": "2026-11-27 08:03:23 北京时间",
+  "publishedAtIso": "2026-11-27T00:03:23Z",
+  "growthWindow": "2026.11.18—2026.11.23（OpenGithubs 周榜统计区间）；2026.11.27 GitHub Trending 日榜仅作热度参考，迁址或无可靠周口径者填 null",
+  "risingSource": "https://github.com/OpenGithubs/github-weekly-rank/blob/24f03f1fe471049a2999c1aaf3a9c921d155381d/README.md",
+  "rising": [
+    {
+      "name": "ccch1mneyyy/dsh-Go",
+      "url": "https://github.com/ccch1mneyyy/dsh-Go",
+      "stars": 32667,
+      "weeklyGain": 23790,
+      "functionZh": "把 DeepSeek Harness 带到手机，可在手机本机运行，也能遥控电脑上的工作会话。",
+      "reasonZh": "Android 用户可把电脑任务带到移动端；11 月 25 日发布了 1.4.0，之后仍有兼容性修正。iOS 版仍在开发，需 Mac 自行编译签名；使用前应核对设备权限与连接配置。",
+      "audience": "Android 用户、移动办公和多设备协作开发者"
+    },
+    {
+      "name": "deepseek-ai/dsh-superagent-prototype",
+      "url": "https://github.com/deepseek-ai/dsh-superagent-prototype",
+      "stars": 24663,
+      "weeklyGain": 7950,
+      "functionZh": "基于 DeepSeek Harness 的研究原型，从 GitHub 等入口接收任务，为工作项建立独立会话与目录，并回传进展或 PR。",
+      "reasonZh": "提供理解多会话代理工作流的参考实现。README 明确它不是官方产品、尚不适合生产；主分支仍为 10 月 31 日的发布提交，未见后续维护提交，需自行审查和补齐能力。",
+      "audience": "代理系统研究者、工作流实验开发者"
+    },
+    {
+      "name": "Minireel/HGhub",
+      "url": "https://github.com/Minireel/HGhub",
+      "stars": 12051,
+      "weeklyGain": 3350,
+      "functionZh": "通过 JavaScript 插件扩展视频浏览、搜索、播放和个人媒体库的播放器。",
+      "reasonZh": "适合试验自定义媒体浏览入口；11 月 24 日发布了 0.0.5。项目不内置内容源，也不提供第三方插件；仍在早期开发，采用非商用许可，商用和插件兼容性需另行核对。",
+      "audience": "个人媒体整理用户、播放器插件开发者"
+    },
+    {
+      "name": "huami1314/GestaltX",
+      "url": "https://github.com/huami1314/GestaltX",
+      "stars": 9010,
+      "weeklyGain": null,
+      "functionZh": "面向特定 iOS 27.x 设备的 MobileGestalt 配置编辑器，提供预设、字段编辑以及写入前备份和恢复。",
+      "reasonZh": "适合熟悉系统配置的用户研究设备行为；近期仍有翻译提交和问题反馈。配置标记不能补足硬件能力，已有地区修改后同步异常的反馈；应先备份并核对版本兼容。榜单使用旧仓库地址，本期保守不填周增。",
+      "audience": "有备份与恢复经验的 iPhone、iPad 进阶用户"
+    },
+    {
+      "name": "elementalsouls/Claude-BugHunter",
+      "url": "https://github.com/elementalsouls/Claude-BugHunter",
+      "stars": 24538,
+      "weeklyGain": null,
+      "functionZh": "为 Claude Code 提供安全测试技能、命令和报告模板，辅助组织授权测试的证据收集与复核流程。",
+      "reasonZh": "有助于把安全检查过程和报告格式统一起来；近期仍有提交与问题反馈。需 Claude Code 环境，只适用于明确授权的测试，自动输出不能替代人工验证或保证发现漏洞。日榜热度不换算为周增。",
+      "audience": "负责自有系统审计的安全团队、授权测试人员"
+    }
+  ],
+  "established": [
+    {
+      "name": "borgbackup/borg",
+      "url": "https://github.com/borgbackup/borg",
+      "stars": 13955,
+      "weeklyGain": null,
+      "functionZh": "通过内容去重、压缩与可选认证加密备份文件，支持检查和恢复备份归档。",
+      "reasonZh": "重复数据较多时可节省备份空间，近期仍有兼容性维护。当前主分支为 Borg2 测试版，README 明确禁止用于生产备份；实际部署应选适用的稳定版本，并保管密钥、演练恢复。",
+      "audience": "个人资料备份用户、Linux 运维和自建存储管理者"
+    },
+    {
+      "name": "OpenRA/OpenRA",
+      "url": "https://github.com/OpenRA/OpenRA",
+      "stars": 17842,
+      "weeklyGain": null,
+      "functionZh": "开放源代码即时战略游戏引擎，提供经典红色警戒、泰伯利亚黎明和沙丘 2000 风格的模组与多人对战。",
+      "reasonZh": "适合重温经典玩法或学习制作地图和模组；11 月仍有升级规则维护和问题反馈。项目不由原游戏发行商背书，素材获取应遵循官方说明，试玩版与稳定版需区分。",
+      "audience": "即时战略玩家、地图作者、游戏模组爱好者"
+    },
+    {
+      "name": "OpenShot/openshot-qt",
+      "url": "https://github.com/OpenShot/openshot-qt",
+      "stars": 6845,
+      "weeklyGain": null,
+      "functionZh": "跨平台桌面视频编辑器，提供多轨剪辑、转场、标题、音频处理及关键帧动画。",
+      "reasonZh": "适合把素材剪成介绍视频或课程片段；11 月发布了 4.1.1，近期仍维护测试。复杂项目应先保存备份并试导出，硬件编码等实验能力的兼容性需按平台核对。",
+      "audience": "个人视频作者、教师和轻量剪辑用户"
+    },
+    {
+      "name": "zealdocs/zeal",
+      "url": "https://github.com/zealdocs/zeal",
+      "stars": 12888,
+      "weeklyGain": null,
+      "functionZh": "可下载 Dash 格式文档集的离线文档浏览器，集中检索不同语言和工具的参考资料。",
+      "reasonZh": "网络不稳定时也能查阅预先下载的文档；10 月底发布了 0.9.2，近期仍有问题反馈。主要面向 Windows 和 Linux，文档集需先下载并维护版本，离线内容可能落后于在线文档。",
+      "audience": "经常查阅技术手册的开发者、离线学习用户"
+    },
+    {
+      "name": "tropy/tropy",
+      "url": "https://github.com/tropy/tropy",
+      "stars": 1174,
+      "weeklyGain": null,
+      "functionZh": "整理、描述和检索研究照片，把照片与来源信息、项目结构关联起来，方便回查资料。",
+      "reasonZh": "适合管理档案馆拍摄的材料和研究图像；11 月 26 日仍发布了测试版本。它侧重研究资料组织，不是完整图片编辑器；重要素材应另行备份，并区分稳定版和测试版。",
+      "audience": "历史研究者、档案工作者、论文资料整理用户"
+    }
+  ]
+},
+{
+  "title": "GitHub 使用",
   "publishedAt": "2026-11-25 08:06:04 北京时间",
   "publishedAtIso": "2026-11-25T00:06:04Z",
   "growthWindow": "2026.11.18—2026.11.23（OpenGithubs 周榜统计区间）；2026.11.25 GitHub Trending 日榜仅作热度参考，无可靠周口径者填 null",
